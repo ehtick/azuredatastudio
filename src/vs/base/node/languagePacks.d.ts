@@ -1,10 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 export interface NLSConfiguration {
 	locale: string;
+	osLocale: string;
 	availableLanguages: {
 		[key: string]: string;
 	};
@@ -21,4 +22,4 @@ export interface InternalNLSConfiguration extends NLSConfiguration {
 	_languagePackSupport?: boolean;
 }
 
-export function getNLSConfiguration(commit: string, userDataPath: string, metaDataFile: string, locale: string): Promise<NLSConfiguration>;
+export function getNLSConfiguration(commit: string | undefined, userDataPath: string, metaDataFile: string, locale: string, osLocale: string): Promise<NLSConfiguration>;

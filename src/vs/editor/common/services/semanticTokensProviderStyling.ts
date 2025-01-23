@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { SemanticTokensLegend, SemanticTokens } from 'vs/editor/common/languages';
@@ -10,7 +10,7 @@ import { ILogService, LogLevel } from 'vs/platform/log/common/log';
 import { SparseMultilineTokens } from 'vs/editor/common/tokens/sparseMultilineTokens';
 import { ILanguageService } from 'vs/editor/common/languages/language';
 
-export const enum SemanticTokensProviderStylingConstants {
+const enum SemanticTokensProviderStylingConstants {
 	NO_STYLING = 0b01111111111111111111111111111111
 }
 

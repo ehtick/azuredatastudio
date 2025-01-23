@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -88,7 +88,9 @@ suite('Firewall rule dialog controller tests', () => {
 			savePassword: true,
 			groupFullName: 'g2/g2-2',
 			groupId: 'group id',
+			serverCapabilities: undefined,
 			getOptionsKey: () => '',
+			getOptionKeyIdNames: undefined!,
 			matches: () => false,
 			providerName: mssqlProviderName,
 			options: {},

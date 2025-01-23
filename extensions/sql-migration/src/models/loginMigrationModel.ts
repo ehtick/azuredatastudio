@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { MultiStepResult, MultiStepState } from '../dialog/generic/multiStepStatusDialog';
@@ -25,6 +25,12 @@ export enum LoginMigrationStep {
 	MigrateServerRolesAndSetPermissions = 2,
 	MigrationCompleted = 3,
 }
+
+export const CollectingSourceLoginsFailed = 'Collecting source logins failed';
+export const CollectingTargetLoginsFailed = 'Collecting target logins failed';
+export const ConnectingToTargetFailed = 'Connecting to target failed';
+export const InternalServerError = 'Login Migrations Internal Server Error';
+
 
 export function GetLoginMigrationStepString(step: LoginMigrationStep): string {
 	switch (step) {
@@ -61,6 +67,7 @@ export class LoginMigrationModel {
 	public collectedSourceLogins: boolean = false;
 	public collectedTargetLogins: boolean = false;
 	public loginsOnSource: LoginTableInfo[] = [];
+	public systemLoginsOnSource: LoginTableInfo[] = [];
 	public loginsOnTarget: string[] = [];
 	public loginMigrationsResult!: contracts.StartLoginMigrationResult;
 	public loginMigrationsError: any;
@@ -70,6 +77,7 @@ export class LoginMigrationModel {
 	private _currentStepIdx: number = 0;
 	private _logins: Map<string, Login>;
 	private _loginMigrationSteps: LoginMigrationStep[] = [];
+	public errorCountList: string[] = [];
 
 	constructor() {
 		this.resultsPerStep = new Map<contracts.LoginMigrationStep, contracts.StartLoginMigrationResult>();
@@ -159,8 +167,33 @@ export class LoginMigrationModel {
 	}
 
 	private setErrorCountMapPerStep(step: LoginMigrationStep, result: contracts.StartLoginMigrationResult) {
-		const errorCount = result.exceptionMap ? Object.keys(result.exceptionMap).length : 0;
-		this.errorCountMap.set(LoginMigrationStep[step], errorCount);
+		const errorBuckets: Map<string, number> = new Map<string, number>();
+
+		if (!result.exceptionMap) {
+			return;
+		}
+
+		for (const exceptions of Object.values(result.exceptionMap)) {
+			for (const exception of exceptions) {
+				// Get the value for the key, or the default value of t0 if he key is not in the map
+				const errorCount = errorBuckets.get(exception.ErrorCodeString) ?? 0;
+				errorBuckets.set(exception.ErrorCodeString, errorCount + 1)
+			}
+		}
+
+		// Making a string of the map elements of errorBuckets
+		const errorBucketsString = JSON.stringify(
+			Array.from(errorBuckets.entries()).reduce((o: any, [key, value]) => {
+				o[key] = value;
+				return o;
+			}, {})
+		);
+
+		// Retaining this step in case a revert is needed, but we will be using errorCountList for telemetry
+		this.errorCountMap.set(LoginMigrationStep[step], errorBucketsString);
+
+		// Creating an array of the error codes and its counts for each step
+		this.errorCountList.push(`[${LoginMigrationStep[step]}: ${errorBucketsString}]`);
 	}
 
 	private setDurationPerStep(step: LoginMigrationStep, result: contracts.StartLoginMigrationResult) {
@@ -294,6 +327,7 @@ export class LoginMigrationModel {
 			stateMachine._targetServerInstance.id,
 			stateMachine._targetUserName,
 			stateMachine._targetPassword,
+			stateMachine._targetPort,
 			// for login migration, connect to target Azure SQL with true/true
 			// to-do: take as input from the user, should be true/false for DB/MI but true/true for VM
 			true /* encryptConnection */,

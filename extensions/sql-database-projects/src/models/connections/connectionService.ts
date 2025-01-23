@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import type * as azdataType from 'azdata';
@@ -87,7 +87,8 @@ export class ConnectionService {
 				workstationId: undefined,
 				profileName: profile.profileName,
 				expiresOn: undefined,
-				tenantId: profile.tenantId
+				tenantId: profile.tenantId,
+				commandTimeout: undefined
 			};
 			let connectionUrl = '';
 			try {

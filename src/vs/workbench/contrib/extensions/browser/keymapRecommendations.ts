@@ -1,11 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ExtensionRecommendations, ExtensionRecommendation } from 'vs/workbench/contrib/extensions/browser/extensionRecommendations';
 import { IProductService } from 'vs/platform/product/common/productService';
-import { ExtensionRecommendationReason, IExtensionRecommendationReson } from 'vs/workbench/services/extensionRecommendations/common/extensionRecommendations';
+import { ExtensionRecommendationReason } from 'vs/workbench/services/extensionRecommendations/common/extensionRecommendations';
 
 export class KeymapRecommendations extends ExtensionRecommendations {
 
@@ -22,7 +22,7 @@ export class KeymapRecommendations extends ExtensionRecommendations {
 		if (this.productService.keymapExtensionTips) {
 			this._recommendations = this.productService.keymapExtensionTips.map(extensionId => (<ExtensionRecommendation>{
 				extensionId: extensionId.toLowerCase(),
-				reason: <IExtensionRecommendationReson>{ // {{SQL CARBON EDIT}}
+				reason: {
 					reasonId: ExtensionRecommendationReason.Application,
 					reasonText: ''
 				}

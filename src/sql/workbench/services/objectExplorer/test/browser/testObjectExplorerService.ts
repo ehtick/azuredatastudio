@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { TreeNode } from 'sql/workbench/services/objectExplorer/common/treeNode';
@@ -54,6 +54,8 @@ export class TestObjectExplorerService implements IObjectExplorerService {
 	public providerRegistered(providerId: string): boolean { return true; }
 
 	public get onUpdateObjectExplorerNodes(): Event<ObjectExplorerNodeEventArgs> { throw new Error('Method not implemented'); }
+
+	public get onNodeExpandedError(): Event<NodeExpandInfoWithProviderId> { throw new Error('Method not implemented'); }
 
 	public get onSelectionOrFocusChange(): Event<void> { throw new Error('Method not implemented'); }
 

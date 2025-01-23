@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -191,7 +191,7 @@ suite('viewLineRenderer.renderLine', () => {
 				'<span class="mtk3">l</span>',
 				'<span class="mtk4">o</span>',
 				'<span class="mtk5">\u00a0</span>',
-				'<span>&hellip;</span>'
+				'<span class="mtkoverflow">Show more (6 chars)</span>'
 			],
 			mapping: [
 				[0, 0, 0],

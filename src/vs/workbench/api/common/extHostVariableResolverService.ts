@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Lazy } from 'vs/base/common/lazy';
@@ -158,7 +158,7 @@ export class ExtHostVariableResolverProviderService extends Disposable implement
 	}
 
 	public getResolver(): Promise<IConfigurationResolverService> {
-		return this._resolver.getValue();
+		return this._resolver.value;
 	}
 
 	protected homeDir(): string | undefined {

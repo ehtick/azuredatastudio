@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Viewlet } from './viewlet';
@@ -35,7 +35,7 @@ export class Search extends Viewlet {
 
 	async clearSearchResults(): Promise<void> {
 		await retry(
-			() => this.code.waitAndClick(`.sidebar .codicon-search-clear-results`),
+			() => this.code.waitAndClick(`.sidebar .title-actions .codicon-search-clear-results`),
 			() => this.waitForNoResultText(10));
 	}
 

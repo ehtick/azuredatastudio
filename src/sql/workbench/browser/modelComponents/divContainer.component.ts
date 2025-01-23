@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./media/divContainer';
 
@@ -27,7 +27,7 @@ class DivItem {
 
 @Component({
 	template: `
-		<div #divContainer *ngIf="items" [ngClass] = "{'divContainer': true, 'clickable-divContainer': clickable}" [ngStyle]="CSSStyles" [style.height]="height" [style.width]="width" [style.display]="display" (keydown)="onKey($event)" [attr.role]="ariaRole" [attr.aria-selected]="ariaSelected" [attr.aria-live]="ariaLive">
+		<div #divContainer *ngIf="items" [ngClass] = "{'divContainer': true, 'clickable-divContainer': clickable}" [ngStyle]="CSSStyles" [style.height]="height" [style.width]="width" [style.display]="display" (keydown)="onKey($event)" [attr.role]="ariaRole" [attr.aria-selected]="ariaSelected" [attr.aria-live]="ariaLive" [attr.aria-label]="ariaLabel">
 			<div *ngFor="let item of items" [style.order]="getItemOrder(item)" [ngStyle]="getItemStyles(item)">
 				<model-component-wrapper [descriptor]="item.descriptor" [modelStore]="modelStore">
 				</model-component-wrapper>

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./media/webview';
 import {
@@ -74,7 +74,8 @@ export default class WebViewComponent extends ComponentBase<WebViewProperties> i
 
 	private _createWebview(): void {
 		this._webview = this.webviewService.createWebviewElement({
-			id: this.id,
+			providedViewType: this.id,
+			title: this.id,
 			contentOptions: {
 				allowScripts: true,
 			},
@@ -117,7 +118,7 @@ export default class WebViewComponent extends ComponentBase<WebViewProperties> i
 	private setHtml(): void {
 		if (this._webview && this.html) {
 			this._renderedHtml = this.html;
-			this._webview.html = this._renderedHtml;
+			this._webview.setHtml(this._renderedHtml);
 		}
 	}
 

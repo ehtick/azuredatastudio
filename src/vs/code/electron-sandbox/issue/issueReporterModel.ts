@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { isRemoteDiagnosticError, SystemInfo } from 'vs/platform/diagnostics/common/diagnostics';
@@ -12,8 +12,8 @@ export interface IssueReporterData {
 
 	versionInfo?: any;
 	systemInfo?: SystemInfo;
-	processInfo?: any;
-	workspaceInfo?: any;
+	processInfo?: string;
+	workspaceInfo?: string;
 
 	includeSystemInfo: boolean;
 	includeWorkspaceInfo: boolean;
@@ -189,7 +189,7 @@ ${this.getInfos()}
 
 |Item|Value|
 |---|---|
-|Remote|${remote.hostName}|
+|Remote|${remote.latency ? `${remote.hostName} (latency: ${remote.latency.current.toFixed(2)}ms last, ${remote.latency.average.toFixed(2)}ms average)` : remote.hostName}|
 |OS|${remote.machineInfo.os}|
 |CPUs|${remote.machineInfo.cpus}|
 |Memory (System)|${remote.machineInfo.memory}|

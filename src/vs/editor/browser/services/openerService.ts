@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
@@ -25,15 +25,25 @@ class CommandOpener implements IOpener {
 		if (!matchesScheme(target, Schemas.command)) {
 			return false;
 		}
+
 		if (!options?.allowCommands) {
 			// silently ignore commands when command-links are disabled, also
-			// surpress other openers by returning TRUE
+			// suppress other openers by returning TRUE
 			return true;
 		}
-		// run command or bail out if command isn't known
+
 		if (typeof target === 'string') {
 			target = URI.parse(target);
 		}
+
+		if (Array.isArray(options.allowCommands)) {
+			// Only allow specific commands
+			if (!options.allowCommands.includes(target.path)) {
+				// Suppress other openers by returning TRUE
+				return true;
+			}
+		}
+
 		// execute as command
 		let args: any = [];
 		try {

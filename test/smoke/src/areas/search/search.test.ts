@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as cp from 'child_process';
@@ -29,14 +29,16 @@ export function setup(logger: Logger) {
 
 		it('searches only for *.js files & checks for correct result number', async function () {
 			const app = this.app as Application;
-			await app.workbench.search.searchFor('body');
-			await app.workbench.search.showQueryDetails();
-			await app.workbench.search.setFilesToIncludeText('*.js');
-			await app.workbench.search.submitSearch();
+			try {
+				await app.workbench.search.setFilesToIncludeText('*.js');
+				await app.workbench.search.searchFor('body');
+				await app.workbench.search.showQueryDetails();
 
-			await app.workbench.search.waitForResultText('4 results in 1 file');
-			await app.workbench.search.setFilesToIncludeText('');
-			await app.workbench.search.hideQueryDetails();
+				await app.workbench.search.waitForResultText('4 results in 1 file');
+			} finally {
+				await app.workbench.search.setFilesToIncludeText('');
+				await app.workbench.search.hideQueryDetails();
+			}
 		});
 
 		it('dismisses result & checks for correct result number', async function () {

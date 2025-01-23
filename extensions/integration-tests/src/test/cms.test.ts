@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'mocha';
@@ -57,7 +57,10 @@ suite('CMS integration test suite', () => {
 			provider: server.provider,
 			version: server.version,
 			engineType: server.engineType,
-			options: {}
+			options: {
+				encrypt: 'true',
+				trustServerCertificate: true
+			},
 		};
 
 		// Should create a CMS Server without an error
@@ -109,7 +112,10 @@ suite('CMS integration test suite', () => {
 			provider: server.provider,
 			version: server.version,
 			engineType: server.engineType,
-			options: {}
+			options: {
+				encrypt: 'true',
+				trustServerCertificate: true
+			},
 		};
 
 		// Should create a registered server
@@ -148,7 +154,10 @@ suite('CMS integration test suite', () => {
 			provider: server.provider,
 			version: server.version,
 			engineType: server.engineType,
-			options: {}
+			options: {
+				encrypt: 'true',
+				trustServerCertificate: true
+			},
 		};
 		let relativePath = cmsResources.registeredServerGroups[0].relativePath;
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -139,3 +139,55 @@ export const mockURIList: vscode.Uri[] = [
 	vscode.Uri.file('/test/folder/folder1/abc1.sqlproj'),
 	vscode.Uri.file('/test/folder/folder2/abc2.sqlproj')
 ];
+
+export const mockConnectionInfo = {
+	id: undefined,
+	userName: 'My User',
+	password: 'My Pwd',
+	serverName: 'My Server',
+	databaseName: 'My Database',
+	connectionName: 'My Connection',
+	providerName: undefined,
+	groupId: 'My GroupId',
+	groupFullName: 'My groupName',
+	authenticationType: azdata.connection.AuthenticationType.SqlLogin,
+	savePassword: false,
+	saveProfile: true,
+	options: {
+		server: 'My Server',
+		database: 'My Database',
+		user: 'My User',
+		password: 'My Pwd',
+		authenticationType: 'SqlLogin',
+		connectionName: 'My Connection Name'
+	}
+};
+
+export const mockProjectEndpointInfo: mssql.SchemaCompareEndpointInfo = {
+	endpointType: mssql.SchemaCompareEndpointType.Project,
+	projectFilePath: '',
+	extractTarget: mssql.ExtractTarget.schemaObjectType,
+	targetScripts: [],
+	dataSchemaProvider: '150',
+	connectionDetails: mockConnectionInfo,
+	databaseName: '',
+	serverDisplayName: '',
+	serverName: '',
+	ownerUri: '',
+	packageFilePath: ''
+};
+
+export const mockDatabaseEndpointInfo: mssql.SchemaCompareEndpointInfo = {
+	endpointType: mssql.SchemaCompareEndpointType.Database,
+	databaseName: 'My Database',
+	serverDisplayName: 'My Connection Name',
+	serverName: 'My Server',
+	connectionDetails: mockConnectionInfo,
+	ownerUri: 'MockUri',
+	projectFilePath: '',
+	extractTarget: mssql.ExtractTarget.schemaObjectType,
+	targetScripts: [],
+	dataSchemaProvider: '',
+	packageFilePath: '',
+	connectionName: 'My Connection Name'
+};

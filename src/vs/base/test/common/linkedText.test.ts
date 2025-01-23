@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -68,6 +68,16 @@ suite('LinkedText', () => {
 			'\nand link ',
 			{ label: 'two', href: 'http://foo' },
 			'...'
+		]);
+	});
+
+	test('Should match non-greedily', () => {
+		assert.deepStrictEqual(parseLinkedText('a [link text 1](http://link.href "title1") b [link text 2](http://link.href "title2") c').nodes, [
+			'a ',
+			{ label: 'link text 1', href: 'http://link.href', title: 'title1' },
+			' b ',
+			{ label: 'link text 2', href: 'http://link.href', title: 'title2' },
+			' c',
 		]);
 	});
 });

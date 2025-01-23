@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
-import { parseExtensionHostPort } from 'vs/platform/environment/common/environmentService';
+import { parseExtensionHostDebugPort } from 'vs/platform/environment/common/environmentService';
 import { OPTIONS, parseArgs } from 'vs/platform/environment/node/argv';
 import { NativeEnvironmentService } from 'vs/platform/environment/node/environmentService';
 import product from 'vs/platform/product/common/product';
@@ -12,7 +12,7 @@ import product from 'vs/platform/product/common/product';
 suite('EnvironmentService', () => {
 
 	test('parseExtensionHostPort when built', () => {
-		const parse = (a: string[]) => parseExtensionHostPort(parseArgs(a, OPTIONS), true);
+		const parse = (a: string[]) => parseExtensionHostDebugPort(parseArgs(a, OPTIONS), true);
 
 		assert.deepStrictEqual(parse([]), { port: null, break: false, env: undefined, debugId: undefined });
 		assert.deepStrictEqual(parse(['--debugPluginHost']), { port: null, break: false, env: undefined, debugId: undefined });
@@ -30,7 +30,7 @@ suite('EnvironmentService', () => {
 	});
 
 	test('parseExtensionHostPort when unbuilt', () => {
-		const parse = (a: string[]) => parseExtensionHostPort(parseArgs(a, OPTIONS), false);
+		const parse = (a: string[]) => parseExtensionHostDebugPort(parseArgs(a, OPTIONS), false);
 
 		assert.deepStrictEqual(parse([]), { port: 5870, break: false, env: undefined, debugId: undefined });
 		assert.deepStrictEqual(parse(['--debugPluginHost']), { port: 5870, break: false, env: undefined, debugId: undefined });

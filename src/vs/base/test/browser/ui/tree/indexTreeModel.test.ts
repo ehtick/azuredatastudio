@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -358,7 +358,7 @@ suite('IndexTreeModel', () => {
 
 		assert.deepStrictEqual(list.length, 3);
 
-		model.setCollapsed([0], false);
+		model.expandTo([0, 1]);
 		assert.deepStrictEqual(list.length, 6);
 		assert.deepStrictEqual(list[0].element, 0);
 		assert.deepStrictEqual(list[0].collapsed, false);

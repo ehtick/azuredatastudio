@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
@@ -89,6 +89,8 @@ registerSimpleEditorSettingMigration('hover', [[true, { enabled: true }], [false
 registerSimpleEditorSettingMigration('parameterHints', [[true, { enabled: true }], [false, { enabled: false }]]);
 registerSimpleEditorSettingMigration('autoIndent', [[false, 'advanced'], [true, 'full']]);
 registerSimpleEditorSettingMigration('matchBrackets', [[true, 'always'], [false, 'never']]);
+registerSimpleEditorSettingMigration('renderFinalNewline', [[true, 'on'], [false, 'off']]);
+registerSimpleEditorSettingMigration('cursorSmoothCaretAnimation', [[true, 'on'], [false, 'off']]);
 
 registerEditorSettingMigration('autoClosingBrackets', (value, read, write) => {
 	if (value === false) {
@@ -168,5 +170,25 @@ registerEditorSettingMigration('quickSuggestions', (input, read, write) => {
 		const value = input ? 'on' : 'off';
 		const newValue = { comments: value, strings: value, other: value };
 		write('quickSuggestions', newValue);
+	}
+});
+
+// Sticky Scroll
+
+registerEditorSettingMigration('experimental.stickyScroll.enabled', (value, read, write) => {
+	if (typeof value === 'boolean') {
+		write('experimental.stickyScroll.enabled', undefined);
+		if (typeof read('stickyScroll.enabled') === 'undefined') {
+			write('stickyScroll.enabled', value);
+		}
+	}
+});
+
+registerEditorSettingMigration('experimental.stickyScroll.maxLineCount', (value, read, write) => {
+	if (typeof value === 'number') {
+		write('experimental.stickyScroll.maxLineCount', undefined);
+		if (typeof read('stickyScroll.maxLineCount') === 'undefined') {
+			write('stickyScroll.maxLineCount', value);
+		}
 	}
 });

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -1593,6 +1593,12 @@ suite('buffer api', () => {
 		assert(a.equal(b));
 		assert(!a.equal(c));
 		assert(!a.equal(d));
+	});
+
+	test('equal with more chunks', () => {
+		const a = createTextBuffer(['ab', 'cd', 'e']);
+		const b = createTextBuffer(['ab', 'c', 'de']);
+		assert(a.equal(b));
 	});
 
 	test('equal 2, empty buffer', () => {

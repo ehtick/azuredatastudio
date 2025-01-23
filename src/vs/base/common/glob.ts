@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { equals } from 'vs/base/common/arrays';
@@ -10,7 +10,7 @@ import { isEqualOrParent } from 'vs/base/common/extpath';
 import { LRUCache } from 'vs/base/common/map';
 import { basename, extname, posix, sep } from 'vs/base/common/path';
 import { isLinux } from 'vs/base/common/platform';
-import { escapeRegExpCharacters } from 'vs/base/common/strings';
+import { escapeRegExpCharacters, ltrim } from 'vs/base/common/strings';
 
 export interface IRelativePattern {
 
@@ -367,7 +367,12 @@ function wrapRelativePattern(parsedPattern: ParsedStringPattern, arg2: string | 
 		// Given we have checked `base` being a parent of `path`,
 		// we can now remove the `base` portion of the `path`
 		// and only match on the remaining path components
-		return parsedPattern(path.substr(arg2.base.length + 1), basename);
+		// For that we try to extract the portion of the `path`
+		// that comes after the `base` portion. We have to account
+		// for the fact that `base` might end in a path separator
+		// (https://github.com/microsoft/vscode/issues/162498)
+
+		return parsedPattern(ltrim(path.substr(arg2.base.length), sep), basename);
 	};
 
 	// Make sure to preserve associated metadata
@@ -724,7 +729,7 @@ function parseExpressionPattern(pattern: string, value: boolean | SiblingClause,
 					return null;
 				}
 
-				const clausePattern = when.replace('$(basename)', name!);
+				const clausePattern = when.replace('$(basename)', () => name!);
 				const matched = hasSibling(clausePattern);
 				return isThenable(matched) ?
 					matched.then(match => match ? pattern : null) :

@@ -1,17 +1,18 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 export class Node<T> {
 
-	readonly data: T;
+
 	readonly incoming = new Map<string, Node<T>>();
 	readonly outgoing = new Map<string, Node<T>>();
 
-	constructor(data: T) {
-		this.data = data;
-	}
+	constructor(
+		readonly key: string,
+		readonly data: T
+	) { }
 }
 
 export class Graph<T> {
@@ -36,8 +37,8 @@ export class Graph<T> {
 		const fromNode = this.lookupOrInsertNode(from);
 		const toNode = this.lookupOrInsertNode(to);
 
-		fromNode.outgoing.set(this._hashFn(to), toNode);
-		toNode.incoming.set(this._hashFn(from), fromNode);
+		fromNode.outgoing.set(toNode.key, toNode);
+		toNode.incoming.set(fromNode.key, fromNode);
 	}
 
 	removeNode(data: T): void {
@@ -54,7 +55,7 @@ export class Graph<T> {
 		let node = this._nodes.get(key);
 
 		if (!node) {
-			node = new Node(data);
+			node = new Node(key, data);
 			this._nodes.set(key, node);
 		}
 
@@ -72,7 +73,7 @@ export class Graph<T> {
 	toString(): string {
 		const data: string[] = [];
 		for (const [key, value] of this._nodes) {
-			data.push(`${key}, (incoming)[${[...value.incoming.keys()].join(', ')}], (outgoing)[${[...value.outgoing.keys()].join(',')}]`);
+			data.push(`${key}\n\t(-> incoming)[${[...value.incoming.keys()].join(', ')}]\n\t(outgoing ->)[${[...value.outgoing.keys()].join(',')}]\n`);
 
 		}
 		return data.join('\n');

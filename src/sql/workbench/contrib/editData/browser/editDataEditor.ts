@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as strings from 'vs/base/common/strings';
@@ -213,7 +213,7 @@ export class EditDataEditor extends EditorPane {
 	/**
 	 * Sets this editor and the sub-editors to visible.
 	 */
-	public override setEditorVisible(visible: boolean, group: IEditorGroup): void {
+	protected override setEditorVisible(visible: boolean, group: IEditorGroup): void {
 		if (this._resultsEditor) {
 			this._resultsEditor.setVisible(visible, group);
 		}

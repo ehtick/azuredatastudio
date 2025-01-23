@@ -1,20 +1,21 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as es from 'event-stream';
 import _debounce = require('debounce');
 import * as _filter from 'gulp-filter';
 import * as rename from 'gulp-rename';
-import * as _ from 'underscore';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as _rimraf from 'rimraf';
 import * as VinylFile from 'vinyl';
 import { ThroughStream } from 'through';
 import * as sm from 'source-map';
-import * as git from './git';
+import { pathToFileURL } from 'url';
+import * as ternaryStream from 'ternary-stream';
+import * as git from './git'; // {{SQL CARBON EDIT}} - add for get version
 
 const root = path.dirname(path.dirname(__dirname));
 
@@ -77,7 +78,7 @@ export function incremental(streamProvider: IStreamProvider, initial: NodeJS.Rea
 	return es.duplex(input, output);
 }
 
-export function debounce(task: () => NodeJS.ReadWriteStream): NodeJS.ReadWriteStream {
+export function debounce(task: () => NodeJS.ReadWriteStream, duration = 500): NodeJS.ReadWriteStream {
 	const input = es.through();
 	const output = es.through();
 	let state = 'idle';
@@ -99,7 +100,7 @@ export function debounce(task: () => NodeJS.ReadWriteStream): NodeJS.ReadWriteSt
 
 	run();
 
-	const eventuallyRun = _debounce(() => run(), 500);
+	const eventuallyRun = _debounce(() => run(), duration);
 
 	input.on('data', () => {
 		if (state === 'idle') {
@@ -207,8 +208,8 @@ export function loadSourcemaps(): NodeJS.ReadWriteStream {
 			const contents = (<Buffer>f.contents).toString('utf8');
 
 			const reg = /\/\/# sourceMappingURL=(.*)$/g;
-			let lastMatch: RegExpMatchArray | null = null;
-			let match: RegExpMatchArray | null = null;
+			let lastMatch: RegExpExecArray | null = null;
+			let match: RegExpExecArray | null = null;
 
 			while (match = reg.exec(contents)) {
 				lastMatch = match;
@@ -219,7 +220,7 @@ export function loadSourcemaps(): NodeJS.ReadWriteStream {
 					version: '3',
 					names: [],
 					mappings: '',
-					sources: [f.relative],
+					sources: [f.relative.replace(/\\/g, '/')],
 					sourcesContent: [contents]
 				};
 
@@ -247,6 +248,32 @@ export function stripSourceMappingURL(): NodeJS.ReadWriteStream {
 		.pipe(es.mapSync<VinylFile, VinylFile>(f => {
 			const contents = (<Buffer>f.contents).toString('utf8');
 			f.contents = Buffer.from(contents.replace(/\n\/\/# sourceMappingURL=(.*)$/gm, ''), 'utf8');
+			return f;
+		}));
+
+	return es.duplex(input, output);
+}
+
+/** Splits items in the stream based on the predicate, sending them to onTrue if true, or onFalse otherwise */
+export function $if(test: boolean | ((f: VinylFile) => boolean), onTrue: NodeJS.ReadWriteStream, onFalse: NodeJS.ReadWriteStream = es.through()) {
+	if (typeof test === 'boolean') {
+		return test ? onTrue : onFalse;
+	}
+
+	return ternaryStream(test, onTrue, onFalse);
+}
+
+/** Operator that appends the js files' original path a sourceURL, so debug locations map */
+export function appendOwnPathSourceURL(): NodeJS.ReadWriteStream {
+	const input = es.through();
+
+	const output = input
+		.pipe(es.mapSync<VinylFile, VinylFile>(f => {
+			if (!(f.contents instanceof Buffer)) {
+				throw new Error(`contents of ${f.path} are not a buffer`);
+			}
+
+			f.contents = Buffer.concat([f.contents, Buffer.from(`\n//# sourceURL=${pathToFileURL(f.path)}`)]);
 			return f;
 		}));
 
@@ -368,21 +395,31 @@ export function streamToPromise(stream: NodeJS.ReadWriteStream): Promise<void> {
 	});
 }
 
-export function getElectronVersion(): string {
+export function getElectronVersion(): Record<string, string> {
 	const yarnrc = fs.readFileSync(path.join(root, '.yarnrc'), 'utf8');
-	const target = /^target "(.*)"$/m.exec(yarnrc)![1];
-	return target;
+	const electronVersion = /^target "(.*)"$/m.exec(yarnrc)![1];
+	const msBuildId = /^ms_build_id "(.*)"$/m.exec(yarnrc)![1];
+	return { electronVersion, msBuildId };
 }
 
 export function acquireWebNodePaths() {
 	const root = path.join(__dirname, '..', '..');
 	const webPackageJSON = path.join(root, '/remote/web', 'package.json');
 	const webPackages = JSON.parse(fs.readFileSync(webPackageJSON, 'utf8')).dependencies;
+
+	const distroWebPackageJson = path.join(root, '.build/distro/npm/remote/web/package.json');
+	if (fs.existsSync(distroWebPackageJson)) {
+		const distroWebPackages = JSON.parse(fs.readFileSync(distroWebPackageJson, 'utf8')).dependencies;
+		Object.assign(webPackages, distroWebPackages);
+	}
+
 	const nodePaths: { [key: string]: string } = {};
 	for (const key of Object.keys(webPackages)) {
 		const packageJSON = path.join(root, 'node_modules', key, 'package.json');
 		const packageData = JSON.parse(fs.readFileSync(packageJSON, 'utf8'));
-		let entryPoint: string = typeof packageData.browser === 'string' ? packageData.browser : packageData.main ?? packageData.main; // {{SQL CARBON EDIT}} Some packages (like Turndown) have objects in this field instead of the entry point, fall back to main in that case
+		// Only cases where the browser is a string are handled
+		let entryPoint: string = typeof packageData.browser === 'string' ? packageData.browser : packageData.main;
+
 		// On rare cases a package doesn't have an entrypoint so we assume it has a dist folder with a min.js
 		if (!entryPoint) {
 			// TODO @lramos15 remove this when jschardet adds an entrypoint so we can warn on all packages w/out entrypoint
@@ -422,41 +459,25 @@ export function acquireWebNodePaths() {
 	return nodePaths;
 }
 
-export function createExternalLoaderConfig(webEndpoint?: string, commit?: string, quality?: string) {
+export interface IExternalLoaderInfo {
+	baseUrl: string;
+	paths: { [moduleId: string]: string };
+	[key: string]: any;
+}
+
+export function createExternalLoaderConfig(webEndpoint?: string, commit?: string, quality?: string): IExternalLoaderInfo | undefined {
 	if (!webEndpoint || !commit || !quality) {
 		return undefined;
 	}
 	webEndpoint = webEndpoint + `/${quality}/${commit}`;
 	const nodePaths = acquireWebNodePaths();
 	Object.keys(nodePaths).map(function (key, _) {
-		nodePaths[key] = `${webEndpoint}/node_modules/${key}/${nodePaths[key]}`;
+		nodePaths[key] = `../node_modules/${key}/${nodePaths[key]}`;
 	});
-	const externalLoaderConfig = {
+	const externalLoaderConfig: IExternalLoaderInfo = {
 		baseUrl: `${webEndpoint}/out`,
 		recordStats: true,
 		paths: nodePaths
 	};
 	return externalLoaderConfig;
 }
-
-export function buildWebNodePaths(outDir: string) {
-	const result = () => new Promise<void>((resolve, _) => {
-		const root = path.join(__dirname, '..', '..');
-		const nodePaths = acquireWebNodePaths();
-		// Now we write the node paths to out/vs
-		const outDirectory = path.join(root, outDir, 'vs');
-		fs.mkdirSync(outDirectory, { recursive: true });
-		const headerWithGeneratedFileWarning = `/*---------------------------------------------------------------------------------------------
-	 *  Copyright (c) Microsoft Corporation. All rights reserved.
-	 *  Licensed under the Source EULA. See License.txt in the project root for license information.
-	 *--------------------------------------------------------------------------------------------*/
-
-	// This file is generated by build/npm/postinstall.js. Do not edit.`;
-		const fileContents = `${headerWithGeneratedFileWarning}\nself.webPackagePaths = ${JSON.stringify(nodePaths, null, 2)};`;
-		fs.writeFileSync(path.join(outDirectory, 'webPackagePaths.js'), fileContents, 'utf8');
-		resolve();
-	});
-	result.taskName = 'build-web-node-paths';
-	return result;
-}
-

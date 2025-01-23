@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -87,7 +87,7 @@ export class OEShimService extends Disposable implements IOEShimService {
 
 	private async connectOrPrompt(connProfile: ConnectionProfile): Promise<ConnectionProfile> {
 		connProfile = await new Promise(async (resolve, reject) => {
-			let result = await this.cm.connect(connProfile, undefined, { showConnectionDialogOnError: true, showFirewallRuleOnError: true, saveTheConnection: false, showDashboard: false, params: undefined }, {
+			let result = await this.cm.connect(connProfile, undefined, { showConnectionDialogOnError: true, showFirewallRuleOnError: true, saveTheConnection: false, showDashboard: false }, {
 				onConnectSuccess: async (e, profile) => {
 					let existingConnection = this.cm.findExistingConnection(profile);
 					connProfile = new ConnectionProfile(this.capabilities, existingConnection);

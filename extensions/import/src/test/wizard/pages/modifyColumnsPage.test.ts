@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as TypeMoq from 'typemoq';
@@ -56,9 +56,7 @@ describe('import extension modify Column Page', function () {
 		should.notEqual(modifyColumnsPage.form, undefined, 'form should not be undefined');
 	});
 
-	it('handleImport updates table value correctly when import is successful', async function() {
-
-
+	it('handleImport updates table value correctly when import is successful', async function () {
 		let testProseColumns = [
 			{
 				columnName: 'column1',
@@ -75,8 +73,35 @@ describe('import extension modify Column Page', function () {
 		];
 
 		let testTableData = [
-			[ 'column1', 'nvarchar(50)', false, false],
-			[ 'column2', 'nvarchar(50)', false, false]
+			[
+				{
+					value: 'column1'
+				}, {
+					value: 'nvarchar(50)'
+				}, {
+					value: false,
+					ariaLabel: constants.primaryKeyText,
+					enabled: true
+				}, {
+					value: false,
+					ariaLabel: constants.allowNullsText,
+					enabled: true
+				}
+			], [
+				{
+					value: 'column2'
+				}, {
+					value: 'nvarchar(50)'
+				}, {
+					value: false,
+					ariaLabel: constants.primaryKeyText,
+					enabled: true
+				}, {
+					value: false,
+					ariaLabel: constants.allowNullsText,
+					enabled: true
+				}
+			]
 		];
 
 		mockImportModel.object.proseColumns = testProseColumns;
@@ -98,7 +123,7 @@ describe('import extension modify Column Page', function () {
 		await modifyColumnsPage.onPageEnter();
 
 		// checking if all the required components are correctly initialized
-		should.deepEqual(modifyColumnsPage.table.data, testTableData);
+		should.deepEqual(modifyColumnsPage.table.dataValues, testTableData);
 
 	});
 });

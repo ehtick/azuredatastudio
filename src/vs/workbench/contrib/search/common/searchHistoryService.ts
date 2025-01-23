@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
@@ -28,7 +28,7 @@ export interface ISearchHistoryValues {
 export class SearchHistoryService implements ISearchHistoryService {
 	declare readonly _serviceBrand: undefined;
 
-	private static readonly SEARCH_HISTORY_KEY = 'workbench.search.history';
+	public static readonly SEARCH_HISTORY_KEY = 'workbench.search.history';
 
 	private readonly _onDidClearHistory = new Emitter<void>();
 	readonly onDidClearHistory: Event<void> = this._onDidClearHistory.event;

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { parseNumAsTimeString } from 'sql/platform/connection/common/utils';
@@ -316,10 +316,12 @@ export class QueryResultSelectionSummaryStatusBarContribution extends Disposable
 		const nullCount = selectedCells.filter(cell => cell.isNull).length;
 		let summaryText, tooltipText;
 		if (numericValues.length >= 2) {
-			const sum = numericValues.reduce((previous, current, idx, array) => previous + current);
+			const sum = numericValues.reduce((previous, current) => previous + current);
+			const min = numericValues.reduce((previous, current) => Math.min(previous, current));
+			const max = numericValues.reduce((previous, current) => Math.max(previous, current));
 			summaryText = localize('status.query.summaryText', "Average: {0}  Count: {1}  Sum: {2}", Number((sum / numericValues.length).toFixed(3)), selectedCells.length, sum);
 			tooltipText = localize('status.query.summaryTooltip', "Average: {0}  Count: {1}  Distinct Count: {2}  Max: {3}  Min: {4}  Null Count: {5}  Sum: {6}",
-				Number((sum / numericValues.length).toFixed(3)), selectedCells.length, distinctValues.size, Math.max(...numericValues), Math.min(...numericValues), nullCount, sum);
+				Number((sum / numericValues.length).toFixed(3)), selectedCells.length, distinctValues.size, max, min, nullCount, sum);
 		} else {
 			summaryText = summaryText = localize('status.query.summaryTextNonNumeric', "Count: {0}  Distinct Count: {1}  Null Count: {2}", selectedCells.length, distinctValues.size, nullCount);
 		}

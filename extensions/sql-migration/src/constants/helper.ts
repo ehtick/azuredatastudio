@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -91,6 +91,18 @@ export const ValidationErrorCodes = {
 	SqlInfoValidationFailed: '2056'
 };
 
+// Color codes for Graph
+export const ColorCodes = {
+	NotReadyState_Red: "#E00B1C",
+	ReadyState_Green: "#57A300",
+	ReadyWithWarningState_Amber: "#DB7500"
+}
+
+export const IssueCategory = {
+	Issue: "Issue",
+	Warning: "Warning"
+}
+
 const _dateFormatter = new Intl.DateTimeFormat(
 	undefined, {
 	year: 'numeric',
@@ -101,7 +113,7 @@ const _dateFormatter = new Intl.DateTimeFormat(
 	second: '2-digit'
 });
 
-const _numberFormatter = new Intl.NumberFormat(
+const _numberFormatterOneMinIntegers = new Intl.NumberFormat(
 	undefined, {
 	style: 'decimal',
 	useGrouping: true,
@@ -109,6 +121,31 @@ const _numberFormatter = new Intl.NumberFormat(
 	minimumFractionDigits: 0,
 	maximumFractionDigits: 0,
 });
+
+const _numberFormatterTwoMinIntegers = new Intl.NumberFormat(
+	undefined, {
+	style: 'decimal',
+	useGrouping: true,
+	minimumIntegerDigits: 2,
+	minimumFractionDigits: 0,
+	maximumFractionDigits: 0,
+});
+
+export function formatSecondsIntoReadableTime(seconds: number) {
+	const hours = seconds / (60 * 60);
+	const absoluteHours = Math.floor(hours);
+	const h = _numberFormatterTwoMinIntegers.format(absoluteHours);
+
+	const minutesRemaining = (hours - absoluteHours) * 60;
+	const absoluteMinutes = Math.floor(minutesRemaining);
+	const m = _numberFormatterTwoMinIntegers.format(absoluteMinutes);
+
+	const secondsRemaining = (minutesRemaining - absoluteMinutes) * 60;
+	const absoluteSeconds = Math.floor(secondsRemaining);
+	const s = _numberFormatterTwoMinIntegers.format(absoluteSeconds);
+
+	return h + ':' + m + ':' + s;
+}
 
 export function formatDateTimeString(dateTime: string): string {
 	return dateTime
@@ -129,7 +166,7 @@ export function formatTime(miliseconds: number): string {
 
 export function formatNumber(value: number): string {
 	return value >= 0
-		? _numberFormatter.format(value)
+		? _numberFormatterOneMinIntegers.format(value)
 		: '';
 }
 
@@ -322,4 +359,27 @@ export function selectDatabasesFromList(selectedDbs: string[], databaseTableValu
 		}
 	}
 	return databaseTableValues;
+}
+
+export function getMigrationType(migration: DatabaseMigration | undefined): string {
+	// If MI or VM migration, the data type is schema + data
+	var targetType = getMigrationTargetTypeEnum(migration);
+	if (targetType === MigrationTargetType.SQLMI || targetType === MigrationTargetType.SQLVM) {
+		return loc.BACKUP_AND_RESTORE;
+	}
+
+	var enableSchema = migration?.properties?.sqlSchemaMigrationConfiguration?.enableSchemaMigration ?? false;
+	var enableData = migration?.properties?.sqlDataMigrationConfiguration?.enableDataMigration ?? false;
+	return enableSchema && enableData
+		? loc.SCHEMA_AND_DATA
+		: enableSchema ? loc.SCHEMA_ONLY : loc.DATA_ONLY;
+}
+
+export function getSchemaMigrationStatus(migration: DatabaseMigration | undefined): string | undefined {
+	return migration?.properties?.migrationStatusDetails?.sqlSchemaMigrationStatus?.status;
+}
+
+export function getSchemaMigrationStatusString(migration: DatabaseMigration | undefined): string {
+	const schemaMigrationStatus = getSchemaMigrationStatus(migration) ?? DefaultSettingValue;
+	return loc.SchemaMigrationStatusLookup[schemaMigrationStatus] ?? schemaMigrationStatus;
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/queryEditor';
@@ -38,7 +38,7 @@ import * as queryContext from 'sql/workbench/contrib/query/common/queryContext';
 import { Taskbar, ITaskbarContent } from 'sql/base/browser/ui/taskbar/taskbar';
 import * as actions from 'sql/workbench/contrib/query/browser/queryActions';
 import { IRange } from 'vs/editor/common/core/range';
-import { UntitledQueryEditorInput } from 'sql/base/query/browser/untitledQueryEditorInput';
+import { UntitledQueryEditorInput } from 'sql/workbench/browser/editor/query/untitledQueryEditorInput';
 import { IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { ICapabilitiesService } from 'sql/platform/capabilities/common/capabilitiesService';
@@ -154,7 +154,7 @@ export class QueryEditor extends EditorPane {
 	/**
 	 * Called to create the editor in the parent element.
 	 */
-	public createEditor(parent: HTMLElement): void {
+	protected createEditor(parent: HTMLElement): void {
 		parent.classList.add('query-editor');
 
 		this.splitviewContainer = DOM.$('.query-editor-view');
@@ -202,8 +202,9 @@ export class QueryEditor extends EditorPane {
 		}));
 
 		// Create Actions for the toolbar
-		this._runQueryAction = this.instantiationService.createInstance(actions.RunQueryAction, this);
+
 		this._cancelQueryAction = this.instantiationService.createInstance(actions.CancelQueryAction, this);
+		this._runQueryAction = this.instantiationService.createInstance(actions.RunQueryAction, this);
 		this._toggleConnectDatabaseAction = this.instantiationService.createInstance(actions.ToggleConnectDatabaseAction, this, false);
 		this._changeConnectionAction = this.instantiationService.createInstance(actions.ConnectDatabaseAction, this, true);
 		this._listDatabasesAction = this.instantiationService.createInstance(actions.ListDatabasesAction, this);
@@ -283,7 +284,6 @@ export class QueryEditor extends EditorPane {
 		if (action.id === actions.ListDatabasesAction.ID) {
 			if (!this._listDatabasesActionItem) {
 				this._listDatabasesActionItem = this.instantiationService.createInstance(actions.ListDatabasesActionItem, this, action);
-				this._register(this._listDatabasesActionItem.attachStyler(this.themeService));
 			}
 			return this._listDatabasesActionItem;
 		}
@@ -309,7 +309,6 @@ export class QueryEditor extends EditorPane {
 		const content: ITaskbarContent[] = [
 			{ action: this._runQueryAction },
 			{ action: this._cancelQueryAction },
-			{ element: Taskbar.createTaskbarSeparator() },
 			{ action: this._toggleConnectDatabaseAction },
 			{ action: this._changeConnectionAction }
 		];
@@ -327,6 +326,8 @@ export class QueryEditor extends EditorPane {
 		// Only show the databases dropdown if the connection provider supports it.
 		// If the provider we're using isn't registered yet then default to not showing it - we'll update once the provider is registered
 		if (this.capabilitiesService.getCapabilities(providerId)?.connection?.connectionOptions?.find(option => option.specialValueType === ConnectionOptionSpecialType.databaseName)) {
+			content.push({ element: Taskbar.createTaskbarSeparator() });
+			content.push({ element: Taskbar.createTaskbarText(localize("queryActions.selectDatabase.label", "Database:")) });
 			content.push({ action: this._listDatabasesAction });
 		}
 
@@ -451,7 +452,7 @@ export class QueryEditor extends EditorPane {
 	/**
 	 * Sets this editor and the 2 sub-editors to visible.
 	 */
-	public override setEditorVisible(visible: boolean, group: IEditorGroup): void {
+	protected override setEditorVisible(visible: boolean, group: IEditorGroup): void {
 		this.textFileEditor.setVisible(visible, group);
 		this.textResourceEditor.setVisible(visible, group);
 		this.resultsEditor.setVisible(visible, group);
@@ -562,7 +563,10 @@ export class QueryEditor extends EditorPane {
 
 	// helper functions
 
-	public isSelectionEmpty(): boolean {
+	/**
+	 * Returns a boolean value indicating whether the editor is empty.
+	 */
+	public isEditorEmpty(): boolean {
 		if (this.currentTextEditor && this.currentTextEditor.getControl()) {
 			let control = this.currentTextEditor.getControl();
 			let codeEditor: ICodeEditor = <ICodeEditor>control;

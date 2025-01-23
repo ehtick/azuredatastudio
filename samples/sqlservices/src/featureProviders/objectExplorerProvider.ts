@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as azdata from 'azdata';
 import * as vscode from 'vscode';
@@ -33,7 +33,8 @@ export class ObjectExplorerProvider implements azdata.ObjectExplorerProvider {
 					nodePath: RootNode,
 					nodeType: 'server',
 					label: 'abc',
-					isLeaf: false
+					isLeaf: false,
+					parentNodePath: ''
 				}
 			});
 		}, 500);
@@ -99,13 +100,15 @@ export class ObjectExplorerProvider implements azdata.ObjectExplorerProvider {
 							dark: this.context.asAbsolutePath('images/group_inverse.svg')
 						},
 						label: `obj 1 - ${timestamp}`,
-						isLeaf: false
+						isLeaf: false,
+						parentNodePath: nodeInfo.nodePath
 					}, {
 						nodePath: nodeInfo.nodePath + '/2',
 						nodeType: '',
 						icon: azdata.SqlThemeIcon.Column,
 						label: `obj 2 - ${timestamp}`,
-						isLeaf: false
+						isLeaf: false,
+						parentNodePath: nodeInfo.nodePath
 					}
 				]
 			});

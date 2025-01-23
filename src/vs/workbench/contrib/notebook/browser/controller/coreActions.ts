@@ -1,25 +1,27 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { localize } from 'vs/nls';
-import { Action2, IAction2Options, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
+import { Action2, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { getNotebookEditorFromEditorPane, IActiveNotebookEditor, ICellViewModel, cellRangeToViewCells } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
-import { NOTEBOOK_EDITOR_EDITABLE, NOTEBOOK_EDITOR_FOCUSED, NOTEBOOK_IS_ACTIVE_EDITOR, NOTEBOOK_KERNEL_COUNT, NOTEBOOK_KERNEL_SOURCE_COUNT } from 'vs/workbench/contrib/notebook/common/notebookContextKeys';
+import { getNotebookEditorFromEditorPane, IActiveNotebookEditor, ICellViewModel, cellRangeToViewCells, ICellOutputViewModel } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
+import { INTERACTIVE_WINDOW_IS_ACTIVE_EDITOR, NOTEBOOK_EDITOR_EDITABLE, NOTEBOOK_EDITOR_FOCUSED, NOTEBOOK_IS_ACTIVE_EDITOR, NOTEBOOK_KERNEL_COUNT, NOTEBOOK_KERNEL_SOURCE_COUNT } from 'vs/workbench/contrib/notebook/common/notebookContextKeys';
 import { ICellRange, isICellRange } from 'vs/workbench/contrib/notebook/common/notebookRange';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IEditorCommandsContext } from 'vs/workbench/common/editor';
-import { INotebookEditorService } from 'vs/workbench/contrib/notebook/browser/notebookEditorService';
+import { INotebookEditorService } from 'vs/workbench/contrib/notebook/browser/services/notebookEditorService';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { WorkbenchActionExecutedClassification, WorkbenchActionExecutedEvent } from 'vs/base/common/actions';
 import { TypeConstraint } from 'vs/base/common/types';
 import { IJSONSchema } from 'vs/base/common/jsonSchema';
 import { MarshalledId } from 'vs/base/common/marshallingIds';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { isEqual } from 'vs/base/common/resources';
 
 // Kernel Command
 export const SELECT_KERNEL_ID = '_notebook.selectKernel';
@@ -68,6 +70,10 @@ export interface INotebookCellActionContext extends INotebookActionContext {
 	cell: ICellViewModel;
 }
 
+export interface INotebookOutputActionContext extends INotebookCellActionContext {
+	outputViewModel: ICellOutputViewModel;
+}
+
 export function getContextFromActiveEditor(editorService: IEditorService): INotebookActionContext | undefined {
 	const editor = getNotebookEditorFromEditorPane(editorService.activeEditorPane);
 	if (!editor || !editor.hasModel()) {
@@ -110,13 +116,25 @@ export function getContextFromUri(accessor: ServicesAccessor, context?: any) {
 	return undefined;
 }
 
+export function findTargetCellEditor(context: INotebookCellActionContext, targetCell: ICellViewModel) {
+	let foundEditor: ICodeEditor | undefined = undefined;
+	for (const [, codeEditor] of context.notebookEditor.codeEditors) {
+		if (isEqual(codeEditor.getModel()?.uri, targetCell.uri)) {
+			foundEditor = codeEditor;
+			break;
+		}
+	}
+
+	return foundEditor;
+}
+
 export abstract class NotebookAction extends Action2 {
-	constructor(desc: IAction2Options) {
+	constructor(desc: any) {
 		if (desc.f1 !== false) {
 			desc.f1 = false;
 			const f1Menu = {
 				id: MenuId.CommandPalette,
-				when: NOTEBOOK_IS_ACTIVE_EDITOR
+				when: ContextKeyExpr.or(NOTEBOOK_IS_ACTIVE_EDITOR, INTERACTIVE_WINDOW_IS_ACTIVE_EDITOR)
 			};
 
 			if (!desc.menu) {
@@ -160,14 +178,14 @@ export abstract class NotebookAction extends Action2 {
 		return !!context && !!(context as INotebookActionContext).notebookEditor;
 	}
 
-	protected getEditorContextFromArgsOrActive(accessor: ServicesAccessor, context?: any, ...additionalArgs: any[]): INotebookActionContext | undefined {
+	getEditorContextFromArgsOrActive(accessor: ServicesAccessor, context?: any, ...additionalArgs: any[]): INotebookActionContext | undefined {
 		return getContextFromActiveEditor(accessor.get(IEditorService));
 	}
 }
 
 // todo@rebornix, replace NotebookAction with this
 export abstract class NotebookMultiCellAction extends Action2 {
-	constructor(desc: IAction2Options) {
+	constructor(desc: any) {
 		if (desc.f1 !== false) {
 			desc.f1 = false;
 			const f1Menu = {

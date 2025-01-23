@@ -1,31 +1,22 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { azureResource } from 'azurecore';
 import { logAnalyticsQuery } from '../queryStringConstants';
-import { ResourceServiceBase, GraphData } from '../resourceTreeDataProviderBase';
+import { ResourceServiceBase } from '../resourceTreeDataProviderBase';
+import { AzureMonitorGraphData } from '../../interfaces';
+import { AZURE_MONITOR_PROVIDER_ID } from '../../../constants';
 
-export interface AzureMonitorGraphData extends GraphData {
-	properties: {
-		fullyQualifiedDomainName: string;
-		administratorLogin: string;
-		uri: string;
-		customerId: string
-	};
-}
+export class AzureMonitorResourceService extends ResourceServiceBase<AzureMonitorGraphData> {
+	public override queryFilter: string = logAnalyticsQuery;
 
-export class AzureMonitorResourceService extends ResourceServiceBase<AzureMonitorGraphData, azureResource.AzureResourceDatabaseServer> {
-
-	protected get query(): string {
-		return logAnalyticsQuery;
-	}
-
-	protected convertResource(resource: AzureMonitorGraphData): azureResource.AzureResourceDatabaseServer {
+	public convertServerResource(resource: AzureMonitorGraphData): azureResource.AzureResourceDatabaseServer {
 		return {
 			id: resource.id,
 			name: resource.name,
+			provider: AZURE_MONITOR_PROVIDER_ID,
 			fullName: resource.properties.customerId,
 			loginName: '',
 			defaultDatabaseName: '',

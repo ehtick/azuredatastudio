@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 //@ts-check
@@ -17,9 +17,6 @@ delete process.env['VSCODE_CWD'];
 const bootstrap = require('./bootstrap');
 const bootstrapNode = require('./bootstrap-node');
 const product = require('../product.json');
-
-// Avoid Monkey Patches from Application Insights
-bootstrap.avoidMonkeyPatchFromAppInsights();
 
 // Enable portable support
 bootstrapNode.configurePortable(product);

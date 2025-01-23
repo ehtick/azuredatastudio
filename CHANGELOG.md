@@ -1,5 +1,417 @@
 # Change Log
 
+## July 2024
+
+Azure Data Studio 1.49.0 is the latest general availability (GA) release.
+
+- Release number: 1.49.0
+- Release date: July 31, 2024
+
+### What's new in 1.49.0
+
+| New Item | Details |
+| --- | --- |
+| SQL Database Projects Extension | Support for Fabric mirrored SQL database (preview) target platform |
+
+### Bug fixes in 1.49.0
+
+| New Item | Details |
+| --- | --- |
+| Accessibility | Accessibility improvements were made in the Database Properties dialog. |
+| Query editor | Fixed query editor override of transaction isolation level setting in T-SQL script. |
+
+## February 2024
+
+Azure Data Studio 1.48.0 is the latest general availability (GA) release.
+
+- Release number: 1.48.0
+- Release date: February 28, 2024
+ 
+ ### What's new in 1.48.0
+
+| New Item | Details |
+| --- | --- |
+| Backup/Restore | Add restore from S3-compatible storage to restore dialog |
+| Backup/Restore | Add Restore Database option to Database context menu in Object Explorer |
+| Backup/Restore | Add SQL Server Restore from URL to restore dialog |
+| Copilot | Add ability to change github account |
+| Query Editor | Add Session ID / SPID to query editor tabs |
+| Object Explorer | Add ability to enable Ledger in Create Database dialog |
+| Shell | Support Connect command when launching ADS from the command line |
+
+### Bug fixes in 1.48.0
+
+| New Item | Details |
+| --- | --- |
+|Connections | Fixed Azure AD - Universal with MFA support doesn't work on Redhat Linux |
+|Connections | Fixed Error: “Cannot read properties of undefined (reading 'serverInfo')” |
+|Connections | Fixed proxy errors browsing Azure resources |
+|Connections | Fixed Error: “UserName cannot be null or empty when using SqlLogin authentication” message when using ’Active Directory Default' authentication |
+|Edit Data | Deleting row causes focus to be in wrong row |
+|Notebooks | Fixed Installing Notebook dependencies failed with error: Cannot read property 'version' of undefined |
+|Notebooks | Fixed "Open in editor" link in Notebooks search results doesn't work |
+|Object Explorer | Removed the drop database icon from the connection browser menu |
+|Query Editor | Fixed tabs not visible in query editor |
+|Query Editor | Fixed query editor does not display any results when results being with “#” |
+|Query Editor | Improved speed when copying data from results grid to clipboard |
+|Query Editor | Fixed blank/empty results pane after executing a query |
+|Query Editor | Fixed invalid results when field contains HTML or XML |
+
+## November 2023 Hotfix 1
+
+Azure Data Studio 1.47.1 is the latest general availability (GA) release.
+
+- Release number: 1.47.1
+- Release date: January 10, 2024
+
+### Bug fixes in 1.47.1
+
+| New Item | Details |
+| --- | --- |
+| Query Editor | Fixed query results with blank string interpreted as XML |
+| Shell | Fixed not all installation files signed |
+| Security | Update to [Microsoft.Data.SqlClient 5.1.3](https://github.com/dotnet/SqlClient/blob/main/release-notes/5.1/5.1.3.md) that patches [CVE-2024-0056](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-0056) |
+
+### Known issues in 1.47.1
+
+ New Item | Details | Workaround |
+| --- | --- | --- |
+| Installation | Azure Data Studio installation fails on RHEL 8 | Use RHEL 9, or manually install glibc-2.29 and add it to the Library Path and then re-install ADS |
+
+For a list of the current known issues, visit the [issues list on GitHub](https://github.com/microsoft/azuredatastudio/issues?q=is%3Aissue).
+
+## Security Hotfix for ADS with BDC Support - Version 1.41.3
+* Release date: January 10, 2024
+* Release status: General Availability
+
+### Bug fixes in 1.41.3
+
+| New Item | Details |
+| --- | --- |
+| Security | Update to [Microsoft.Data.SqlClient 5.1.3](https://github.com/dotnet/SqlClient/blob/main/release-notes/5.1/5.1.3.md) that patches [CVE-2024-0056](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-0056) |
+
+## November 2023
+
+Azure Data Studio 1.47.0 is the latest general availability (GA) release.
+
+- Release number: 1.47.0
+- Release date: November 8, 2023
+ 
+ ### What's new in 1.47.0
+
+| New Item | Details |
+| --- | --- |
+| Connection | Improved visibility of advanced options in tabs and tooltips |
+| Database Properties | Implemented usability improvements to object properties dialogs |
+| Extensibility | Allow extensions to hook into provider events |
+| Extensibility | Improved charting capability |
+| General | Enabled `Mssql: Parallel Message Processing` by default to improve application performance when working with MSSQL connections. |
+| General | Added `Mssql: Parallel Message Processing Limit` with a default of 100 to control the number of threads used for parallel processing. |
+| General | Updated notifications so they close automatically upon task completion |
+| Notebooks | Updated version to 6.5.6 and removed traitlets v5.9.0 from required notebook dependencies |
+| Object Explorer | Added `Select Top 1000` menu option for the history table of a system-versioned temporal table |
+| Object Explorer | Usability improvements including added context menus |
+| Result Set | Added additional options for saving results to Excel |
+| Result Set | Added support to display formatted XML data when stored as a VARCHAR data type |
+| User Management | References to Azure Active Directory (Azure AD) have been updated to Microsoft Entra, see [Azure AD is Becoming Microsoft Entra ID](https://techcommunity.microsoft.com/t5/microsoft-entra-azure-ad-blog/azure-ad-is-becoming-microsoft-entra-id/ba-p/2520436) for details. |
+| VS Code Merge | Merges upstream improvements from VS Code 1.80, 1.81, and 1.82. These releases contained numerous new features as well as quality, performance, stability, and compliance enhancements. The full details can be reviewed in the VS Code release notes at: [Visual Studio Code June 2023](https://code.visualstudio.com/updates/v1_80), [Visual Studio Code July 2023](https://code.visualstudio.com/updates/v1_81), and [Visual Studio Code August 2023](https://code.visualstudio.com/updates/v1_82). |
+
+### Bug fixes in 1.47.0
+
+| New Item | Details |
+| --- | --- |
+| Authentication | Fixed error "multiple matching_tokens occurred when acquiring token." when authenticating to Azure resources |
+| Autocomplete | Fixed autocomplete suggests "abort" whenever new comment is begun |
+| Connection | Updated prefix for Clear Pooled Connections in the command palette to use the MSSQL prefix |
+| Connection | Fixed proxy setting values not being passed to backend SQL Tools Service |
+| Connection | Removed tenant filter config setting |
+| Extensibility | Fixed issue where server dashboard was loading before activation of extension completed |
+| Notebooks | Fixed issue where the Notebook Python process continued to run after Azure Data Studio is closed |
+| Notebooks | Fixed Jupyter Notebook entry in new file command under command palette does nothing |
+| Object Explorer | Fixed silent failure when attempting to open script files |
+| Object Explorer | Removed duplicate entry for Group By Schema from command palette |
+| Object Explorer | Addressed behavior where selecting Manage for an Azure SQL Database opened the dashboard for the logical server instead of the database |
+| Profiler Extension | Fixed issue where Profiler columns were not resizeable |
+| Profiler Extension | Resolved problem where selecting Ctrl + F in the Profiler extension did not bring up Find dialog |
+| Query Editor | Updated maximum value supported for `Query: Text Size` setting to fix results not being copied to the clipboard |
+| Query Editor | Fixed issue where query editor would not open due to initialization errors |
+| Query Editor | Fixed error "Cannot connect to the database due to invalid OwnerUri" after saving a new query file |
+| Query History Extension | Fixed error loading query history items |
+| Schema Compare | Fixed issue where schema compare does not show that it is running while doing a comparison |
+| Schema Compare | Fixed issue where Azure Data Studio stops responding after attempting to apply schema compare changes |
+| Shell | Shortened query tab titles for edit data |
+| Shell | Updated hyperlinks to use correct theming so they are visible when using dark theme |
+| Shell | Updated shell default behavior to not open any editor when `Show welcome page on startup` is not selected |
+| SQL Project | Fixed issue where database project fails to build with syntax error when including a database scoped credential object |
+
+For details about the issues addressed in the November 2023 release, visit the [November 2023 Release on GitHub](https://github.com/microsoft/azuredatastudio/milestone/105?closed=1).
+
+## September 2023 (Hotfix 1)
+
+Azure Data Studio 1.46.1 is the latest general availability (GA) release.
+
+- Release number: 1.46.1
+- Release date: October 3, 2023
+
+### Bug fixes in 1.46.1
+
+| New Item | Details |
+| --- | --- |
+| Security | Update to Electron v22.3.25 with patch for [CVE-2023-5217](https://github.com/advisories/GHSA-qqvq-6xgj-jw8g) |
+
+For details about the issue addressed in the September 2023 hotfix release, visit the [September 2023 Hotfix Release on GitHub](https://github.com/microsoft/azuredatastudio/milestone/106?closed=1).
+
+For a list of the current known issues, visit the [issues list on GitHub](https://github.com/microsoft/azuredatastudio/issues?q=is%3Aissue).
+
+## September 2023 
+
+Azure Data Studio 1.46.0 is the latest general availability (GA) release.
+
+- Release number: 1.46.0
+- Release date: September 20, 2023
+
+### What's new in 1.46.0
+
+| New Item | Details |
+| --- | --- |
+| Attach/Detach Database | Introduced support for attaching and detaching databases (Preview) |
+| Connection | Introduced support for custom cloud providers, see ([Azure Data Studio - Azure Connectivity](https://learn.microsoft.com/sql/azure-data-studio/azure-connectivity?#configuring-custom-cloud-endpoints)) for configuration information |
+| Connection | Enabled Connection Pooling as default behavior |
+| Connection | Introduced command `SQL Server: Clear Pooled Connections` to clear inactive pooled connections |
+| Database Properties | Introduced support for viewing database properties (Preview) |
+| General | Added support for Server and Database properties (Preview) |
+| Result Set | Updated copy notification to automatically close after three (3) seconds, and included an option to disable notifications |
+| Result Set | Added a prompt to open the file location  after saving result to Excel |
+| Profiler Extension | Introduced a progress dialog when opening an XEL file |
+| Server Properties | Introduced support for viewing server properties (Preview) |
+| SQL Database Projects Extension | Released version 1.3.1 |
+| SQL Database Projects Extension | Added support for "Azure Synapse Serverless SQL Pool” target platform |
+| SQL Database Projects Extension | Added support for “Synapse Data Warehouse in Microsoft Fabric” target platform |
+| SQL Database Projects Extension | Updated to Microsoft.Build.Sql SDK version to 0.1.12-preview |
+
+### Bug fixes in 1.46.0
+
+| New Item | Details |
+| --- | --- |
+| Accessibility | Improved screen reader prompts for SQL Database Projects extension, Database Migration Assessment for Oracle extension, SQL Agent extension, and when installing a new extension |
+| Accessibility | Addressed issues with install button tool tip, new connection button, and new server group buttons |
+| Accessibility | Fixed color contrast for creating connections and notebooks, running queries, and deploying a server |
+| Connection | Added refresh prompt for Azure accounts when error AADSTS700082 occurs |
+| Connection | Introduced notification when a duplicate connection exists upon dragging a connection to a different group |
+| Connection | Fixed issue to prevent Dashboard server name from being replaced with profile name |
+| Connection | Added retry logic to wait for resume when establishing connection to a serverless Azure database |
+| Connection | Fixed issue where tab color did not align with server group color |
+| Connection | Updated Cluster Server connection property to have the correct Boolean value for Cosmos DB |
+| Connection | Fixed issue with advanced connection options not correctly transferred to change password dialog |
+| Connection | Addressed incorrect label for first connection in the Recent connections list |
+| Connection | Improved account selection experience after enabling cloud settings |
+| General | Fixed issue with incorrect cell colors when editing data |
+| General | Addressed problem with invalid data for a column's data type when editing data |
+| General | Re-enabled full screen toggle behavior for the F11 key binding |
+| Notebooks | Addressed issue where kernel failed to change correctly when switching to Python |
+| Query Editor | Fixed Intellisense refresh behavior |
+| Query Editor | Improved query execution performance |
+| Query Editor | Improved read performance for large data sets |
+| Query Editor | Addressed issue where selecting Cancel would not immediately cancel a query that was executing |
+| Query Editor | Resolved problem of queries hanging when executing against Synapse Dedicated Pool |
+| Query Plan Viewer | Fixed issue where missing index definition recommendation included incorrect column |
+| Query Plan Viewer | Addressed issue with query plan XML having the incorrect format |
+| Result Set | Corrected XML formatting when opening a column from the result set |
+| Result Set | Fixed issue where copying results to clipboard did not work |
+| Schema Compare | Added support to automatically resize the split view when the window changes size |
+| Schema Compare | Addressed error “StartIndex cannot be less than zero” which occurred when applying change using Schema Compare |
+| Schema Compare | Display 'Yes' button to re-compare after changing options in Schema Compare |
+| SQL Database Projects | Fixed issue where databases were not populated if a project was created from the server instead of a database |
+| SQL Database Projects | Addressed error 'Could not run the "SqlModelResolutionTask" task because MSBuild could not create or connect to a task host with runtime "NET" and architecture "arm64"' resulting in build failure on arm64 with SDK-style and legacy style projects |
+| Welcome Page | Improved display of Install button under the extension list on Welcome Page |
+
+For a full list of bug fixes addressed for the September 2023 hotfix release, visit the [September 2023 Release on GitHub](https://github.com/microsoft/azuredatastudio/milestone/102?closed=1).
+
+For a list of the current known issues, visit the [issues list on GitHub](https://github.com/microsoft/azuredatastudio/issues?q=is%3Aissue).
+
+## July 2023 (Hotfix)
+
+Azure Data Studio 1.45.1 is the latest general availability (GA) release.
+
+- Release number: 1.45.1
+- Release date: August 7, 2023
+
+### Bug fixes in 1.45.1
+
+| New Item | Details |
+| --- | --- |
+| Connection | Fixed an issue that prevented all connections from appearing in the server tree view. |
+| Connection | Updated recent connections list to include connections that are not saved. |
+| Database Migration Assessment for Oracle | Resolved issue where links to open the assessment output were no longer working. |
+| Database Schema Conversion Toolkit | Resolved issue where links to open the conversion output were no longer working. |
+| Installation | Addressed error "gyp WARN install" for Windows arm64. |
+| Profiler | Fixed an issue where the session dropdown was not populated when an XEL file is opened. |
+| Profiler | Addressed issue where running state was incorrectly set after a session was started. |
+
+For a full list of bug fixes addressed for the July 2023 hotfix release, visit the [July 2023 Hotfix Release on GitHub](https://github.com/microsoft/azuredatastudio/milestone/104?closed=1).
+
+### Known issues in 1.45.1
+
+ New Item | Details | Workaround |
+| --- | --- | --- |
+| Installation | Azure Data Studio installation fails on RHEL 8 | Use RHEL 9, or manually install glibc-2.29 and add it to the Library Path and then re-install ADS |
+
+## July 2023
+
+Azure Data Studio 1.45.0 is the latest general availability (GA) release.
+
+- Release number: 1.45.0
+- Release date: July 26, 2023
+
+### What's new in 1.45.0
+
+| New Item | Details |
+| --- | --- |
+| Connection | Introduced support for Tenant hierarchy in the Azure tree |
+| Connection | Updated Azure tree icons |
+| Connection | Updated the Azure tree in the Connection Pane to show only available resource types |
+| Connection | Added Azure Postgres Flexible Server and Azure CosmosDB for PostgreSQL in the Azure resource tree |
+| Connection | Added support for advanced connection options for other providers |
+| Connection | Added capability to clear encryption keys with the 'Clear Azure Account Token Cache' command |
+| Connection | Introduced support for connection pooling for MSSQL connections |
+| GitHub Copilot | GitHub Copilot extension version 1.95.239 |
+| MySQL Extension | General Availability |
+| Object Explorer | Added support for additional Filter options in Object Explorer |
+| Object Explorer | Reduced size of server group color block |
+| Object Explorer | Enabled 'Async Server tree' for the Server tree view |
+| Object Explorer | Added inline actions (e.g. edit, delete, refresh) |
+| Object Explorer | Introduced an action to collapse all open objects in Object Explorer |
+| Object Explorer | Added ability to use left and right arrows in OE to open or close trees |
+| Object Explorer | Right-click menu options updated and order modified |
+| Profiler / Extended Events | Introduced support for opening .XEL files up to 1GB in size |
+| Query Editor | Introduced a new configuration option to control whether to add a line break between rows when copying if the previous row has a trailing line break |
+| Result Set | Introduced keyboard shortcut (Ctrl/CMD + Shift + C) to copy information from the results grid with headers |
+| Result Set | Introduced keyboard shortcut (Ctrl/CMD + Shift + O) to sort columns in a result set |
+| SQL Database Projects Extension | Added the ability to create a publish profile from the Add Item… menu |
+| Table Designer | Added configuration option to prevent DDL triggers from being disabled as part of the table modification |
+| User Management | Improved table component performance in the Securables dialog of User properties |
+| VS Code merge | VS Code merges to version 1.79, read [their release notes](https://code.visualstudio.com/updates/v1_79) to learn more |
+
+### Bug fixes in 1.45.0
+
+| New Item | Details |
+| --- | --- |
+| Accessibility | Improved contrast for buttons on Welcome page when using light themes |
+| Accessibility | Improved focus on Home tab when using High Contrast Aquatic/Desert theme |
+| Accessibility | Corrected border color the issue reporter dialog when using light theme |
+| Accessibility | Fixed multiple issues with screen readers |
+| Accessibility | Improved keyboard navigation in select database dropdown and added visual label |
+| Accessibility | Added required indicator for Server group name when configuring a server group |
+| Accessibility | Fixed display so contents are visible at 200% zoom in Notebook cell |
+| Accessibility | Added tooltip for Learn more button in New Deployment window |
+| Backup/Restore | Addressed issue with backup/restore dialog titles not updating for non-MSSQL databases |
+| Central Management Servers Extension | Resolved error generated after saving a connection using SQL authentication |
+| Charting | Addressed issue with mix/max value setting for a chart axis |
+| Connection | Improved dialog window for adding an Azure account when authentication code is required |
+| Connection | Fixed throttling of ARM requests when in the Browse Connections tab |
+| General | Fixed issue with vertical scrolling in dialog windows |
+| General | Fixed error "Cannot read properties of undefined" |
+| Notebooks | Addressed inability to open JSON in a new tab from Notebook results cell |
+| Notebooks | Fixed error "Unable to load and parse grammar for scope markdown.math.inline" when creating a Notebook text cell |
+| Object Explorer | Addressed connection leak which occurred when renaming a table |
+| Object Explorer | Improved error handling in server tree expand requests |
+| Object Explorer | Fixed issue with unexpected connection drops in Object Explorer |
+| Query Editor | Corrected syntax highlighting for nested multi-line comments |
+| Query Editor | Addressed issue where folding behavior incorrectly included blank lines at the end of a text block |
+| Query Editor | Resolved issue when executing USE DATABASE_NAME command and database context did not change in the status bar |
+| Query Plan Viewer | Fixed issue with filter icon appearing over query text in Top Operations window |
+| Result Set | Fixed issue where HTML entered in Edit Rows mode was being rendered |
+| Result Set | Fixed incorrect aggregation (sum) when selecting rows in the result set and implemented performance improvements |
+| Result Set | Improved support for copying large result sets to the clipboard |
+| Result Set | Added progress notification when copying result sets and implemented performance improvements |
+| Result Set | Improved formatting and result set navigation for columns containing XML |
+| Result Set | Added notification to identify when the number of rows or columns copied exceed Excel limits |
+| SQL Database Projects Extension | Addressed issue with schema compare dropping constraints |
+| SQL Database Projects Extension | Removed incorrect delete command from database references node |
+| SQL Database Projects Extension | Introduced ability to add sqlcmd variables without a default value via the quickpick |
+| User Management | Removed unsupported database roles for Azure SQL DB user creation |
+| User Management | Included MUST_CHANGE option for Azure SQL when creating a new login or for a password change |
+
+### Known issues in 1.45.0
+
+ New Item | Details | Workaround |
+| --- | --- | --- |
+| Installation | Azure Data Studio installation fails on RHEL 8 | Use RHEL 9, or manually install glibc-2.29 and add it to the Library Path and then re-install ADS |
+
+## May 2023 (hotfix)
+
+Azure Data Studio 1.44.1 is the latest general availability (GA) release.
+
+- Release number: 1.44.1
+- Release date: June 5, 2023
+
+### Bug fixes in 1.44.1
+
+| New Item | Details |
+| --- | --- |
+| Backup & Restore | Fixed an issue in Object Explorer where the Restore dialog failed to open. https://github.com/microsoft/azuredatastudio/issues/23257 |
+| Connection | Resolved issue that caused a login failure in Azure SQL for hyphenated user accounts. https://github.com/microsoft/azuredatastudio/issues/23210 |
+| Object Explorer | Addressed inability to open a view using CTRL/CMD + Q or the Open View menu. https://github.com/microsoft/azuredatastudio/issues/23236 |
+| Query Editor | Introduced a performance improvement in the Query Editor language service by enabling connection pooling. https://github.com/microsoft/azuredatastudio/issues/22970 |
+
+## Version 1.44.0
+
+Azure Data Studio 1.44.0 is the latest general availability (GA) release.
+
+- Release number: 1.44.0
+- Release date: May 24, 2023
+
+### What's new in 1.44.0
+
+| New Item | Details |
+| --- | --- |
+| Connection | Enabled Sql Authentication Provider by default for Azure SQL connections and the MSAL Authentication Library.  Learn more at [Connect with Azure Data Studio](https://aka.ms/azuredatastudio-connection) |
+| Connection | Introduced support for passing in advanced connection options in command line arguments |
+| Connection | Added ability to provide an Application Name in the connection string parameter |
+| General | Added support for customizing table keyboard shortcuts |
+| General | Added warning notification on startup if Azure PII logging is enabled |
+| GitHub Copilot | GitHub Copilot extension for autocomplete-style suggestions added to extension gallery. Learn more at https://aka.ms/ads-copilot |
+| Notebooks | Fixed issue where deleted text listed using the Find feature |
+| Object Explorer | Introduced filtering capability for Object Explorer (preview) |
+| Query Editor | Shorted text for Change Connection and Export as Notebook button |
+| Query Results | Increased the default max column width |
+| SQL Database Projects Extension | Released version 1.1.1 |
+| SQL Database Projects Extension | Improved performance of loading one or more large projects |
+| SQL Database Projects Extension | Introduced ability to save publish settings to a new or existing  publish profile |
+| User Management | Added support for creating database and server roles (preview) |
+| User Management | Improved authentication options when creating database users (preview) |
+
+### Bug fixes in 1.44.0
+
+| New Item | Details |
+| --- | --- |
+| Accessibility | Added labels to radio groups in SQL Database Projects dialog |
+| Accessibility | Fixed issue with narrator reading character twice in network share path for Azure SQL migration extension |
+| Accessibility | Addressed problem where keyboard focus did not shift to error message when creating a new database |
+| Accessibility | Fixed issue with voiceover not announcing label names correctly when updating a database project |
+| Connection | Improved token refresh behavior |
+| Connection | Enabled support to login with blank passwords when creating MSSQL connection |
+| Connection | Added change password dialog display after password expiration occurs for a SQL login |
+| Connection | Addressed scenario where Intellisense stopped working after a connection token expired |
+| Connection | Fixed behavior where PostgreSQL username was incorrectly replaced |
+| Connection | Implemented support for connections against the same server but with different properties |
+| Connection | Resolved issue where connection status changed to red (disconnected) after moving an active connection to a server group |
+| Connection | Updated Azure node in Connection dialog to include notation when no subscriptions are found |
+| Connection | Updated firewall dialog to pre-select the account and tenant in the connection dialog |
+| Extension | Fixed an issue with over-encoded URLs in diagnostic error messages |
+| Intellisense | Resolved issue with SORT_IN_TEMPDB not recognized as valid T-SQL syntax when creating an object |
+| Notebooks | Updated Notebook connection to support MySQL and PostgreSQL when connecting to an existing Notebook |
+| Query Results | Fixed overlapping action display when multiple result sets are returned |
+| Schema Compare | Update scmp files to be backwards compatible |
+| SQL Database Projects Extension | Fixed multiple issues related to SQLCMD variables and projects |
+| SQL Database Projects Extension | Addressed a failure that was occurring when using schema compare with Azure Synapse dedicated pools |
+| SQL Database Projects Extension | Resolved problem where a database project would not build after a reference to a system database was added from SSDT |
+| SQL Database Projects Extension | Fixed issue where projects were listed twice when using multi root workspaces |
+| SQL Database Projects Extension | Fixed an issue where file structure information was not stored in the scmp file after a schema compare |
+| SQL Database Projects (VS Code) | Updated default folder location when creating a new project from database workflow |
+
+For a full list of bug fixes addressed for the May 2023 release, visit the [May 2023 Release on GitHub](https://github.com/microsoft/azuredatastudio/milestone/98?closed=1).
+
 ## Version 1.43.0
 * Release number: 1.43.0
 * Release date: April 12, 2023
@@ -130,7 +542,7 @@ For a list of the current known issues, visit the [issues list on GitHub](https:
 | Connection | Include ability to change password for new or expired login. |
 | Connection | Add support for SQL Server Alias use when connecting to a server. |
 | MongoDB Atlas Extension | Provides the ability to connect to and query data on MongoDB Atlas (Preview). |
-| Notebooks | Provide option for users to convert markdown to a table or not when HMTL table tag is present. |
+| Notebooks | Provide option for users to convert markdown to a table or not when HTML table tag is present. |
 | Object Explorer | Databases are no longer brought online in serverless Azure SQL when Databases node is expanded. |
 | Object Explorer | Added support for Ledger views. |
 | Object Explorer | Fixed issue with key binding for objectExplorer.manage not working. |

@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { ITreeViewDataProvider } from 'vs/workbench/common/views';
 import { Emitter, Event } from 'vs/base/common/event';
@@ -79,4 +79,4 @@ export class ConnectionTreeService implements IConnectionTreeService {
 	}
 }
 
-registerSingleton(IConnectionTreeService, ConnectionTreeService, false);
+registerSingleton(IConnectionTreeService, ConnectionTreeService, InstantiationType.Delayed);

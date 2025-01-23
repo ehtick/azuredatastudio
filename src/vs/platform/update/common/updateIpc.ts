@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
@@ -69,7 +69,7 @@ export class UpdateChannelClient implements IUpdateService {
 		return this.channel.call('quitAndInstall');
 	}
 
-	isLatestVersion(): Promise<boolean> {
+	isLatestVersion(): Promise<boolean | undefined> {
 		return this.channel.call('isLatestVersion');
 	}
 

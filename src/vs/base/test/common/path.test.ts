@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 // NOTE: VSCode's copy of nodejs path library to be usable in common (non-node) namespace
@@ -360,7 +360,7 @@ suite('Paths (Node Implementation)', () => {
 		assert.strictEqual(path.extname('far.boo/boo'), '');
 	});
 
-	(isWeb && isWindows ? test.skip : test)('resolve', () => { // TODO@sbatten fails on windows & browser only
+	test('resolve', () => {
 		const failures = [] as string[];
 		const slashRE = /\//g;
 		const backslashRE = /\\/g;
@@ -372,7 +372,6 @@ suite('Paths (Node Implementation)', () => {
 			[['c:/ignore', 'd:\\a/b\\c/d', '\\e.exe'], 'd:\\e.exe'],
 			[['c:/ignore', 'c:/some/file'], 'c:\\some\\file'],
 			[['d:/ignore', 'd:some/dir//'], 'd:\\ignore\\some\\dir'],
-			[['.'], process.cwd()],
 			[['//server/share', '..', 'relative\\'], '\\\\server\\share\\relative'],
 			[['c:/', '//'], 'c:\\'],
 			[['c:/', '//dir'], 'c:\\dir'],
@@ -387,12 +386,16 @@ suite('Paths (Node Implementation)', () => {
 			// arguments                    result
 			[[['/var/lib', '../', 'file/'], '/var/file'],
 			[['/var/lib', '/../', 'file/'], '/file'],
-			[['a/b/c/', '../../..'], process.cwd()],
-			[['.'], process.cwd()],
 			[['/some/dir', '.', '/absolute/'], '/absolute'],
 			[['/foo/tmp.3/', '../tmp.3/cycles/root.js'], '/foo/tmp.3/cycles/root.js']
 			]
+			],
+			[(isWeb ? path.posix.resolve : path.resolve),
+			// arguments						result
+			[[['.'], process.cwd()],
+			[['a/b/c', '../../..'], process.cwd()]
 			]
+			],
 		];
 		resolveTests.forEach((test) => {
 			const resolve = test[0];

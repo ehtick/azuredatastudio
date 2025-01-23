@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ReverseLookUpMap } from 'sql/base/common/map';
@@ -9,7 +9,7 @@ import { ConnectionConfig } from 'sql/platform/connection/common/connectionConfi
 import { fixupConnectionCredentials } from 'sql/platform/connection/common/connectionInfo';
 import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
 import { ConnectionProfileGroup, IConnectionProfileGroup } from 'sql/platform/connection/common/connectionProfileGroup';
-import { AuthenticationType } from 'sql/platform/connection/common/constants';
+import { AuthenticationType, mssqlProviderName } from 'sql/platform/connection/common/constants';
 import { IConnectionProfile, ProfileMatcher } from 'sql/platform/connection/common/interfaces';
 import { ICredentialsService } from 'sql/platform/credentials/common/credentialsService';
 import { isDisposable } from 'vs/base/common/lifecycle';
@@ -85,10 +85,28 @@ export class ConnectionStore {
 		if (credentialsItem.savePassword && this.isPasswordRequired(credentialsItem) && !credentialsItem.password) {
 			const credentialId = this.formatCredentialId(credentialsItem, CRED_PROFILE_USER);
 			return this.credentialService.readCredential(credentialId)
-				.then(savedCred => {
-					if (savedCred) {
+				.then(async savedCred => {
+					if (savedCred?.password) {
 						credentialsItem.password = savedCred.password;
 						credentialsItem.options['password'] = savedCred.password;
+					} else if (credentialsItem.providerName === mssqlProviderName) {
+						// Special handling for MSSQL provider as "applicationName:azdata" is no longer included
+						// in credential string starting with MAY 2023 release.
+						// We will try to read credential including applicationName and if it is found,
+						// we will update the saved credential with new credential key.
+						// This special case handling should be removed in a future release.
+						let credParts = credentialId.split('|');
+						credParts.splice(3, 0, 'applicationName:azdata');
+						const oldCredentialId = credParts.join('|');
+						const savedMssqlCred = await this.credentialService.readCredential(oldCredentialId);
+						if (savedMssqlCred?.password) {
+							credentialsItem.password = savedMssqlCred.password;
+							credentialsItem.options['password'] = savedMssqlCred.password;
+							// Update credential in credential store.
+							await this.credentialService.deleteCredential(oldCredentialId);
+							await this.credentialService.saveCredential(credentialId, savedMssqlCred.password);
+							savedCred.password = savedMssqlCred.password;
+						}
 					}
 					return { profile: credentialsItem, savedCred: !!savedCred };
 				});
@@ -142,9 +160,10 @@ export class ConnectionStore {
 		return this.connectionConfig.addGroup(profile);
 	}
 
-	private saveProfileToConfig(profile: IConnectionProfile, matcher?: ProfileMatcher): Promise<IConnectionProfile> {
+	private async saveProfileToConfig(profile: IConnectionProfile, matcher?: ProfileMatcher): Promise<IConnectionProfile> {
 		if (profile.saveProfile) {
-			return this.connectionConfig.addConnection(profile, matcher);
+			let result = await this.connectionConfig.addConnection(profile, matcher);
+			return result;
 		} else {
 			return Promise.resolve(profile);
 		}
@@ -157,8 +176,9 @@ export class ConnectionStore {
 	 * @param matcher the profile matching function for the actual connection we want to edit.
 	 * @returns a boolean value indicating if there's an identical profile to the edit.
 	 */
-	public isDuplicateEdit(profile: IConnectionProfile, matcher?: ProfileMatcher): Promise<boolean> {
-		return this.connectionConfig.isDuplicateEdit(profile, matcher);
+	public async isDuplicateEdit(profile: IConnectionProfile, matcher?: ProfileMatcher): Promise<boolean> {
+		let result = await this.connectionConfig.isDuplicateEdit(profile, matcher);
+		return result;
 	}
 
 	/**
@@ -229,7 +249,8 @@ export class ConnectionStore {
 
 		// Remove the connection from the list if it already exists
 		list = list.filter(value => {
-			let equal = value && value.getConnectionInfoId(false) === savedProfile.getConnectionInfoId(false);
+			let equal = value && value.connectionName === savedProfile.connectionName;
+			equal = equal && value.getConnectionInfoId(false) === savedProfile.getConnectionInfoId(false);
 			if (equal && savedProfile.saveProfile) {
 				equal = value.groupId === savedProfile.groupId ||
 					ConnectionProfileGroup.sameGroupName(value.groupFullName, savedProfile.groupFullName);
@@ -247,7 +268,8 @@ export class ConnectionStore {
 
 		// Remove the connection from the list if it already exists
 		list = list.filter(value => {
-			let equal = value && value.getConnectionInfoId(false) === savedProfile.getConnectionInfoId(false);
+			let equal = value && value.connectionName === savedProfile.connectionName;
+			equal = equal && value.getConnectionInfoId(false) === savedProfile.getConnectionInfoId(false);
 			if (equal && savedProfile.saveProfile) {
 				equal = value.groupId === savedProfile.groupId ||
 					ConnectionProfileGroup.sameGroupName(value.groupFullName, savedProfile.groupFullName);

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from 'vs/base/common/event';
@@ -9,6 +9,7 @@ import { IDebugService, VIEWLET_ID, IDebugSession } from 'vs/workbench/contrib/d
 import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 import { dispose, IDisposable } from 'vs/base/common/lifecycle';
 import { IViewsService } from 'vs/workbench/common/views';
+import { NotificationPriority } from 'vs/platform/notification/common/notification';
 
 export class DebugProgressContribution implements IWorkbenchContribution {
 
@@ -44,7 +45,7 @@ export class DebugProgressContribution implements IWorkbenchContribution {
 						location: ProgressLocation.Notification,
 						title: progressStartEvent.body.title,
 						cancellable: progressStartEvent.body.cancellable,
-						silent: true,
+						priority: NotificationPriority.SILENT,
 						source,
 						delay: 500
 					}, progressStep => {

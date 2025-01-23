@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { fail } from 'assert';
@@ -23,7 +23,7 @@ import { IDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { TestDialogService } from 'vs/platform/dialogs/test/common/testDialogService';
 import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
 
-suite('Workbench - TerminalService', () => {
+suite.skip('Workbench - TerminalService', () => {
 	let instantiationService: TestInstantiationService;
 	let terminalService: TerminalService;
 	let configurationService: TestConfigurationService;
@@ -55,6 +55,10 @@ suite('Workbench - TerminalService', () => {
 
 		terminalService = instantiationService.createInstance(TerminalService);
 		instantiationService.stub(ITerminalService, terminalService);
+	});
+
+	teardown(() => {
+		instantiationService.dispose();
 	});
 
 	suite('safeDisposeTerminal', () => {

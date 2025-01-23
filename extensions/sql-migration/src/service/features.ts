@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { SqlOpsDataClient, SqlOpsFeature } from 'dataprotocol-client';
@@ -38,10 +38,15 @@ export class SqlMigrationService extends MigrationExtensionService implements co
 		contracts.SqlMigrationStopPerfDataCollectionRequest.type,
 		contracts.StartLoginMigrationRequest.type,
 		contracts.ValidateLoginMigrationRequest.type,
+		contracts.ValidateSysAdminPermissionRequest.type,
+		contracts.ValidateUserMappingRequest.type,
+		contracts.ValidateAADDomainNameRequest.type,
+		contracts.ValidateLoginEligibilityRequest.type,
 		contracts.MigrateLoginsRequest.type,
 		contracts.EstablishUserMappingRequest.type,
 		contracts.MigrateServerRolesAndSetPermissionsRequest.type,
-		contracts.TdeMigrateRequest.type
+		contracts.TdeMigrateRequest.type,
+		contracts.GetSqlMigrationGenerateArmTemplateRequest.type
 	];
 
 	constructor(client: SqlOpsDataClient) {
@@ -71,13 +76,25 @@ export class SqlMigrationService extends MigrationExtensionService implements co
 		// this isn't explicitly necessary
 	}
 
-	async getAssessments(connectionString: string, databases: string[], xEventsFilesFolderPath: string): Promise<contracts.AssessmentResult | undefined> {
-		let params: contracts.SqlMigrationAssessmentParams = { connectionString: connectionString, databases: databases, xEventsFilesFolderPath: xEventsFilesFolderPath };
+	async getAssessments(connectionString: string, databases: string[], xEventsFilesFolderPath: string, collectAdhocQueries: boolean): Promise<contracts.AssessmentResult | undefined> {
+		let params: contracts.SqlMigrationAssessmentParams = { connectionString: connectionString, databases: databases, xEventsFilesFolderPath: xEventsFilesFolderPath, collectAdhocQueries: collectAdhocQueries };
 		try {
 			return this._client.sendRequest(contracts.GetSqlMigrationAssessmentItemsRequest.type, params);
 		}
 		catch (e) {
 			this._client.logFailedRequest(contracts.GetSqlMigrationAssessmentItemsRequest.type, e);
+		}
+
+		return undefined;
+	}
+
+	async getArmTemplate(targetType: string): Promise<string[] | undefined> {
+		try {
+			const response = this._client.sendRequest(contracts.GetSqlMigrationGenerateArmTemplateRequest.type, targetType);
+			return response;
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.GetSqlMigrationGenerateArmTemplateRequest.type, e);
 		}
 
 		return undefined;
@@ -95,16 +112,18 @@ export class SqlMigrationService extends MigrationExtensionService implements co
 		includePreviewSkus: boolean,
 		databaseAllowList: string[]): Promise<contracts.SkuRecommendationResult | undefined> {
 		let params: contracts.SqlMigrationSkuRecommendationsParams = {
-			dataFolder,
-			perfQueryIntervalInSec,
-			targetPlatforms,
-			targetSqlInstance,
-			targetPercentile,
-			scalingFactor,
-			startTime,
-			endTime,
-			includePreviewSkus,
-			databaseAllowList
+			dataFolder: dataFolder,
+			perfQueryIntervalInSec: perfQueryIntervalInSec,
+			targetPlatforms: targetPlatforms,
+			targetSqlInstance: targetSqlInstance,
+			targetPercentile: targetPercentile,
+			scalingFactor: scalingFactor,
+			startTime: startTime,
+			endTime: endTime,
+			includePreviewSkus: includePreviewSkus,
+			databaseAllowList: databaseAllowList,
+			isPremiumSSDV2Enabled: true,
+			isNextGenGPEnabled: true
 		};
 
 		try {
@@ -214,6 +233,98 @@ export class SqlMigrationService extends MigrationExtensionService implements co
 		return undefined;
 	}
 
+	async validateSysAdminPermission(
+		sourceConnectionString: string,
+		targetConnectionString: string,
+		loginList: string[],
+		aadDomainName: string): Promise<contracts.StartLoginMigrationPreValidationResult | undefined> {
+		let params: contracts.StartLoginMigrationsParams = {
+			sourceConnectionString,
+			targetConnectionString,
+			loginList,
+			aadDomainName
+		};
+
+		try {
+			return this._client.sendRequest(contracts.ValidateSysAdminPermissionRequest.type, params);
+
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.ValidateSysAdminPermissionRequest.type, e);
+		}
+
+		return undefined;
+	}
+
+	async validateUserMapping(
+		sourceConnectionString: string,
+		targetConnectionString: string,
+		loginList: string[],
+		aadDomainName: string): Promise<contracts.StartLoginMigrationPreValidationResult | undefined> {
+		let params: contracts.StartLoginMigrationsParams = {
+			sourceConnectionString,
+			targetConnectionString,
+			loginList,
+			aadDomainName
+		};
+
+		try {
+			return this._client.sendRequest(contracts.ValidateUserMappingRequest.type, params);
+
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.ValidateUserMappingRequest.type, e);
+		}
+
+		return undefined;
+	}
+
+	async validateAADDomainName(
+		sourceConnectionString: string,
+		targetConnectionString: string,
+		loginList: string[],
+		aadDomainName: string): Promise<contracts.StartLoginMigrationPreValidationResult | undefined> {
+		let params: contracts.StartLoginMigrationsParams = {
+			sourceConnectionString,
+			targetConnectionString,
+			loginList,
+			aadDomainName
+		};
+
+		try {
+			return this._client.sendRequest(contracts.ValidateAADDomainNameRequest.type, params);
+
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.ValidateAADDomainNameRequest.type, e);
+		}
+
+		return undefined;
+	}
+
+	async validateLoginEligibility(
+		sourceConnectionString: string,
+		targetConnectionString: string,
+		loginList: string[],
+		aadDomainName: string): Promise<contracts.StartLoginMigrationPreValidationResult | undefined> {
+		let params: contracts.StartLoginMigrationsParams = {
+			sourceConnectionString,
+			targetConnectionString,
+			loginList,
+			aadDomainName
+		};
+
+		try {
+			return this._client.sendRequest(contracts.ValidateLoginEligibilityRequest.type, params);
+
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.ValidateLoginEligibilityRequest.type, e);
+		}
+
+		return undefined;
+	}
+
 	async migrateLogins(
 		sourceConnectionString: string,
 		targetConnectionString: string,
@@ -316,5 +427,34 @@ export class SqlMigrationService extends MigrationExtensionService implements co
 
 		return undefined;
 	}
-}
 
+	async runTdeValidation(
+		sourceSqlConnectionString: string,
+		networkSharePath: string,
+	) {
+		let params: contracts.TdeValidationParams = {
+			sourceSqlConnectionString: sourceSqlConnectionString,
+			networkSharePath: networkSharePath,
+		};
+
+		try {
+			return await this._client.sendRequest(contracts.TdeValidationRequest.type, params);
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.TdeValidationRequest.type, e);
+		}
+
+		return undefined;
+	}
+
+	async getTdeValidationTitles() {
+		try {
+			return await this._client.sendRequest(contracts.TdeValidationTitlesRequest.type, {});
+		}
+		catch (e) {
+			this._client.logFailedRequest(contracts.TdeValidationRequest.type, e);
+		}
+
+		return undefined;
+	}
+}

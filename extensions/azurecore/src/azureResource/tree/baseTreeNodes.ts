@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { AppContext } from '../../appContext';
@@ -17,7 +17,6 @@ abstract class AzureResourceTreeNodeBase extends TreeNode {
 		parent: TreeNode | undefined
 	) {
 		super();
-
 		this.parent = parent;
 	}
 }
@@ -29,7 +28,6 @@ export abstract class AzureResourceContainerTreeNodeBase extends AzureResourceTr
 		parent: TreeNode | undefined
 	) {
 		super(appContext, treeChangeHandler, parent);
-
 		this._cacheService = this.appContext.getService<IAzureResourceCacheService>(AzureResourceServiceNames.cacheService);
 	}
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Position } from 'vs/editor/common/core/position';
@@ -53,8 +53,12 @@ export abstract class RestrictedRenderingContext {
 		return absoluteTop - this.scrollTop;
 	}
 
-	public getVerticalOffsetForLineNumber(lineNumber: number): number {
-		return this._viewLayout.getVerticalOffsetForLineNumber(lineNumber);
+	public getVerticalOffsetForLineNumber(lineNumber: number, includeViewZones?: boolean): number {
+		return this._viewLayout.getVerticalOffsetForLineNumber(lineNumber, includeViewZones);
+	}
+
+	public getVerticalOffsetAfterLineNumber(lineNumber: number, includeViewZones?: boolean): number {
+		return this._viewLayout.getVerticalOffsetAfterLineNumber(lineNumber, includeViewZones);
 	}
 
 	public getDecorationsInViewport(): ViewModelDecoration[] {
@@ -83,10 +87,46 @@ export class RenderingContext extends RestrictedRenderingContext {
 }
 
 export class LineVisibleRanges {
+	/**
+	 * Returns the element with the smallest `lineNumber`.
+	 */
+	public static firstLine(ranges: LineVisibleRanges[] | null): LineVisibleRanges | null {
+		if (!ranges) {
+			return null;
+		}
+		let result: LineVisibleRanges | null = null;
+		for (const range of ranges) {
+			if (!result || range.lineNumber < result.lineNumber) {
+				result = range;
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the element with the largest `lineNumber`.
+	 */
+	public static lastLine(ranges: LineVisibleRanges[] | null): LineVisibleRanges | null {
+		if (!ranges) {
+			return null;
+		}
+		let result: LineVisibleRanges | null = null;
+		for (const range of ranges) {
+			if (!result || range.lineNumber > result.lineNumber) {
+				result = range;
+			}
+		}
+		return result;
+	}
+
 	constructor(
 		public readonly outsideRenderedLine: boolean,
 		public readonly lineNumber: number,
-		public readonly ranges: HorizontalRange[]
+		public readonly ranges: HorizontalRange[],
+		/**
+		 * Indicates if the requested range does not end in this line, but continues on the next line.
+		 */
+		public readonly continuesOnNextLine: boolean,
 	) { }
 }
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as fs from 'fs';
@@ -14,7 +14,6 @@ const shasum = crypto.createHash('sha1');
 
 shasum.update(fs.readFileSync(path.join(ROOT, 'build/.cachesalt')));
 shasum.update(fs.readFileSync(path.join(ROOT, '.yarnrc')));
-shasum.update(fs.readFileSync(path.join(ROOT, 'remote/.yarnrc')));
 
 // Add `package.json` and `yarn.lock` files
 for (const dir of dirs) {
@@ -24,7 +23,8 @@ for (const dir of dirs) {
 		dependencies: packageJson.dependencies,
 		devDependencies: packageJson.devDependencies,
 		optionalDependencies: packageJson.optionalDependencies,
-		resolutions: packageJson.resolutions
+		resolutions: packageJson.resolutions,
+		distro: packageJson.distro
 	};
 	shasum.update(JSON.stringify(relevantPackageJsonSections));
 

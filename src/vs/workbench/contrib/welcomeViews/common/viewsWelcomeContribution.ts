@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
@@ -27,9 +27,7 @@ export class ViewsWelcomeContribution extends Disposable implements IWorkbenchCo
 				for (const welcome of contribution.value) {
 					const disposable = this.viewWelcomeContents.get(welcome);
 
-					if (disposable) {
-						disposable.dispose();
-					}
+					disposable?.dispose();
 				}
 			}
 

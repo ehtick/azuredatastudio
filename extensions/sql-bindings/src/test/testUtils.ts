@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -60,7 +60,7 @@ export class MockVscodeMssqlIExtension implements vscodeMssql.IExtension {
 	createConnectionDetails(_: vscodeMssql.IConnectionInfo): vscodeMssql.ConnectionDetails {
 		throw new Error('Method not implemented.');
 	}
-	getServerInfo(_: vscodeMssql.IConnectionInfo): vscodeMssql.ServerInfo {
+	getServerInfo(_: vscodeMssql.IConnectionInfo): vscodeMssql.IServerInfo {
 		throw new Error('Method not implemented.');
 	}
 }
@@ -115,7 +115,8 @@ export function createTestCredentials(): vscodeMssql.IConnectionInfo {
 		multipleActiveResultSets: false,
 		packetSize: 8192,
 		typeSystemVersion: 'Latest',
-		connectionString: ''
+		connectionString: '',
+		commandTimeout: undefined
 	};
 	return creds;
 }

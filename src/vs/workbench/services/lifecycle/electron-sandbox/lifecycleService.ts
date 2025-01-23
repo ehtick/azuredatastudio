@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { handleVetos } from 'vs/platform/lifecycle/common/lifecycle';
@@ -9,8 +9,8 @@ import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ipcRenderer } from 'vs/base/parts/sandbox/electron-sandbox/globals';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractLifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycleService';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { INativeHostService } from 'vs/platform/native/electron-sandbox/native';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { INativeHostService } from 'vs/platform/native/common/native';
 import { Promises, disposableTimeout, raceCancellation } from 'vs/base/common/async';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
@@ -192,4 +192,4 @@ export class NativeLifecycleService extends AbstractLifecycleService {
 	}
 }
 
-registerSingleton(ILifecycleService, NativeLifecycleService);
+registerSingleton(ILifecycleService, NativeLifecycleService, InstantiationType.Eager);

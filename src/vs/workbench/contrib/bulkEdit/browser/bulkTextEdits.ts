@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { dispose, IDisposable, IReference } from 'vs/base/common/lifecycle';
@@ -116,7 +116,7 @@ class ModelEditTask implements IDisposable {
 		if (!edit.text) {
 			return edit;
 		}
-		const text = new SnippetParser().text(edit.text);
+		const text = SnippetParser.asInsertText(edit.text);
 		return { ...edit, insertAsSnippet: false, text };
 	}
 }
@@ -156,7 +156,7 @@ class EditorEditTask extends ModelEditTask {
 						});
 					}
 				}
-				snippetCtrl.apply(snippetEdits);
+				snippetCtrl.apply(snippetEdits, { undoStopBefore: false, undoStopAfter: false });
 
 			} else {
 				// normal edit

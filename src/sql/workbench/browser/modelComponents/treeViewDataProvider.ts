@@ -1,14 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// eslint-disable-next-line code-import-patterns
 import { ExtHostModelViewTreeViewsShape } from 'sql/workbench/api/common/sqlExtHost.protocol';
-// eslint-disable-next-line code-import-patterns
 import { IModelViewTreeViewDataProvider, ITreeComponentItem } from 'sql/workbench/common/views';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-// eslint-disable-next-line code-import-patterns
 import * as vsTreeView from 'vs/workbench/api/browser/mainThreadTreeViews';
 import { ResolvableTreeItem } from 'vs/workbench/common/views';
 import { deepClone } from 'vs/base/common/objects';

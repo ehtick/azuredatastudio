@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Color } from 'vs/base/common/color';
@@ -40,13 +40,13 @@ export class TestColorTheme implements IColorTheme {
 	}
 }
 
-export class TestFileIconTheme implements IFileIconTheme {
+class TestFileIconTheme implements IFileIconTheme {
 	hasFileIcons = false;
 	hasFolderIcons = false;
 	hidesExplorerArrows = false;
 }
 
-export class UnthemedProductIconTheme implements IProductIconTheme {
+class UnthemedProductIconTheme implements IProductIconTheme {
 	getIcon(contribution: IconContribution) {
 		return undefined;
 	}

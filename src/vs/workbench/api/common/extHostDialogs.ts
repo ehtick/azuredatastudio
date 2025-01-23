@@ -1,11 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import type * as vscode from 'vscode';
 import { URI } from 'vs/base/common/uri';
 import { MainContext, MainThreadDiaglogsShape, IMainContext } from 'vs/workbench/api/common/extHost.protocol';
+import { checkProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
+import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 
 export class ExtHostDialogs {
 
@@ -15,7 +17,10 @@ export class ExtHostDialogs {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadDialogs);
 	}
 
-	showOpenDialog(options?: vscode.OpenDialogOptions): Promise<URI[] | undefined> {
+	showOpenDialog(extension: IRelaxedExtensionDescription, options?: vscode.OpenDialogOptions): Promise<URI[] | undefined> {
+		if (options?.allowUIResources) {
+			checkProposedApiEnabled(extension, 'showLocal');
+		}
 		return this._proxy.$showOpenDialog(options).then(filepaths => {
 			return filepaths ? filepaths.map(p => URI.revive(p)) : undefined;
 		});

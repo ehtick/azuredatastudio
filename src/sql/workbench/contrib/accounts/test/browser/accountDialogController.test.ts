@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -71,7 +71,7 @@ suite('Account Management Dialog Controller Tests', () => {
 
 function createInstantiationService(addAccountFailureEmitter?: Emitter<string>): InstantiationService {
 	// Create a mock account dialog view model
-	let accountViewModel = new AccountViewModel(new TestAccountManagementService(), new NullLogService());
+	let accountViewModel = new AccountViewModel(new TestAccountManagementService(), new NullLogService(), undefined);
 	let mockAccountViewModel = TypeMoq.Mock.ofInstance(accountViewModel);
 	let mockEvent = new Emitter<any>();
 	mockAccountViewModel.setup(x => x.addProviderEvent).returns(() => mockEvent.event);

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
@@ -10,7 +10,7 @@ import { TestInstantiationService } from 'vs/platform/instantiation/test/common/
 import * as TypeMoq from 'typemoq';
 import { TestCapabilitiesService } from 'sql/platform/capabilities/test/common/testCapabilitiesService';
 import { ITree } from 'sql/base/parts/tree/browser/tree';
-import { TestTree } from 'sql/workbench/test/treeMock';
+import { TestTree } from 'sql/workbench/test/browser/parts/tree/treeMock';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { TestStorageService } from 'vs/workbench/test/common/workbenchTestServices';
 import { TreeItemCollapsibleState } from 'sql/workbench/services/objectExplorer/common/treeNode';
@@ -39,7 +39,7 @@ suite('ServerTreeView onAddConnectionProfile handler tests', () => {
 		);
 		mockConnectionManagementService.setup(x => x.getConnectionGroups()).returns(x => []);
 		mockConnectionManagementService.setup(x => x.hasRegisteredServers()).returns(() => true);
-		serverTreeView = new ServerTreeView(mockConnectionManagementService.object, instantiationService, undefined, new TestThemeService(), undefined, new TestConfigurationService(), capabilitiesService, undefined, undefined, new MockContextKeyService(), undefined, undefined);
+		serverTreeView = new ServerTreeView(mockConnectionManagementService.object, instantiationService, undefined, new TestThemeService(), undefined, new TestConfigurationService(), capabilitiesService, undefined, undefined, new MockContextKeyService(), undefined, undefined, undefined);
 		mockTree = TypeMoq.Mock.ofType<ITree>(TestTree);
 		(serverTreeView as any)._tree = mockTree.object;
 		mockRefreshTreeMethod = TypeMoq.Mock.ofType(Function);

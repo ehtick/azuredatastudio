@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { extUriBiasedIgnorePathCase } from 'vs/base/common/resources';
@@ -8,13 +8,13 @@ import { URI } from 'vs/base/common/uri';
 import { ICodeWindow } from 'vs/platform/window/electron-main/window';
 import { IResolvedWorkspace, ISingleFolderWorkspaceIdentifier, isSingleFolderWorkspaceIdentifier, isWorkspaceIdentifier, IWorkspaceIdentifier } from 'vs/platform/workspace/common/workspace';
 
-export function findWindowOnFile(windows: ICodeWindow[], fileUri: URI, localWorkspaceResolver: (workspace: IWorkspaceIdentifier) => IResolvedWorkspace | undefined): ICodeWindow | undefined {
+export async function findWindowOnFile(windows: ICodeWindow[], fileUri: URI, localWorkspaceResolver: (workspace: IWorkspaceIdentifier) => Promise<IResolvedWorkspace | undefined>): Promise<ICodeWindow | undefined> {
 
 	// First check for windows with workspaces that have a parent folder of the provided path opened
 	for (const window of windows) {
 		const workspace = window.openedWorkspace;
 		if (isWorkspaceIdentifier(workspace)) {
-			const resolvedWorkspace = localWorkspaceResolver(workspace);
+			const resolvedWorkspace = await localWorkspaceResolver(workspace);
 
 			// resolved workspace: folders are known and can be compared with
 			if (resolvedWorkspace) {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import AdsTelemetryReporter, { TelemetryEventMeasures, TelemetryEventProperties } from '@microsoft/ads-extension-telemetry';
@@ -43,9 +43,13 @@ export enum TelemetryViews {
 	LoginMigrationTargetSelectionPage = 'LoginMigrationTargetSelectionPage',
 	LoginMigrationSelectorPage = 'LoginMigrationSelectorPage',
 	LoginMigrationStatusPage = 'LoginMigrationStatusPage',
+	LoginMigrationPreValdationDialog = 'LoginMigrationPreValdationDialog',
 	TdeConfigurationDialog = 'TdeConfigurationDialog',
 	TdeMigrationDialog = 'TdeMigrationDialog',
 	ValidIrDialog = 'validIrDialog',
+	ImportAssessmentDialog = 'ImportAssessmentDialog',
+	UploadArmTemplateDialog = 'UploadArmTemplateDialog',
+	ProvisioningScriptWizard = 'ProvisioningScriptWizard'
 }
 
 export enum TelemetryAction {
@@ -77,11 +81,23 @@ export enum TelemetryAction {
 	OpenLoginMigrationWizard = 'OpenLoginMigrationWizard',
 	LoginMigrationStarted = 'LoginMigrationStarted',
 	LoginMigrationCompleted = 'LoginMigrationCompleted',
+	LoginMigrationError = 'LoginMigrationError',
+	LoginMigrationPreValidationStarted = 'LoginMigrationPreValidationStarted',
+	LoginMigrationPreValidationFailed = 'LoginMigrationPreValidationFailed',
+	LoginMigrationPreValidationSuccessful = 'LoginMigrationPreValidationSuccessful',
 	TdeMigrationSuccess = 'TdeMigrationSuccess',
 	TdeMigrationFailures = 'TdeMigrationFailures',
 	TdeMigrationClientException = 'TdeMigrationClientException',
 	TdeConfigurationUseADS = 'TdeConfigurationUseADS',
-	TdeConfigurationIgnoreADS = 'TdeConfigurationIgnoreADS'
+	TdeConfigurationAlreadyMigrated = 'TdeConfigurationAlreadyMigrated',
+	TdeConfigurationCancelled = 'TdeConfigurationCancelled',
+	ImportAssessmentSuccess = 'ImportAssessmentSuccess',
+	ImportAssessmentFailed = 'ImportAssessmentFailed',
+	SaveArmTemplateSuccess = 'SaveArmTemplateSuccess',
+	CopyArmTemplateSuccess = 'CopyArmTemplateSuccess',
+	OpenCustomDeploymentPortalSuccess = 'OpenCustomDeploymentPortalSuccess',
+	OpenTargetProvisioningWizard = 'OpenTargetProvisioningWizard',
+	OpenDeployArmTemplateDialog = 'OpenDeployArmTemplateDialog'
 }
 
 export function logError(telemetryView: TelemetryViews, err: string, error: any): void {
@@ -97,7 +113,8 @@ export function sendSqlMigrationActionEvent(telemetryView: TelemetryViews, telem
 }
 
 export function getTelemetryProps(migrationStateModel: MigrationStateModel): TelemetryEventProperties {
-	const tenantId = migrationStateModel._azureAccount?.properties?.tenants?.length > 0
+	const tenantId = migrationStateModel._azureTenant?.id ??
+		migrationStateModel._azureAccount?.properties?.tenants?.length > 0
 		? migrationStateModel._azureAccount?.properties?.tenants[0]?.id
 		: '';
 	return {

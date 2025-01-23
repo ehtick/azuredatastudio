@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as arrays from 'vs/base/common/arrays';
@@ -9,12 +9,12 @@ import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
 import { countEOL } from 'vs/editor/common/core/eolCounter';
 import { ContiguousTokensEditing } from 'vs/editor/common/tokens/contiguousTokensEditing';
+import { LineRange } from 'vs/editor/common/core/lineRange';
 
 /**
  * Represents contiguous tokens over a contiguous range of lines.
  */
 export class ContiguousMultilineTokens {
-
 	public static deserialize(buff: Uint8Array, offset: number, result: ContiguousMultilineTokens[]): number {
 		const view32 = new Uint32Array(buff.buffer);
 		const startLineNumber = readUInt32BE(buff, offset); offset += 4;
@@ -62,6 +62,10 @@ export class ContiguousMultilineTokens {
 	constructor(startLineNumber: number, tokens: Uint32Array[]) {
 		this._startLineNumber = startLineNumber;
 		this._tokens = tokens;
+	}
+
+	getLineRange(): LineRange {
+		return new LineRange(this._startLineNumber, this._startLineNumber + this._tokens.length);
 	}
 
 	/**

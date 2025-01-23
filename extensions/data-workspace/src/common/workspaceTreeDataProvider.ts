@@ -1,22 +1,23 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { IWorkspaceService } from './interfaces';
-import { dragAndDropNotSupported, onlyMovingOneFileIsSupported, ProjectsFailedToLoad, UnknownProjectsError } from './constants';
+import { dragAndDropNotSupported, onlyMovingOneFileIsSupported, projectFailedToLoad, UnknownProjectsError } from './constants';
 import { WorkspaceTreeItem } from 'dataworkspace';
 import { TelemetryReporter } from './telemetry';
+import { getErrorMessage } from './utils';
 import Logger from './logger';
 
 /**
  * Tree data provider for the workspace main view
  */
 export class WorkspaceTreeDataProvider implements vscode.TreeDataProvider<WorkspaceTreeItem>, vscode.TreeDragAndDropController<WorkspaceTreeItem> {
-	dropMimeTypes = ['application/vnd.code.tree.WorkspaceTreeDataProvider'];
-	dragMimeTypes = []; // The recommended mime type of the tree (`application/vnd.code.tree.WorkspaceTreeDataProvider`) is automatically added.
+	dropMimeTypes = ['application/vnd.code.tree.workspacetreedataprovider'];
+	dragMimeTypes = ['application/vnd.code.tree.workspacetreedataprovider'];
 
 	constructor(private _workspaceService: IWorkspaceService) {
 		this._workspaceService.onDidWorkspaceProjectsChange(() => {
@@ -54,7 +55,7 @@ export class WorkspaceTreeDataProvider implements vscode.TreeDataProvider<Worksp
 
 			const typeMetric: Record<string, number> = {};
 
-			let errorCount = 0;
+			let errorMessages: { project: vscode.Uri, errorMessage: string }[] = [];
 			for (const project of projects) {
 				try {
 					const projectProvider = await this._workspaceService.getProjectProvider(project);
@@ -79,13 +80,15 @@ export class WorkspaceTreeDataProvider implements vscode.TreeDataProvider<Worksp
 						});
 					});
 				} catch (e) {
-					errorCount++;
+					errorMessages.push({ project: project, errorMessage: getErrorMessage(e) });
 					console.error(e.message);
 				}
 			}
 
-			if (errorCount > 0) {
-				void vscode.window.showErrorMessage(ProjectsFailedToLoad);
+			if (errorMessages.length > 0) {
+				for (let error of errorMessages) {
+					void vscode.window.showErrorMessage(projectFailedToLoad(path.basename(error.project.fsPath), error.errorMessage + (error.errorMessage.endsWith('.') ? '' : '.')));
+				}
 			}
 
 			TelemetryReporter.sendMetricsEvent(typeMetric, 'OpenWorkspaceProjectTypes');

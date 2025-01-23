@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ProgressOptions } from 'vscode';
@@ -42,9 +42,7 @@ export class ExtHostProgress implements ExtHostProgressShape {
 		const progressEnd = (handle: number): void => {
 			this._proxy.$progressEnd(handle);
 			this._mapHandleToCancellationSource.delete(handle);
-			if (source) {
-				source.dispose();
-			}
+			source?.dispose();
 		};
 
 		let p: Thenable<R>;

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { refineServiceDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -56,7 +56,7 @@ export function positionFromString(str: string): Position {
 	return positionsByString[str];
 }
 
-export function panelOpensMaximizedSettingToString(setting: PanelOpensMaximizedOptions): string {
+function panelOpensMaximizedSettingToString(setting: PanelOpensMaximizedOptions): string {
 	switch (setting) {
 		case PanelOpensMaximizedOptions.ALWAYS: return 'always';
 		case PanelOpensMaximizedOptions.NEVER: return 'never';

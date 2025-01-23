@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./textCell';
 import 'vs/css!./media/markdown';
@@ -41,7 +41,7 @@ const USER_SELECT_CLASS = 'actionselect';
 	templateUrl: decodeURI(require.toUrl('./textCell.component.html'))
 })
 export class TextCellComponent extends CellView implements OnInit, OnChanges {
-	@ViewChild('preview', { read: ElementRef }) override output: ElementRef;
+	@ViewChild('preview', { read: ElementRef }) protected override output: ElementRef;
 	@ViewChildren(CodeComponent) private markdowncodeCell: QueryList<CodeComponent>;
 
 	@Input() cellModel: ICellModel;

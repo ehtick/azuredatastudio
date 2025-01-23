@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -57,7 +57,7 @@ export class MigrationsTab extends TabBase<MigrationsTab> {
 		switch (this._selectedTabId) {
 			case undefined:
 			case MigrationsListTabId:
-				return this._migrationsListTab.refresh();
+				return this._migrationsListTab.refresh(true);
 			default:
 				return this._migrationDetailsViewTab.refresh();
 		}
@@ -155,11 +155,10 @@ export class MigrationsTab extends TabBase<MigrationsTab> {
 		return undefined;
 	}
 
-	private async _openTab(tab: azdata.Tab): Promise<void> {
+	private async _openTab(tab: TabBase<any>): Promise<void> {
 		if (tab.id === this._selectedTabId) {
 			return;
 		}
-
 		await this.statusBar.clearError();
 		this._tab.clearItems();
 		this._tab.addItem(tab.content);

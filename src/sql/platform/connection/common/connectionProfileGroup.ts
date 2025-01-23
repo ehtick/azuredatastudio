@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
@@ -144,6 +144,7 @@ export class ConnectionProfileGroup implements IConnectionProfileGroup {
 		connections?.forEach((conn) => {
 			this._childConnections = this._childConnections.filter((curConn) => { return curConn.id !== conn.id; });
 			conn.parent = this;
+			conn.groupId = this.id;
 			this._childConnections.push(conn);
 		});
 
@@ -153,6 +154,7 @@ export class ConnectionProfileGroup implements IConnectionProfileGroup {
 		groups?.forEach((group) => {
 			this._childGroups = this._childGroups.filter((grp) => { return group.id !== grp.id; });
 			group.parent = this;
+			group.parentId = this.id;
 			this._childGroups.push(group);
 		});
 	}
@@ -179,6 +181,7 @@ export class ConnectionProfileGroup implements IConnectionProfileGroup {
 		const matchingConnection = this.getMatchingConnection(connection);
 		connection.parent = this;
 		connection.groupId = this.id;
+		connection.groupFullName = this.fullName;
 		if (matchingConnection) {
 			this.replaceConnection(connection, matchingConnection.id);
 		} else {

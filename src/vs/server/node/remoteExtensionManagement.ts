@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { PersistentProtocol, ProtocolConstants, ISocket } from 'vs/base/parts/ipc/common/ipc.net';
@@ -8,13 +8,8 @@ import { ILogService } from 'vs/platform/log/common/log';
 import { Emitter, Event } from 'vs/base/common/event';
 import { VSBuffer } from 'vs/base/common/buffer';
 import { ProcessTimeRunOnceScheduler } from 'vs/base/common/async';
-import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
 
-export interface IExtensionsManagementProcessInitData {
-	args: NativeParsedArgs;
-}
-
-export function printTime(ms: number): string {
+function printTime(ms: number): string {
 	let h = 0;
 	let m = 0;
 	let s = 0;

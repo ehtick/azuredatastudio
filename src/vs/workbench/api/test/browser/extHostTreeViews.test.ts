@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -20,8 +20,9 @@ import { NullLogService } from 'vs/platform/log/common/log';
 import type { IDisposable } from 'vs/base/common/lifecycle';
 import { nullExtensionDescription as extensionsDescription } from 'vs/workbench/services/extensions/common/extensions';
 import { runWithFakedTimers } from 'vs/base/test/common/timeTravelScheduler';
+import { IExtHostTelemetry } from 'vs/workbench/api/common/extHostTelemetry';
 
-suite.skip('ExtHostTreeView', function () { // {{SQL CARBON EDIT}} Skip suite
+suite('ExtHostTreeView', function () {
 
 	class RecordingShape extends mock<MainThreadTreeViewsShape>() {
 
@@ -49,6 +50,7 @@ suite.skip('ExtHostTreeView', function () { // {{SQL CARBON EDIT}} Skip suite
 	let tree: { [key: string]: any };
 	let labels: { [key: string]: string };
 	let nodes: { [key: string]: { key: string } };
+	let instantiationService: TestInstantiationService;
 
 	setup(() => {
 		tree = {
@@ -69,7 +71,7 @@ suite.skip('ExtHostTreeView', function () { // {{SQL CARBON EDIT}} Skip suite
 		// Use IInstantiationService to get typechecking when instantiating
 		let inst: IInstantiationService;
 		{
-			const instantiationService = new TestInstantiationService();
+			instantiationService = new TestInstantiationService();
 			inst = instantiationService;
 		}
 
@@ -77,7 +79,12 @@ suite.skip('ExtHostTreeView', function () { // {{SQL CARBON EDIT}} Skip suite
 		target = new RecordingShape();
 		testObject = new ExtHostTreeViews(target, new ExtHostCommands(
 			rpcProtocol,
-			new NullLogService()
+			new NullLogService(),
+			new class extends mock<IExtHostTelemetry>() {
+				override onExtensionError(): boolean {
+					return true;
+				}
+			}
 		), new NullLogService());
 		onDidChangeTreeNode = new Emitter<{ key: string } | undefined>();
 		onDidChangeTreeNodeWithId = new Emitter<{ key: string }>();
@@ -86,6 +93,10 @@ suite.skip('ExtHostTreeView', function () { // {{SQL CARBON EDIT}} Skip suite
 		testObject.createTreeView('testNodeWithHighlightsTreeProvider', { treeDataProvider: aNodeWithHighlightedLabelTreeDataProvider() }, extensionsDescription);
 
 		return loadCompleteTree('testNodeTreeProvider');
+	});
+
+	teardown(() => {
+		instantiationService.dispose();
 	});
 
 	test('construct node tree', () => {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -31,6 +31,8 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.connectionName,
@@ -43,6 +45,8 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.serverName,
@@ -55,6 +59,8 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.databaseName,
@@ -67,6 +73,8 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.userName,
@@ -79,6 +87,8 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.authType,
@@ -91,16 +101,34 @@ export class TestCapabilitiesService implements ICapabilitiesService {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined!,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.password,
 				valueType: ServiceOptionType.string
 			}
 		];
+		let mssqlAdvancedOptions: azdata.ConnectionOption[] = [
+			{
+				name: 'trustServerCertificate',
+				displayName: undefined!,
+				description: undefined!,
+				groupName: undefined!,
+				categoryValues: undefined!,
+				defaultValue: 'false',
+				objectType: undefined!,
+				isArray: false,
+				isIdentity: false,
+				isRequired: false,
+				specialValueType: undefined!,
+				valueType: ServiceOptionType.boolean
+			}
+		];
 		let msSQLCapabilities = {
 			providerId: mssqlProviderName,
 			displayName: 'MSSQL',
-			connectionOptions: connectionProvider,
+			connectionOptions: connectionProvider.concat(mssqlAdvancedOptions),
 			useFullOptions: true,
 		};
 		let pgSQLCapabilities = {

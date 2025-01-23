@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { nb, IResultMessage } from 'azdata';
@@ -67,7 +67,6 @@ export interface NotebookConfig {
 	showCellStatusBar: boolean;
 	sqlStopOnError: boolean;
 	trustedBooks: Array<string>;
-	useExistingPython: boolean;
 }
 
 export interface NotebookConfig {
@@ -87,7 +86,6 @@ export interface NotebookConfig {
 	showNotebookConvertActions: boolean;
 	sqlStopOnError: boolean;
 	trustedBooks: Array<string>;
-	useExistingPython: boolean;
 }
 
 export class SqlSessionManager implements nb.SessionManager {

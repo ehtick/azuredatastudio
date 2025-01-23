@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IRequestOptions, IRequestContext } from 'vs/base/parts/request/common/request';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { ILogService } from 'vs/platform/log/common/log';
+import { ILoggerService } from 'vs/platform/log/common/log';
 import { RequestChannelClient } from 'vs/platform/request/common/requestIpc';
 import { IRemoteAgentService, IRemoteAgentConnection } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { RequestService } from 'vs/platform/request/browser/requestService';
@@ -18,9 +18,9 @@ export class BrowserRequestService extends RequestService {
 	constructor(
 		@IRemoteAgentService private readonly remoteAgentService: IRemoteAgentService,
 		@IConfigurationService configurationService: IConfigurationService,
-		@ILogService logService: ILogService
+		@ILoggerService loggerService: ILoggerService
 	) {
-		super(configurationService, logService);
+		super(configurationService, loggerService);
 	}
 
 	override async request(options: IRequestOptions, token: CancellationToken): Promise<IRequestContext> {

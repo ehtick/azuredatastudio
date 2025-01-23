@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -96,7 +96,7 @@ suite('Overflow Actionbar tests', () => {
 		assert(overflowActionbar.actionsList.children.length === 4);
 		assert(overflowActionbar.items.length === 4);
 		assert.strictEqual(getMoreItemPlaceholderIndex(overflowActionbar.items), 2);
-		assert(overflowActionbar.overflow.childElementCount === 1);
+		assert(<any>overflowActionbar.overflow.childElementCount === 1);
 		verifyOverflowFocusedIndex(overflowActionbar, 3);
 
 		// move separator to overflow

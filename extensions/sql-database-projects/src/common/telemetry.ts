@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import AdsTelemetryReporter from '@microsoft/ads-extension-telemetry';
@@ -43,6 +43,7 @@ export enum TelemetryActions {
 	resetOptions = 'resetOptions',
 	optionsChanged = 'optionsChanged',
 	profileLoaded = 'profileLoaded',
+	profileSaved = 'profileSaved',
 	SchemaComparisonFinished = 'SchemaComparisonFinished',
 	SchemaComparisonStarted = 'SchemaComparisonStarted',
 	rename = "rename",

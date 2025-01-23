@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { AsyncIterableObject, CancelableAsyncIterableObject, createCancelableAsyncIterable, RunOnceScheduler } from 'vs/base/common/async';
@@ -33,6 +33,11 @@ const enum HoverOperationState {
 export const enum HoverStartMode {
 	Delayed = 0,
 	Immediate = 1
+}
+
+export const enum HoverStartSource {
+	Mouse = 0,
+	Keyboard = 1
 }
 
 export class HoverResult<T> {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import type * as azdataType from 'azdata';
@@ -78,8 +78,10 @@ export default class MainController implements vscode.Disposable {
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.newItem', async (node: WorkspaceTreeItem) => { return this.projectsController.addItemPromptFromNode(node); }));
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.addExistingItem', async (node: WorkspaceTreeItem) => { return this.projectsController.addExistingItemPrompt(node); }));
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.newFolder', async (node: WorkspaceTreeItem) => { return this.projectsController.addFolderPrompt(node); }));
+		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.newPublishProfile', async (node: WorkspaceTreeItem) => { return this.projectsController.addItemPromptFromNode(node, ItemType.publishProfile); }));
 
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.addDatabaseReference', async (node: WorkspaceTreeItem) => { return this.projectsController.addDatabaseReference(node); }));
+		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.openReferencedSqlProject', async (node: WorkspaceTreeItem) => { return this.projectsController.openReferencedSqlProject(node); }));
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.openContainingFolder', async (node: WorkspaceTreeItem) => { return this.projectsController.openContainingFolder(node); }));
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.editProjectFile', async (node: WorkspaceTreeItem) => { return this.projectsController.editProjectFile(node); }));
 		this.context.subscriptions.push(vscode.commands.registerCommand('sqlDatabaseProjects.delete', async (node: WorkspaceTreeItem) => { return this.projectsController.delete(node); }));
@@ -106,7 +108,7 @@ export default class MainController implements vscode.Disposable {
 					isNewTable: false,
 					tableScriptPath: filePath,
 					projectFilePath: projectPath,
-					allScripts: project.files.filter(entry => entry.type === EntryType.File && path.extname(entry.fsUri.fsPath).toLowerCase() === constants.sqlFileExtension)
+					allScripts: project.sqlObjectScripts.filter(entry => entry.type === EntryType.File && path.extname(entry.fsUri.fsPath).toLowerCase() === constants.sqlFileExtension)
 						.map(entry => entry.fsUri.fsPath),
 					targetVersion: targetVersion
 				}, {

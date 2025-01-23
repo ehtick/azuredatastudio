@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { onUnexpectedError } from 'vs/base/common/errors';
@@ -51,13 +51,13 @@ export class OneReference {
 
 		if (!preview) {
 			return localize(
-				'aria.oneReference', "symbol in {0} on line {1} at column {2}",
+				'aria.oneReference', "in {0} on line {1} at column {2}",
 				basename(this.uri), this.range.startLineNumber, this.range.startColumn
 			);
 		} else {
 			return localize(
-				{ key: 'aria.oneReference.preview', comment: ['Placeholders are: 0: filename, 1:line number, 2: column number, 3: preview snippet of source code'] }, "symbol in {0} on line {1} at column {2}, {3}",
-				basename(this.uri), this.range.startLineNumber, this.range.startColumn, preview.value
+				{ key: 'aria.oneReference.preview', comment: ['Placeholders are: 0: filename, 1:line number, 2: column number, 3: preview snippet of source code'] }, "{0} in {1} on line {2} at column {3}",
+				preview.value, basename(this.uri), this.range.startLineNumber, this.range.startColumn
 			);
 		}
 	}

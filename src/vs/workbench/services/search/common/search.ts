@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { mapArrayOrNot } from 'vs/base/common/arrays';
@@ -19,6 +19,7 @@ import * as paths from 'vs/base/common/path';
 import { isCancellationError } from 'vs/base/common/errors';
 import { TextSearchCompleteMessageType } from 'vs/workbench/services/search/common/searchExtTypes';
 import { isThenable } from 'vs/base/common/async';
+import { ResourceSet } from 'vs/base/common/map';
 
 export { TextSearchCompleteMessageType };
 
@@ -42,6 +43,7 @@ export const ISearchService = createDecorator<ISearchService>('searchService');
 export interface ISearchService {
 	readonly _serviceBrand: undefined;
 	textSearch(query: ITextQuery, token?: CancellationToken, onProgress?: (result: ISearchProgressItem) => void): Promise<ISearchComplete>;
+	textSearchSplitSyncAsync(query: ITextQuery, token?: CancellationToken | undefined, onProgress?: ((result: ISearchProgressItem) => void) | undefined, notebookFilesToIgnore?: ResourceSet, asyncNotebookFilesToIgnore?: Promise<ResourceSet>): { syncResults: ISearchComplete; asyncResults: Promise<ISearchComplete> };
 	fileSearch(query: IFileQuery, token?: CancellationToken): Promise<ISearchComplete>;
 	clearCache(cacheKey: string): Promise<void>;
 	registerSearchResultProvider(scheme: string, type: SearchProviderType, provider: ISearchResultProvider): IDisposable;
@@ -129,7 +131,6 @@ export const enum QueryType {
 
 /* __GDPR__FRAGMENT__
 	"IPatternInfo" : {
-		"pattern" : { "classification": "CustomerContent", "purpose": "FeatureInsight" },
 		"isRegExp": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "isMeasurement": true },
 		"isWordMatch": { "classification": "SystemMetaData", "purpose": "FeatureInsight", "isMeasurement": true },
 		"wordSeparators": { "classification": "SystemMetaData", "purpose": "FeatureInsight" },
@@ -146,6 +147,14 @@ export interface IPatternInfo {
 	isMultiline?: boolean;
 	isUnicode?: boolean;
 	isCaseSensitive?: boolean;
+	notebookInfo?: INotebookPatternInfo;
+}
+
+export interface INotebookPatternInfo {
+	isInNotebookMarkdownInput?: boolean;
+	isInNotebookMarkdownPreview?: boolean;
+	isInNotebookCellInput?: boolean;
+	isInNotebookCellOutput?: boolean;
 }
 
 export interface IExtendedExtensionSearchOptions {
@@ -174,12 +183,14 @@ export interface ISearchRange {
 export interface ITextSearchResultPreview {
 	text: string;
 	matches: ISearchRange | ISearchRange[];
+	cellFragment?: string;
 }
 
 export interface ITextSearchMatch {
 	uri?: URI;
 	ranges: ISearchRange | ISearchRange[];
 	preview: ITextSearchResultPreview;
+	webviewIndex?: number;
 }
 
 export interface ITextSearchContext {
@@ -273,9 +284,11 @@ export class FileMatch implements IFileMatch {
 export class TextSearchMatch implements ITextSearchMatch {
 	ranges: ISearchRange | ISearchRange[];
 	preview: ITextSearchResultPreview;
+	webviewIndex?: number;
 
-	constructor(text: string, range: ISearchRange | ISearchRange[], previewOptions?: ITextSearchPreviewOptions) {
+	constructor(text: string, range: ISearchRange | ISearchRange[], previewOptions?: ITextSearchPreviewOptions, webviewIndex?: number) {
 		this.ranges = range;
+		this.webviewIndex = webviewIndex;
 
 		// Trim preview if this is one match and a single-line match with a preview requested.
 		// Otherwise send the full text, like for replace or for showing multiple previews.
@@ -348,6 +361,11 @@ export class OneLineRange extends SearchRange {
 	}
 }
 
+export const enum ViewMode {
+	List = 'list',
+	Tree = 'tree'
+}
+
 export const enum SearchSortOrder {
 	Default = 'default',
 	FileNames = 'fileNames',
@@ -389,6 +407,17 @@ export interface ISearchConfigurationProperties {
 		experimental: {};
 	};
 	sortOrder: SearchSortOrder;
+	decorations: {
+		colors: boolean;
+		badges: boolean;
+	};
+	defaultViewMode: ViewMode;
+	experimental: {
+		closedNotebookRichContentResults: boolean;
+		quickAccess: {
+			preserveInput: boolean;
+		};
+	};
 }
 
 export interface ISearchConfiguration extends IFilesConfiguration {

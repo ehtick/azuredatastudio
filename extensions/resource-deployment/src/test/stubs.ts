@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as events from 'events';
@@ -108,5 +108,7 @@ export class TestChildProcessPromise<T> implements cp.ChildProcessPromise {
 	}
 	listenerCount(type: string | symbol): number {
 		throw new Error('Method not implemented.');
+	}
+	[Symbol.dispose](): void {
 	}
 }

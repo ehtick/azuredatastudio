@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { nb } from 'azdata';
@@ -57,14 +57,15 @@ suite('Local Content Manager', function (): void {
 			override async readFile(resource: URI, options?: IReadFileOptions | undefined): Promise<IFileContent> {
 				const content = await promisify(fs.readFile)(resource.fsPath);
 
-				return { name: ',', size: 0, etag: '', mtime: 0, value: VSBuffer.fromString(content.toString()), resource, ctime: 0, readonly: false };
+				return { name: ',', size: 0, etag: '', mtime: 0, value: VSBuffer.fromString(content.toString()), resource, ctime: 0, readonly: false, locked: false };
 			}
 			override async writeFile(resource: URI, bufferOrReadable: VSBuffer | VSBufferReadable, options?: IWriteFileOptions): Promise<IFileStatWithMetadata> {
 				await pfs.Promises.writeFile(resource.fsPath, bufferOrReadable.toString());
 				return {
 					resource: resource, mtime: 0, etag: '', size: 0, name: '',
 					isDirectory: false, ctime: 0, isFile: true, isSymbolicLink: false,
-					readonly: false, children: []
+					readonly: false, children: [],
+					locked: false
 				};
 			}
 		};

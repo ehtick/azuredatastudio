@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { CharCode } from 'vs/base/common/charCode';
@@ -24,7 +24,7 @@ export interface IShiftCommandOpts {
 }
 
 const repeatCache: { [str: string]: string[] } = Object.create(null);
-export function cachedStringRepeat(str: string, count: number): string {
+function cachedStringRepeat(str: string, count: number): string {
 	if (count <= 0) {
 		return '';
 	}

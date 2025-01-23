@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 // THIS IS A GENERATED FILE. DO NOT EDIT DIRECTLY.
@@ -21,6 +21,7 @@ export enum CodeActionTriggerType {
 }
 
 export enum CompletionItemInsertTextRule {
+	None = 0,
 	/**
 	 * Adjust whitespace/indentation of multiline insert texts to
 	 * match the current line indentation.
@@ -177,136 +178,148 @@ export enum EditorOption {
 	accessibilitySupport = 2,
 	accessibilityPageSize = 3,
 	ariaLabel = 4,
-	autoClosingBrackets = 5,
-	autoClosingDelete = 6,
-	autoClosingOvertype = 7,
-	autoClosingQuotes = 8,
-	autoIndent = 9,
-	automaticLayout = 10,
-	autoSurround = 11,
-	bracketPairColorization = 12,
-	guides = 13,
-	codeLens = 14,
-	codeLensFontFamily = 15,
-	codeLensFontSize = 16,
-	colorDecorators = 17,
-	columnSelection = 18,
-	comments = 19,
-	contextmenu = 20,
-	copyWithSyntaxHighlighting = 21,
-	cursorBlinking = 22,
-	cursorSmoothCaretAnimation = 23,
-	cursorStyle = 24,
-	cursorSurroundingLines = 25,
-	cursorSurroundingLinesStyle = 26,
-	cursorWidth = 27,
-	disableLayerHinting = 28,
-	disableMonospaceOptimizations = 29,
-	domReadOnly = 30,
-	dragAndDrop = 31,
-	dropIntoEditor = 32,
-	emptySelectionClipboard = 33,
-	experimental = 34,
-	extraEditorClassName = 35,
-	fastScrollSensitivity = 36,
-	find = 37,
-	fixedOverflowWidgets = 38,
-	folding = 39,
-	foldingStrategy = 40,
-	foldingHighlight = 41,
-	foldingImportsByDefault = 42,
-	foldingMaximumRegions = 43,
-	unfoldOnClickAfterEndOfLine = 44,
-	fontFamily = 45,
-	fontInfo = 46,
-	fontLigatures = 47,
-	fontSize = 48,
-	fontWeight = 49,
-	formatOnPaste = 50,
-	formatOnType = 51,
-	glyphMargin = 52,
-	gotoLocation = 53,
-	hideCursorInOverviewRuler = 54,
-	hover = 55,
-	inDiffEditor = 56,
-	inlineSuggest = 57,
-	letterSpacing = 58,
-	lightbulb = 59,
-	lineDecorationsWidth = 60,
-	lineHeight = 61,
-	lineNumbers = 62,
-	lineNumbersMinChars = 63,
-	linkedEditing = 64,
-	links = 65,
-	matchBrackets = 66,
-	minimap = 67,
-	mouseStyle = 68,
-	mouseWheelScrollSensitivity = 69,
-	mouseWheelZoom = 70,
-	multiCursorMergeOverlapping = 71,
-	multiCursorModifier = 72,
-	multiCursorPaste = 73,
-	occurrencesHighlight = 74,
-	overviewRulerBorder = 75,
-	overviewRulerLanes = 76,
-	padding = 77,
-	parameterHints = 78,
-	peekWidgetDefaultFocus = 79,
-	definitionLinkOpensInPeek = 80,
-	quickSuggestions = 81,
-	quickSuggestionsDelay = 82,
-	readOnly = 83,
-	renameOnType = 84,
-	renderControlCharacters = 85,
-	renderFinalNewline = 86,
-	renderLineHighlight = 87,
-	renderLineHighlightOnlyWhenFocus = 88,
-	renderValidationDecorations = 89,
-	renderWhitespace = 90,
-	revealHorizontalRightPadding = 91,
-	roundedSelection = 92,
-	rulers = 93,
-	scrollbar = 94,
-	scrollBeyondLastColumn = 95,
-	scrollBeyondLastLine = 96,
-	scrollPredominantAxis = 97,
-	selectionClipboard = 98,
-	selectionHighlight = 99,
-	selectOnLineNumbers = 100,
-	showFoldingControls = 101,
-	showUnused = 102,
-	snippetSuggestions = 103,
-	smartSelect = 104,
-	smoothScrolling = 105,
-	stickyTabStops = 106,
-	stopRenderingLineAfter = 107,
-	suggest = 108,
-	suggestFontSize = 109,
-	suggestLineHeight = 110,
-	suggestOnTriggerCharacters = 111,
-	suggestSelection = 112,
-	tabCompletion = 113,
-	tabIndex = 114,
-	unicodeHighlighting = 115,
-	unusualLineTerminators = 116,
-	useShadowDOM = 117,
-	useTabStops = 118,
-	wordSeparators = 119,
-	wordWrap = 120,
-	wordWrapBreakAfterCharacters = 121,
-	wordWrapBreakBeforeCharacters = 122,
-	wordWrapColumn = 123,
-	wordWrapOverride1 = 124,
-	wordWrapOverride2 = 125,
-	wrappingIndent = 126,
-	wrappingStrategy = 127,
-	showDeprecated = 128,
-	inlayHints = 129,
-	editorClassName = 130,
-	pixelRatio = 131,
-	tabFocusMode = 132,
-	layoutInfo = 133,
-	wrappingInfo = 134
+	ariaRequired = 5,
+	autoClosingBrackets = 6,
+	screenReaderAnnounceInlineSuggestion = 7,
+	autoClosingDelete = 8,
+	autoClosingOvertype = 9,
+	autoClosingQuotes = 10,
+	autoIndent = 11,
+	automaticLayout = 12,
+	autoSurround = 13,
+	bracketPairColorization = 14,
+	guides = 15,
+	codeLens = 16,
+	codeLensFontFamily = 17,
+	codeLensFontSize = 18,
+	colorDecorators = 19,
+	colorDecoratorsLimit = 20,
+	columnSelection = 21,
+	comments = 22,
+	contextmenu = 23,
+	copyWithSyntaxHighlighting = 24,
+	cursorBlinking = 25,
+	cursorSmoothCaretAnimation = 26,
+	cursorStyle = 27,
+	cursorSurroundingLines = 28,
+	cursorSurroundingLinesStyle = 29,
+	cursorWidth = 30,
+	disableLayerHinting = 31,
+	disableMonospaceOptimizations = 32,
+	domReadOnly = 33,
+	dragAndDrop = 34,
+	dropIntoEditor = 35,
+	emptySelectionClipboard = 36,
+	experimentalWhitespaceRendering = 37,
+	extraEditorClassName = 38,
+	fastScrollSensitivity = 39,
+	find = 40,
+	fixedOverflowWidgets = 41,
+	folding = 42,
+	foldingStrategy = 43,
+	foldingHighlight = 44,
+	foldingImportsByDefault = 45,
+	foldingMaximumRegions = 46,
+	unfoldOnClickAfterEndOfLine = 47,
+	fontFamily = 48,
+	fontInfo = 49,
+	fontLigatures = 50,
+	fontSize = 51,
+	fontWeight = 52,
+	fontVariations = 53,
+	formatOnPaste = 54,
+	formatOnType = 55,
+	glyphMargin = 56,
+	gotoLocation = 57,
+	hideCursorInOverviewRuler = 58,
+	hover = 59,
+	inDiffEditor = 60,
+	inlineSuggest = 61,
+	letterSpacing = 62,
+	lightbulb = 63,
+	lineDecorationsWidth = 64,
+	lineHeight = 65,
+	lineNumbers = 66,
+	lineNumbersMinChars = 67,
+	linkedEditing = 68,
+	links = 69,
+	matchBrackets = 70,
+	minimap = 71,
+	mouseStyle = 72,
+	mouseWheelScrollSensitivity = 73,
+	mouseWheelZoom = 74,
+	multiCursorMergeOverlapping = 75,
+	multiCursorModifier = 76,
+	multiCursorPaste = 77,
+	multiCursorLimit = 78,
+	occurrencesHighlight = 79,
+	overviewRulerBorder = 80,
+	overviewRulerLanes = 81,
+	padding = 82,
+	pasteAs = 83,
+	parameterHints = 84,
+	peekWidgetDefaultFocus = 85,
+	definitionLinkOpensInPeek = 86,
+	quickSuggestions = 87,
+	quickSuggestionsDelay = 88,
+	readOnly = 89,
+	readOnlyMessage = 90,
+	renameOnType = 91,
+	renderControlCharacters = 92,
+	renderFinalNewline = 93,
+	renderLineHighlight = 94,
+	renderLineHighlightOnlyWhenFocus = 95,
+	renderValidationDecorations = 96,
+	renderWhitespace = 97,
+	revealHorizontalRightPadding = 98,
+	roundedSelection = 99,
+	rulers = 100,
+	scrollbar = 101,
+	scrollBeyondLastColumn = 102,
+	scrollBeyondLastLine = 103,
+	scrollPredominantAxis = 104,
+	selectionClipboard = 105,
+	selectionHighlight = 106,
+	selectOnLineNumbers = 107,
+	showFoldingControls = 108,
+	showUnused = 109,
+	snippetSuggestions = 110,
+	smartSelect = 111,
+	smoothScrolling = 112,
+	stickyScroll = 113,
+	stickyTabStops = 114,
+	stopRenderingLineAfter = 115,
+	suggest = 116,
+	suggestFontSize = 117,
+	suggestLineHeight = 118,
+	suggestOnTriggerCharacters = 119,
+	suggestSelection = 120,
+	tabCompletion = 121,
+	tabIndex = 122,
+	unicodeHighlighting = 123,
+	unusualLineTerminators = 124,
+	useShadowDOM = 125,
+	useTabStops = 126,
+	wordBreak = 127,
+	wordSeparators = 128,
+	wordWrap = 129,
+	wordWrapBreakAfterCharacters = 130,
+	wordWrapBreakBeforeCharacters = 131,
+	wordWrapColumn = 132,
+	wordWrapOverride1 = 133,
+	wordWrapOverride2 = 134,
+	wrappingIndent = 135,
+	wrappingStrategy = 136,
+	showDeprecated = 137,
+	inlayHints = 138,
+	editorClassName = 139,
+	pixelRatio = 140,
+	tabFocusMode = 141,
+	layoutInfo = 142,
+	wrappingInfo = 143,
+	defaultColorDecorators = 144,
+	colorDecoratorsActivatedOn = 145,
+	inlineCompletionsAccessibilityVerbose = 146
 }
 
 /**
@@ -339,6 +352,14 @@ export enum EndOfLineSequence {
 	 * Use carriage return and line feed (\r\n) as the end of line character.
 	 */
 	CRLF = 1
+}
+
+/**
+ * Vertical Lane in the glyph margin of the editor.
+ */
+export enum GlyphMarginLane {
+	Left = 1,
+	Right = 2
 }
 
 /**
@@ -480,116 +501,121 @@ export enum KeyCode {
 	F17 = 75,
 	F18 = 76,
 	F19 = 77,
-	NumLock = 78,
-	ScrollLock = 79,
+	F20 = 78,
+	F21 = 79,
+	F22 = 80,
+	F23 = 81,
+	F24 = 82,
+	NumLock = 83,
+	ScrollLock = 84,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the ';:' key
 	 */
-	Semicolon = 80,
+	Semicolon = 85,
 	/**
 	 * For any country/region, the '+' key
 	 * For the US standard keyboard, the '=+' key
 	 */
-	Equal = 81,
+	Equal = 86,
 	/**
 	 * For any country/region, the ',' key
 	 * For the US standard keyboard, the ',<' key
 	 */
-	Comma = 82,
+	Comma = 87,
 	/**
 	 * For any country/region, the '-' key
 	 * For the US standard keyboard, the '-_' key
 	 */
-	Minus = 83,
+	Minus = 88,
 	/**
 	 * For any country/region, the '.' key
 	 * For the US standard keyboard, the '.>' key
 	 */
-	Period = 84,
+	Period = 89,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the '/?' key
 	 */
-	Slash = 85,
+	Slash = 90,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the '`~' key
 	 */
-	Backquote = 86,
+	Backquote = 91,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the '[{' key
 	 */
-	BracketLeft = 87,
+	BracketLeft = 92,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the '\|' key
 	 */
-	Backslash = 88,
+	Backslash = 93,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the ']}' key
 	 */
-	BracketRight = 89,
+	BracketRight = 94,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 * For the US standard keyboard, the ''"' key
 	 */
-	Quote = 90,
+	Quote = 95,
 	/**
 	 * Used for miscellaneous characters; it can vary by keyboard.
 	 */
-	OEM_8 = 91,
+	OEM_8 = 96,
 	/**
 	 * Either the angle bracket key or the backslash key on the RT 102-key keyboard.
 	 */
-	IntlBackslash = 92,
-	Numpad0 = 93,
-	Numpad1 = 94,
-	Numpad2 = 95,
-	Numpad3 = 96,
-	Numpad4 = 97,
-	Numpad5 = 98,
-	Numpad6 = 99,
-	Numpad7 = 100,
-	Numpad8 = 101,
-	Numpad9 = 102,
-	NumpadMultiply = 103,
-	NumpadAdd = 104,
-	NUMPAD_SEPARATOR = 105,
-	NumpadSubtract = 106,
-	NumpadDecimal = 107,
-	NumpadDivide = 108,
+	IntlBackslash = 97,
+	Numpad0 = 98,
+	Numpad1 = 99,
+	Numpad2 = 100,
+	Numpad3 = 101,
+	Numpad4 = 102,
+	Numpad5 = 103,
+	Numpad6 = 104,
+	Numpad7 = 105,
+	Numpad8 = 106,
+	Numpad9 = 107,
+	NumpadMultiply = 108,
+	NumpadAdd = 109,
+	NUMPAD_SEPARATOR = 110,
+	NumpadSubtract = 111,
+	NumpadDecimal = 112,
+	NumpadDivide = 113,
 	/**
 	 * Cover all key codes when IME is processing input.
 	 */
-	KEY_IN_COMPOSITION = 109,
-	ABNT_C1 = 110,
-	ABNT_C2 = 111,
-	AudioVolumeMute = 112,
-	AudioVolumeUp = 113,
-	AudioVolumeDown = 114,
-	BrowserSearch = 115,
-	BrowserHome = 116,
-	BrowserBack = 117,
-	BrowserForward = 118,
-	MediaTrackNext = 119,
-	MediaTrackPrevious = 120,
-	MediaStop = 121,
-	MediaPlayPause = 122,
-	LaunchMediaPlayer = 123,
-	LaunchMail = 124,
-	LaunchApp2 = 125,
+	KEY_IN_COMPOSITION = 114,
+	ABNT_C1 = 115,
+	ABNT_C2 = 116,
+	AudioVolumeMute = 117,
+	AudioVolumeUp = 118,
+	AudioVolumeDown = 119,
+	BrowserSearch = 120,
+	BrowserHome = 121,
+	BrowserBack = 122,
+	BrowserForward = 123,
+	MediaTrackNext = 124,
+	MediaTrackPrevious = 125,
+	MediaStop = 126,
+	MediaPlayPause = 127,
+	LaunchMediaPlayer = 128,
+	LaunchMail = 129,
+	LaunchApp2 = 130,
 	/**
 	 * VK_CLEAR, 0x0C, CLEAR key
 	 */
-	Clear = 126,
+	Clear = 131,
 	/**
 	 * Placed last to cover the length of the enum.
 	 * Please do not depend on this value!
 	 */
-	MAX_VALUE = 127
+	MAX_VALUE = 132
 }
 
 export enum MarkerSeverity {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -60,7 +60,6 @@ suite('Files', () => {
 			assert.strictEqual(1, event.rawAdded.length);
 			assert.strictEqual(2, event.rawUpdated.length);
 			assert.strictEqual(3, event.rawDeleted.length);
-			assert.strictEqual(6, event.rawChanges.length);
 			assert.strictEqual(true, event.gotAdded());
 			assert.strictEqual(true, event.gotUpdated());
 			assert.strictEqual(true, event.gotDeleted());

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from 'vs/base/common/lifecycle';
@@ -68,7 +68,7 @@ export class SuggestAlternatives {
 
 	private static _moveIndex(fwd: boolean, model: CompletionModel, index: number): number {
 		let newIndex = index;
-		while (true) {
+		for (let rounds = model.items.length; rounds > 0; rounds--) {
 			newIndex = (newIndex + model.items.length + (fwd ? +1 : -1)) % model.items.length;
 			if (newIndex === index) {
 				break;

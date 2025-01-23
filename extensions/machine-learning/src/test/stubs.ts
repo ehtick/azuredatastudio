@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -22,7 +22,7 @@ export class AzurecoreApiStub implements azurecore.IExtension {
 	getLocations(_account?: azdata.Account, _subscription?: azurecore.azureResource.AzureResourceSubscription, _ignoreErrors?: boolean): Promise<azurecore.GetLocationsResult> {
 		throw new Error('Method not implemented.');
 	}
-	makeAzureRestRequest(_account: azdata.Account, _subscription: azurecore.azureResource.AzureResourceSubscription, _serviceUrl: string, _requestType: azurecore.HttpRequestMethod, _requestBody?: any, _ignoreErrors?: boolean): Promise<azurecore.AzureRestResponse> {
+	makeAzureRestRequest<B>(_account: azdata.Account, _subscription: azurecore.azureResource.AzureResourceSubscription, _serviceUrl: string, _requestType: azurecore.HttpRequestMethod, _requestBody?: any, _ignoreErrors?: boolean): Promise<azurecore.AzureRestResponse<B>> {
 		throw new Error('Method not implemented.');
 	}
 	getFileShares(_account: azdata.Account, _subscription: azurecore.azureResource.AzureResourceSubscription, _storageAccount: azurecore.azureResource.AzureGraphResource, _ignoreErrors?: boolean): Promise<azurecore.GetFileSharesResult> {
@@ -59,6 +59,9 @@ export class AzurecoreApiStub implements azurecore.IExtension {
 		throw new Error('Method not implemented.');
 	}
 	provideResources(): azurecore.azureResource.IAzureResourceProvider[] {
+		throw new Error('Method not implemented.');
+	}
+	getUniversalProvider(): azurecore.azureResource.IAzureUniversalResourceProvider {
 		throw new Error('Method not implemented.');
 	}
 	onEncryptionKeysUpdated: any

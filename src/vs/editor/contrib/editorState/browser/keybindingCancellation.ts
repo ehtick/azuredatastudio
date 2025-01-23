@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { KeyCode } from 'vs/base/common/keyCodes';
@@ -11,7 +11,7 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { CancellationTokenSource, CancellationToken } from 'vs/base/common/cancellation';
 import { LinkedList } from 'vs/base/common/linkedList';
 import { createDecorator, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { localize } from 'vs/nls';
 
 
@@ -70,7 +70,7 @@ registerSingleton(IEditorCancellationTokens, class implements IEditorCancellatio
 		}
 	}
 
-}, true);
+}, InstantiationType.Delayed);
 
 export class EditorKeybindingCancellationTokenSource extends CancellationTokenSource {
 

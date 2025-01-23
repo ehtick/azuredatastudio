@@ -146,6 +146,20 @@
         {
           "specialValueType": null,
           "isIdentity": false,
+          "name": "applicationName",
+          "displayName": "%cms.connectionOptions.applicationName.displayName%",
+          "description": "%cms.connectionOptions.applicationName.description%",
+          "groupName": "%cms.connectionOptions.groupName.initialization%",
+          "valueType": "string",
+          "defaultValue": null,
+          "objectType": null,
+          "categoryValues": null,
+          "isRequired": false,
+          "isArray": false
+        },
+        {
+          "specialValueType": null,
+          "isIdentity": false,
           "name": "applicationIntent",
           "displayName": "%cms.connectionOptions.applicationIntent.displayName%",
           "description": "%cms.connectionOptions.applicationIntent.description%",
@@ -351,16 +365,16 @@
           "objectType": null,
           "categoryValues": [
             {
+              "displayName": "%cms.connectionOptions.encrypt.categoryValues.false%",
+              "name": "false"
+            },
+            {
               "displayName": "%cms.connectionOptions.encrypt.categoryValues.true%",
               "name": "true"
             },
             {
               "displayName": "%cms.connectionOptions.encrypt.categoryValues.strict%",
               "name": "strict"
-            },
-            {
-              "displayName": "%cms.connectionOptions.encrypt.categoryValues.false%",
-              "name": "false"
             }
           ],
           "isRequired": false,
@@ -461,20 +475,6 @@
           "groupName": "%cms.connectionOptions.groupName.connectionResiliency%",
           "valueType": "number",
           "defaultValue": "10",
-          "objectType": null,
-          "categoryValues": null,
-          "isRequired": false,
-          "isArray": false
-        },
-        {
-          "specialValueType": "appName",
-          "isIdentity": false,
-          "name": "applicationName",
-          "displayName": "%cms.connectionOptions.applicationName.displayName%",
-          "description": "%cms.connectionOptions.applicationName.description%",
-          "groupName": "%cms.connectionOptions.groupName.context%",
-          "valueType": "string",
-          "defaultValue": null,
           "objectType": null,
           "categoryValues": null,
           "isRequired": false,
@@ -783,11 +783,11 @@
   "devDependencies": {
     "@types/mocha": "^7.0.2",
     "@types/node": "^12.11.7",
-    "mocha": "^7.1.1",
+    "mocha": "^9.2.2",
     "should": "^13.2.1",
-    "@microsoft/vscodetestcover": "^1.2.1",
+    "@microsoft/vscodetestcover": "^1.2.2",
     "typemoq": "^2.1.0",
-    "@microsoft/azdata-test": "^3.0.1"
+    "@microsoft/azdata-test": "^3.0.4"
   },
   "__metadata": {
     "id": "40",

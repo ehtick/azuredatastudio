@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -52,7 +52,7 @@ export class TextFileSaveParticipant extends Disposable {
 					const promise = saveParticipant.participate(model, context, progress, cts.token);
 					await raceCancellation(promise, cts.token);
 				} catch (err) {
-					this.logService.warn(err);
+					this.logService.error(err);
 				}
 			}
 
@@ -60,11 +60,15 @@ export class TextFileSaveParticipant extends Disposable {
 			model.textEditorModel?.pushStackElement();
 		}, () => {
 			// user cancel
-			cts.dispose(true);
+			cts.cancel();
+		}).finally(() => {
+			cts.dispose();
 		});
 	}
 
 	override dispose(): void {
 		this.saveParticipants.splice(0, this.saveParticipants.length);
+
+		super.dispose();
 	}
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
@@ -44,7 +44,7 @@ export class DebugLifecycle implements IWorkbenchContribution {
 		const res = await this.dialogService.confirm({
 			message,
 			type: 'warning',
-			primaryButton: nls.localize('debug.stop', "Stop Debugging")
+			primaryButton: nls.localize({ key: 'debug.stop', comment: ['&& denotes a mnemonic'] }, "&&Stop Debugging")
 		});
 		return !res.confirmed;
 	}

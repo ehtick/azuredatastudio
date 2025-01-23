@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -11,7 +11,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { KeybindingsRegistry, KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { CATEGORIES } from 'vs/workbench/common/actions';
+import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { StatusbarViewModel } from 'vs/workbench/browser/parts/statusbar/statusbarModel';
 import { StatusBarFocused } from 'vs/workbench/common/contextkeys';
@@ -114,7 +114,7 @@ class FocusStatusBarAction extends Action2 {
 		super({
 			id: 'workbench.action.focusStatusBar',
 			title: { value: localize('focusStatusBar', "Focus Status Bar"), original: 'Focus Status Bar' },
-			category: CATEGORIES.View,
+			category: Categories.View,
 			f1: true
 		});
 	}

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ProviderConnectionInfo } from 'sql/platform/connection/common/providerConnectionInfo';
@@ -24,7 +24,9 @@ suite('SQL ProviderConnectionInfo tests', () => {
 		savePassword: true,
 		groupFullName: 'g2/g2-2',
 		groupId: undefined,
+		serverCapabilities: undefined,
 		getOptionsKey: undefined!,
+		getOptionKeyIdNames: undefined!,
 		matches: undefined!,
 		providerName: mssqlProviderName,
 		options: undefined!,
@@ -41,6 +43,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.connectionName,
@@ -53,6 +57,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.serverName,
@@ -65,6 +71,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.databaseName,
@@ -77,6 +85,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.userName,
@@ -89,6 +99,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.authType,
@@ -101,6 +113,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.password,
@@ -113,6 +127,8 @@ suite('SQL ProviderConnectionInfo tests', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: false,
 				isRequired: false,
 				showOnConnectionDialog: true,
@@ -231,7 +247,7 @@ suite('SQL ProviderConnectionInfo tests', () => {
 	test('getOptionsKey should create a valid unique id', () => {
 		// Test the new option key format
 		let conn = new ProviderConnectionInfo(capabilitiesService, connectionProfile);
-		let expectedId = 'providerName:MSSQL|connectionName:name|databaseName:database|serverName:new server|userName:user';
+		let expectedId = 'providerName:MSSQL|authenticationType:|connectionName:name|databaseName:database|serverName:new server|userName:user';
 		let id = conn.getOptionsKey();
 		assert.strictEqual(id, expectedId);
 

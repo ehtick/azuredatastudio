@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IMirrorModel, IWorkerContext } from 'vs/editor/common/services/editorSimpleWorker';
@@ -179,6 +179,7 @@ export class OutputLinkComputer {
 	}
 }
 
+// Export this function because this will be called by the web worker for computing links
 export function create(ctx: IWorkerContext, createData: ICreateData): OutputLinkComputer {
 	return new OutputLinkComputer(ctx, createData);
 }

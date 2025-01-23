@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { NgModuleRef, PlatformRef, Provider, enableProdMode } from '@angular/core';
@@ -17,7 +17,7 @@ const selectorCounter = new Map<string, number>();
 export function providerIterator(service: IInstantiationService): Provider[] {
 	return Array.from(_util.serviceIds.values()).map(v => {
 		let factory = () => {
-			return (<any>service)._getOrCreateServiceInstance(v, Trace.traceCreation(v));
+			return (<any>service)._getOrCreateServiceInstance(v, Trace.traceCreation(false, v));
 		};
 		factory.prototype = factory;
 		return {

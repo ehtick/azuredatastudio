@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'vs/base/common/path';
@@ -13,7 +13,7 @@ import { URI } from 'vs/base/common/uri';
 import { IFileMatch, IFileSearchProviderStats, IFolderQuery, ISearchCompleteStats, IFileQuery, QueryGlobTester, resolvePatternsForProvider, hasSiblingFn } from 'vs/workbench/services/search/common/search';
 import { FileSearchProvider, FileSearchOptions } from 'vs/workbench/services/search/common/searchExtTypes';
 
-export interface IInternalFileMatch {
+interface IInternalFileMatch {
 	base: URI;
 	original?: URI;
 	relativePath?: string; // Not present for extraFiles or absolute path matches
@@ -21,13 +21,13 @@ export interface IInternalFileMatch {
 	size?: number;
 }
 
-export interface IDirectoryEntry {
+interface IDirectoryEntry {
 	base: URI;
 	relativePath: string;
 	basename: string;
 }
 
-export interface IDirectoryTree {
+interface IDirectoryTree {
 	rootEntries: IDirectoryEntry[];
 	pathToEntries: { [relativePath: string]: IDirectoryEntry[] };
 }
@@ -300,9 +300,7 @@ export class FileSearchManager {
 
 	clearCache(cacheKey: string): void {
 		const sessionTokenSource = this.getSessionTokenSource(cacheKey);
-		if (sessionTokenSource) {
-			sessionTokenSource.cancel();
-		}
+		sessionTokenSource?.cancel();
 	}
 
 	private getSessionTokenSource(cacheKey: string | undefined): CancellationTokenSource | undefined {

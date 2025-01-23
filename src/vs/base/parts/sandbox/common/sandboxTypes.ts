@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IProcessEnvironment } from 'vs/base/common/platform';
@@ -26,7 +26,11 @@ export interface ISandboxConfiguration {
 	windowId: number;
 
 	/**
-	 * Absolute installation path.
+	 * Root path of the JavaScript sources.
+	 *
+	 * Note: This is NOT the installation root
+	 * directory itself but contained in it at
+	 * a level that is platform dependent.
 	 */
 	appRoot: string;
 

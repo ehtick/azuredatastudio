@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 const minimatch = require('minimatch');
@@ -28,7 +28,12 @@ exports.initialize = function (loaderConfig) {
 		} catch (err) {
 			// missing source map...
 		}
-		return instrumenter.instrumentSync(contents, source, map);
+		try {
+			return instrumenter.instrumentSync(contents, source, map);
+		} catch (e) {
+			console.error(`Error instrumenting ${source}: ${e}`);
+			throw e;
+		}
 	};
 };
 

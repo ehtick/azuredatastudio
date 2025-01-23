@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { net } from 'electron';
@@ -15,6 +15,6 @@ function getRawRequest(options: IRequestOptions): IRawRequestFunction {
 export class RequestMainService extends NodeRequestService {
 
 	override request(options: IRequestOptions, token: CancellationToken): Promise<IRequestContext> {
-		return super.request({ ...(options || {}), getRawRequest }, token);
+		return super.request({ ...(options || {}), getRawRequest, isChromiumNetwork: true }, token);
 	}
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/actionBar';
@@ -227,7 +227,7 @@ export class ActionBar extends ActionRunner implements IActionRunner {
 			let item: IActionViewItem | undefined = undefined;
 
 			if (this._options.actionViewItemProvider) {
-				item = this._options.actionViewItemProvider(action);
+				item = this._options.actionViewItemProvider(action, {});
 			}
 
 			if (!item) {

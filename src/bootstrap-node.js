@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 //@ts-check
@@ -78,11 +78,14 @@ exports.removeGlobalNodeModuleLookupPaths = function () {
 	// @ts-ignore
 	Module._resolveLookupPaths = function (moduleName, parent) {
 		const paths = originalResolveLookupPaths(moduleName, parent);
-		let commonSuffixLength = 0;
-		while (commonSuffixLength < paths.length && paths[paths.length - 1 - commonSuffixLength] === globalPaths[globalPaths.length - 1 - commonSuffixLength]) {
-			commonSuffixLength++;
+		if (Array.isArray(paths)) {
+			let commonSuffixLength = 0;
+			while (commonSuffixLength < paths.length && paths[paths.length - 1 - commonSuffixLength] === globalPaths[globalPaths.length - 1 - commonSuffixLength]) {
+				commonSuffixLength++;
+			}
+			return paths.slice(0, paths.length - commonSuffixLength);
 		}
-		return paths.slice(0, paths.length - commonSuffixLength);
+		return paths;
 	};
 };
 

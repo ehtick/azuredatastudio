@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 const filter = require('gulp-filter');
@@ -10,17 +10,19 @@ const vfs = require('vinyl-fs');
 const path = require('path');
 const fs = require('fs');
 const pall = require('p-all');
-const { all, copyrightFilter, unicodeFilter, indentationFilter, tsFormattingFilter, eslintFilter } = require('./filters');
+
+const { all, copyrightFilter, unicodeFilter, indentationFilter, tsFormattingFilter, eslintFilter, stylelintFilter } = require('./filters');
 
 const copyrightHeaderLines = [
 	'/*---------------------------------------------------------------------------------------------',
 	' *  Copyright (c) Microsoft Corporation. All rights reserved.',
-	' *  Licensed under the Source EULA. See License.txt in the project root for license information.',
+	' *  Licensed under the MIT License. See License.txt in the project root for license information.',
 	' *--------------------------------------------------------------------------------------------*/',
 ];
 
 function hygiene(some, linting = true) {
 	const gulpeslint = require('gulp-eslint');
+	const gulpstylelint = require('./stylelint');
 	const tsfmt = require('typescript-formatter');
 	let errorCount = 0;
 
@@ -147,10 +149,12 @@ function hygiene(some, linting = true) {
 	}
 
 	const productJsonFilter = filter('product.json', { restore: true });
+	const snapshotFilter = filter(['**', '!**/*.snap', '!**/*.snap.actual']);
 	const unicodeFilterStream = filter(unicodeFilter, { restore: true });
 
 	const result = input
 		.pipe(filter((f) => !f.stat.isDirectory()))
+		.pipe(snapshotFilter)
 		.pipe(productJsonFilter)
 		.pipe(process.env['BUILD_SOURCEVERSION'] ? es.through() : productJson)
 		.pipe(productJsonFilter.restore)
@@ -172,8 +176,7 @@ function hygiene(some, linting = true) {
 				.pipe(filter(eslintFilter))
 				.pipe(
 					gulpeslint({
-						configFile: '.eslintrc.json',
-						rulePaths: ['./build/lib/eslint'],
+						configFile: '.eslintrc.json'
 					})
 				)
 				.pipe(gulpeslint.formatEach('compact'))
@@ -183,6 +186,16 @@ function hygiene(some, linting = true) {
 						errorCount += results.errorCount;
 					})
 				)
+		);
+		streams.push(
+			result.pipe(filter(stylelintFilter)).pipe(gulpstylelint(((message, isError) => {
+				if (isError) {
+					console.error(message);
+				errorCount++;
+				} else {
+					console.warn(message);
+				}
+			})))
 		);
 	}
 
@@ -291,7 +304,7 @@ if (require.main === module) {
 						.then(
 							(vinyls) =>
 								new Promise((c, e) =>
-									hygiene(es.readArray(vinyls))
+									hygiene(es.readArray(vinyls).pipe(filter(all)))
 										.on('end', () => c())
 										.on('error', e)
 								)

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import Logger from './logger';
@@ -81,11 +81,13 @@ export class BetterTokenStorage<T> {
 		return tokens.get(key);
 	}
 
-	async getAll(): Promise<T[]> {
+	async getAll(predicate?: (item: T) => boolean): Promise<T[]> {
 		const tokens = await this.getTokens();
 		const values = new Array<T>();
 		for (const [_, value] of tokens) {
-			values.push(value);
+			if (!predicate || predicate(value)) {
+				values.push(value);
+			}
 		}
 		return values;
 	}
@@ -141,11 +143,13 @@ export class BetterTokenStorage<T> {
 		this._operationInProgress = false;
 	}
 
-	async deleteAll(): Promise<void> {
+	async deleteAll(predicate?: (item: T) => boolean): Promise<void> {
 		const tokens = await this.getTokens();
 		const promises = [];
-		for (const [key] of tokens) {
-			promises.push(this.delete(key));
+		for (const [key, value] of tokens) {
+			if (!predicate || predicate(value)) {
+				promises.push(this.delete(key));
+			}
 		}
 		await Promise.all(promises);
 	}

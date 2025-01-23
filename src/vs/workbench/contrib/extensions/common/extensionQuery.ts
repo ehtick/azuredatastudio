@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { flatten } from 'vs/base/common/arrays';
@@ -13,9 +13,9 @@ export class Query {
 	}
 
 	static suggestions(query: string): string[] {
-		const commands = ['installed', 'outdated', 'enabled', 'disabled', 'builtin', 'featured', 'popular', 'recommended', 'workspaceUnsupported', 'deprecated', 'sort', 'category', 'tag', 'ext', 'id'] as const;
+		const commands = ['installed', 'updates', 'enabled', 'disabled', 'builtin', 'featured', 'popular', 'recommended', 'recentlyPublished', 'workspaceUnsupported', 'deprecated', 'sort', 'category', 'tag', 'ext', 'id'] as const;
 		const subcommands = {
-			'sort': ['installs', 'rating', 'name', 'publishedDate'],
+			'sort': ['installs', 'rating', 'name', 'publishedDate', 'updateDate'],
 			'category': EXTENSION_CATEGORIES.map(c => `"${c.toLowerCase()}"`),
 			'tag': [''],
 			'ext': [''],

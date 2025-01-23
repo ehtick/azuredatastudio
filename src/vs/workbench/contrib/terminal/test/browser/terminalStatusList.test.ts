@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { deepStrictEqual, strictEqual } from 'assert';
@@ -8,8 +8,9 @@ import { Codicon } from 'vs/base/common/codicons';
 import Severity from 'vs/base/common/severity';
 import { TestConfigurationService } from 'vs/platform/configuration/test/common/testConfigurationService';
 import { spinningLoading } from 'vs/platform/theme/common/iconRegistry';
-import { ThemeIcon } from 'vs/platform/theme/common/themeService';
-import { ITerminalStatus, TerminalStatusList } from 'vs/workbench/contrib/terminal/browser/terminalStatusList';
+import { ThemeIcon } from 'vs/base/common/themables';
+import { TerminalStatusList } from 'vs/workbench/contrib/terminal/browser/terminalStatusList';
+import { ITerminalStatus } from 'vs/workbench/contrib/terminal/common/terminal';
 
 function statusesEqual(list: TerminalStatusList, expected: [string, Severity][]) {
 	deepStrictEqual(list.statuses.map(e => [e.id, e.severity]), expected);
@@ -127,6 +128,19 @@ suite('Workbench - TerminalStatusList', () => {
 			['warning', Severity.Warning]
 		]);
 		strictEqual(list.statuses[1].icon!.id, Codicon.zap.id, 'zap~spin should have animation removed only');
+	});
+
+	test('add should fire onDidRemoveStatus if same status id with a different object reference was added', () => {
+		const eventCalls: string[] = [];
+		list.onDidAddStatus(() => eventCalls.push('add'));
+		list.onDidRemoveStatus(() => eventCalls.push('remove'));
+		list.add({ id: 'test', severity: Severity.Info });
+		list.add({ id: 'test', severity: Severity.Info });
+		deepStrictEqual(eventCalls, [
+			'add',
+			'remove',
+			'add'
+		]);
 	});
 
 	test('remove', () => {

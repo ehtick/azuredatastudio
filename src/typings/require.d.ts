@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 declare const enum LoaderEventType {
@@ -42,12 +42,19 @@ declare const define: {
 
 interface NodeRequire {
 	toUrl(path: string): string;
+
+	/**
+	 * @deprecated MUST not be used anymore
+	 *
+	 * With the move from AMD to ESM we cannot use this anymore. There will be NO MORE node require like this.
+	 */
+	__$__nodeRequire<T>(moduleName: string): T;
+
 	(dependencies: string[], callback: (...args: any[]) => any, errorback?: (err: any) => void): any;
 	config(data: any): any;
 	onError: Function;
-	__$__nodeRequire<T>(moduleName: string): T;
-	getStats(): ReadonlyArray<LoaderEvent>;
-	hasDependencyCycle(): boolean;
+	getStats?(): ReadonlyArray<LoaderEvent>;
+	hasDependencyCycle?(): boolean;
 	define(amdModuleId: string, dependencies: string[], callback: (...args: any[]) => any): any;
 }
 

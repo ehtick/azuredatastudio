@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IIdentityProvider, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
@@ -16,7 +16,7 @@ export interface IDataTreeOptions<T, TFilterData = void> extends IAbstractTreeOp
 
 export class DataTree<TInput, T, TFilterData = void> extends AbstractTree<T | null, TFilterData, T | null> {
 
-	protected override model!: ObjectTreeModel<T, TFilterData>;
+	protected declare model: ObjectTreeModel<T, TFilterData>;
 	private input: TInput | undefined;
 
 	private identityProvider: IIdentityProvider<T> | undefined;

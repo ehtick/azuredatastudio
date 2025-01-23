@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 export const enum EventName {
@@ -39,21 +39,27 @@ export const enum TelemetryView {
 	AgentNotebookHistory = 'AgentNotebookHistory',
 	AgentNotebooks = 'AgentNotebooks',
 	ConnectionErrorDialog = 'ConnectionErrorDialog',
+	EditDataEditor = 'EditDataEditor',
+	EditDataGrid = 'EditDataGrid',
 	ErrorMessageDialog = 'ErrorMessageDialog',
 	ExecutionPlan = 'ExecutionPlan',
 	ExtensionHost = 'ExtensionHost',
 	ExtensionRecommendationDialog = 'ExtensionRecommendationDialog',
 	LinkedAccounts = 'LinkedAccounts',
 	Notebook = 'Notebook',
-	NotifyEncryptionDialog = 'NotifyEncryptionDialog',
 	ResultsPanel = 'ResultsPanel',
 	Shell = 'Shell',
 	SqlAssessment = 'SqlAssessment',
-	TableDesigner = 'TableDesigner'
+	TableDesigner = 'TableDesigner',
+	ObjectExplorer = 'ObjectExplorer'
 }
 
 export const enum TelemetryError {
 	DatabaseConnectionError = 'DatabaseConnectionError',
+	EditCellEndError = 'EditCellEndError',
+	EditCellSelectError = 'EditCellSelectError',
+	SubmitCommitError = 'SubmitCommitError',
+	EditSaveViewError = 'EditSaveViewError',
 	ObjectExplorerExpandError = 'ObjectExplorerExpandError',
 	AddAzureAccountError = 'AddAzureAccountError',
 	AddAzureAccountErrorNoResult = 'AddAzureAccountErrorNoResult',
@@ -82,7 +88,17 @@ export const enum TelemetryAction {
 	DeleteAgentOperator = 'DeleteAgentOperator',
 	DeleteAgentProxy = 'DeleteAgentProxy',
 	DeleteConnection = 'DeleteConnection',
+	DeleteEditRow = 'DeleteEditRow',
 	DeleteServerGroup = 'DeleteServerGroup',
+	EditRowRevert = 'EditRowRevert',
+	EditCellSelect = 'EditCellSelect',
+	EditCellEnd = 'EditCellEnd',
+	EditCopyResult = 'EditCopyResult',
+	EditGridSelectAll = 'EditGridSelectAll',
+	EditRestoreViewState = 'EditRestoreViewState',
+	EditSaveResult = 'EditSaveResult',
+	EditSaveViewState = 'EditSaveViewState',
+	EditSelectAllGrid = 'EditSelectAllGrid',
 	FindNode = 'FindNode',
 	FirewallRuleRequested = 'FirewallRuleCreated',
 	GenerateScript = 'GenerateScript',
@@ -97,12 +113,15 @@ export const enum TelemetryAction {
 	MoveServerGroup = 'MoveServerGroup',
 	NewQuery = 'NewQuery',
 	ObjectExplorerExpand = 'ObjectExplorerExpand',
+	ObjectExplorerFilter = 'ObjectExplorerFilter',
+	ObjectExplorerRemoveFilter = 'ObjectExplorerRemoveFilter',
 	Open = 'Open',
 	OpenQuery = 'OpenQuery',
 	OpenExecutionPlanProperties = 'OpenExecutionPlanProperties',
 	PublishChanges = 'PublishChanges',
 	RefreshAzureAccount = 'RefreshAzureAccount',
 	RestoreRequested = 'RestoreRequested',
+	RevertEditCurrentRow = 'RevertEditCurrentRow',
 	RunAgentJob = 'RunAgentJob',
 	RunQuery = 'RunQuery',
 	RunQueryStatement = 'RunQueryStatement',
@@ -110,6 +129,7 @@ export const enum TelemetryAction {
 	SearchCompleted = 'SearchCompleted',
 	SearchStarted = 'SearchStarted',
 	ShowChart = 'ShowChart',
+	ShowQueryPaneAction = 'ShowQueryPaneAction',
 	StopAgentJob = 'StopAgentJob',
 	ToggleActualExecutionPlan = 'ToggleActualExecutionPlan',
 	ViewExecutionPlanComparisonProperties = 'ViewExecutionPlanComparisonProperties',
@@ -141,6 +161,5 @@ export const enum NbTelemetryAction {
 export const enum TelemetryPropertyName {
 	ChartMaxRowCountExceeded = 'chartMaxRowCountExceeded',
 	ConnectionSource = 'connectionSource',
-	AuthLibrary = 'AuthLibrary'
 }
 

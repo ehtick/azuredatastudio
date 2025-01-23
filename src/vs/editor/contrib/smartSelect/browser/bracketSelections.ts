@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { LinkedList } from 'vs/base/common/linkedList';
@@ -57,7 +57,7 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 				const val = counts.has(key) ? counts.get(key)! : 0;
 				counts.set(key, val + 1);
 			} else {
-				const key = (<any>bracket.bracketInfo).getClosedBrackets()[0].bracketText;
+				const key = (<any>bracket.bracketInfo).getOpeningBrackets()[0].bracketText;
 				// process closing
 				let val = counts.has(key) ? counts.get(key)! : 0;
 				val -= 1;
@@ -98,7 +98,7 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 				break;
 			}
 			if (!bracket.bracketInfo.isOpeningBracket) {
-				const key = (<any>bracket.bracketInfo).getClosedBrackets()[0].bracketText;
+				const key = (<any>bracket.bracketInfo).getOpeningBrackets()[0].bracketText;
 				// wait for opening
 				const val = counts.has(key) ? counts.get(key)! : 0;
 				counts.set(key, val + 1);

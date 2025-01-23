@@ -1,11 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
 
-import { IEditorModel } from 'vs/platform/editor/common/editor';
+import { IEditorModel, IEditorOptions } from 'vs/platform/editor/common/editor';
 import * as DOM from 'vs/base/browser/dom';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
@@ -82,7 +82,7 @@ export class ModelViewInput extends EditorInput {
 		return 'ModelViewEditorInput';
 	}
 
-	public override resolve(refresh?: boolean): Promise<IEditorModel> {
+	public override async resolve(options?: IEditorOptions): Promise<IEditorModel | null> {
 		return undefined;
 	}
 

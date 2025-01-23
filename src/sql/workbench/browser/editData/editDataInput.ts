@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IConnectionManagementService, IConnectableInput, INewConnectionParams } from 'sql/platform/connection/common/connectionManagement';
@@ -14,10 +14,13 @@ import Severity from 'vs/base/common/severity';
 import { EditDataResultsInput } from 'sql/workbench/browser/editData/editDataResultsInput';
 import { IEditorViewState } from 'vs/editor/common/editorCommon';
 import { UntitledTextEditorInput } from 'vs/workbench/services/untitled/common/untitledTextEditorInput';
-import { IResolvedTextEditorModel } from 'vs/editor/common/services/resolverService';
-import { IUntitledTextEditorModel, UntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
+import { UntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
 import { EncodingMode } from 'vs/workbench/services/textfile/common/textfiles';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
+import { IEditorModel, IEditorOptions } from 'vs/platform/editor/common/editor';
+import { Verbosity } from 'vs/workbench/common/editor';
+import { trimTitle } from 'sql/workbench/common/editor/query/queryEditorInput';
+import { IConnectionProfile } from 'azdata';
 
 /**
  * Input for the EditDataEditor.
@@ -171,7 +174,7 @@ export class EditDataInput extends EditorInput implements IConnectableInput {
 	public onConnectCanceled(): void {
 	}
 
-	public onConnectSuccess(params?: INewConnectionParams): void {
+	public onConnectSuccess(params?: INewConnectionParams, profile?: IConnectionProfile): void {
 		let rowLimit: number | undefined = undefined;
 		let queryString: string | undefined = undefined;
 		if (this._useQueryFilter) {
@@ -218,9 +221,58 @@ export class EditDataInput extends EditorInput implements IConnectableInput {
 		return this._connectionManagementService.getTabColorForUri(this.uri);
 	}
 
-	public override resolve(refresh?: boolean): Promise<IUntitledTextEditorModel & IResolvedTextEditorModel> { return this._sql.resolve(); }
+	public override async resolve(options?: IEditorOptions): Promise<IEditorModel | null> {
+		return this._sql.resolve();
+	}
+
 	public getEncoding(): string | undefined { return this._sql.getEncoding(); }
-	public override getName(): string { return this._sql.getName(); }
+	public override getName(longForm?: boolean): string {
+		let profile = this._connectionManagementService.getConnectionProfile(this.uri);
+		let baseTitle = this._sql.getName();
+		if (profile) {
+			let profileInfo = '';
+			if (profile.connectionName) {
+				profileInfo += `${profile.connectionName}`;
+			}
+			else {
+				profileInfo += `${profile.serverName}`;
+				if (profile.databaseName) {
+					profileInfo += `.${profile.databaseName}`;
+				}
+				profileInfo += ` (${profile.userName || profile.authenticationType})`;
+			}
+			return baseTitle + (longForm ? (' - ' + profileInfo) : ` - ${trimTitle(profileInfo)}`);
+		}
+		else {
+			return baseTitle;
+		}
+	}
+	public override getTitle(verbosity?: Verbosity): string {
+		let fullTitle = this._sql.getName();
+		let profile = this._connectionManagementService.getConnectionProfile(this.uri);
+		if (profile) {
+			fullTitle += ` - ${profile.serverName}`;
+			if (profile.databaseName) {
+				fullTitle += `.${profile.databaseName}`;
+			}
+			fullTitle += ` (${profile.userName || profile.authenticationType})`;
+			let nonDefaultOptions = this._connectionManagementService.getNonDefaultOptions(profile);
+			fullTitle += nonDefaultOptions;
+		}
+		else {
+			fullTitle = this.getName(true);
+		}
+		switch (verbosity) {
+			case Verbosity.LONG:
+				// Used by tabsTitleControl as the tooltip hover.
+				return fullTitle;
+			default:
+			case Verbosity.SHORT:
+			case Verbosity.MEDIUM:
+				// Used for header title by tabsTitleControl.
+				return this.getName(true);
+		}
+	}
 	public get hasAssociatedFilePath(): boolean { return this._sql.model.hasAssociatedFilePath; }
 
 	public setEncoding(encoding: string, mode: EncodingMode /* ignored, we only have Encode */): void {

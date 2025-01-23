@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -36,12 +36,6 @@ export class CmsResourceTreeNode extends CmsResourceTreeNodeBase {
 	public async getChildren(): Promise<TreeNode[]> {
 		try {
 			let nodes: CmsResourceTreeNodeBase[] = [];
-			if (!this.ownerUri) {
-				// Set back password to get ownerUri
-				if (this.connection.options.authenticationType === azdata.connection.AuthenticationType.SqlLogin && this.connection.options.savePassword === true) {
-					this.connection.options.password = await this.appContext.cmsUtils.getPassword(this.connection.options.user);
-				}
-			}
 			return this.appContext.cmsUtils.createCmsServer(this.connection, this.name, this.description).then(async (result) => {
 				// update the owner uri and the connection
 				this._ownerUri = result.ownerUri;

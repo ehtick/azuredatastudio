@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./insertCellsModal';
 import { Button } from 'sql/base/browser/ui/button/button';
@@ -24,7 +24,6 @@ import { bootstrapAngular } from 'sql/workbench/services/bootstrap/browser/boots
 import { localize } from 'vs/nls';
 import { NotebookViewsExtension } from 'sql/workbench/services/notebook/browser/notebookViews/notebookViewsExtension';
 import { InsertCellsModule } from 'sql/workbench/contrib/notebook/browser/notebookViews/insertCellsModal.module';
-import { attachButtonStyler } from 'vs/platform/theme/common/styler';
 import { truncate } from 'vs/base/common/strings';
 import { toJpeg } from 'html-to-image';
 import { IComponentEventArgs } from 'sql/platform/dashboard/browser/interfaces';
@@ -97,7 +96,6 @@ export class InsertCellsModal extends Modal {
 	public viewModel: CellOptionsModel;
 
 	private _submitButton: Button;
-	private _cancelButton: Button;
 	private _maxTitleLength: number = 20;
 	private _moduleRef?: NgModuleRef<typeof InsertCellsModule>;
 
@@ -210,10 +208,7 @@ export class InsertCellsModal extends Modal {
 		super.render();
 
 		this._submitButton = this.addFooterButton(localize('insertCellsModal.Insert', "Insert"), () => this.onSubmitHandler());
-		this._cancelButton = this.addFooterButton(localize('insertCellsModal.Cancel', "Cancel"), () => this.onCancelHandler(), 'right', true);
-
-		this._register(attachButtonStyler(this._submitButton, this._themeService));
-		this._register(attachButtonStyler(this._cancelButton, this._themeService));
+		this.addFooterButton(localize('insertCellsModal.Cancel', "Cancel"), () => this.onCancelHandler(), 'right', true);
 
 		attachModalDialogStyler(this, this._themeService);
 		this.validate();

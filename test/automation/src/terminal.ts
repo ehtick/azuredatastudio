@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { QuickInput } from './quickinput';
@@ -10,9 +10,9 @@ import { IElement } from './driver';
 
 export enum Selector {
 	TerminalView = `#terminal`,
-	CommandDecorationPlaceholder = `.terminal-command-decoration.codicon-circle-outline`,
-	CommandDecorationSuccess = `.terminal-command-decoration.codicon-primitive-dot`,
-	CommandDecorationError = `.terminal-command-decoration.codicon-error-small`,
+	CommandDecorationPlaceholder = `.terminal-command-decoration.codicon-terminal-decoration-incomplete`,
+	CommandDecorationSuccess = `.terminal-command-decoration.codicon-terminal-decoration-success`,
+	CommandDecorationError = `.terminal-command-decoration.codicon-terminal-decoration-error`,
 	Xterm = `#terminal .terminal-wrapper`,
 	XtermEditor = `.editor-instance .terminal-wrapper`,
 	TabsEntry = '.terminal-tabs-entry',

@@ -1,7 +1,7 @@
 steps:
   - task: NodeTool@0
     inputs:
-      versionSpec: "16.x"
+      versionSpec: "20.17.0"
 
   - task: geeklearningio.gl-vsts-tasks-yarn.yarn-installer-task.YarnInstaller@3
     inputs:
@@ -9,15 +9,8 @@ steps:
 
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: '2.x'
+      versionSpec: '3.11'
       addToPath: true
-
-  - task: AzureKeyVault@1
-    inputs:
-      azureSubscription: 'ClientToolsInfra_670062 (88d5392f-a34f-4769-b405-f597fc533613)'
-      KeyVaultName: ado-secrets
-      SecretsFilter: 'github-distro-mixin-password,standalone-extensions-uri'
-    displayName: 'Azure Key Vault: Get Secrets'
 
   - task: DownloadPipelineArtifact@2
     inputs:
@@ -28,16 +21,24 @@ steps:
       . build/azure-pipelines/win32/exec.ps1
       $ErrorActionPreference = "Stop"
       exec { tar -xf $(Pipeline.Workspace)/compilation.tar.gz }
+      # Delete compiled tarball now that we've extracted the files since it takes up a lot of space
+      exec { rm $(Pipeline.Workspace)/compilation.tar.gz }
     displayName: Extract compilation output
 
   - powershell: |
       . build/azure-pipelines/win32/exec.ps1
       $ErrorActionPreference = "Stop"
-      "machine github.com`nlogin azuredatastudio`npassword $(github-distro-mixin-password)" | Out-File "$env:USERPROFILE\_netrc" -Encoding ASCII
+      "machine github.com`nlogin azuredatastudio`npassword $(Github-Mixin-Password)" | Out-File "$env:USERPROFILE\_netrc" -Encoding ASCII
 
       exec { git config user.email "sqltools@service.microsoft.com" }
       exec { git config user.name "AzureDataStudio" }
+      exec { git config --global http.postBuffer 524288000 }
+      exec { git config --global https.postBuffer 524288000 }
     displayName: Prepare tooling
+
+  - task: CodeQL3000Init@0
+    displayName: CodeQL Initialize
+    condition: eq(variables['Codeql.enabled'], 'True')
 
   - powershell: |
       git remote add distro "https://github.com/$(VSCODE_MIXIN_REPO).git"
@@ -73,7 +74,7 @@ steps:
       $env:CHILD_CONCURRENCY="1"
       exec { yarn --frozen-lockfile }
     env:
-      GITHUB_TOKEN: $(github-distro-mixin-password)
+      GITHUB_TOKEN: $(Github-Mixin-Password)
     condition: and(succeeded(), ne(variables.NODE_MODULES_RESTORED, 'true'))
     displayName: Install dependencies
 
@@ -107,7 +108,8 @@ steps:
       exec { yarn gulp "vscode-win32-$(VSCODE_ARCH)-inno-updater" }
     displayName: Build
     env:
-      VSCODE_MIXIN_PASSWORD: $(github-distro-mixin-password)
+      GITHUB_TOKEN: $(Github-Mixin-Password)
+      VSCODE_MIXIN_PASSWORD: $(Github-Mixin-Password)
 
   - task: UniversalPackages@0
     displayName: Download SAW Python package
@@ -120,19 +122,6 @@ steps:
       vstsPackageVersion: '*'
     condition: and(succeeded(), eq(variables['VSCODE_QUALITY'], 'saw'), ne(variables['VSCODE_ARCH'], 'arm64'))
 
-  - powershell: |
-      # Install TSGOps specific extensions
-      $ErrorActionPreference = "Stop"
-      $tempFilePath = (New-TemporaryFile).FullName
-      $zipFilePath = $tempFilePath + ".zip"
-      $extensionUri = "$(standalone-extensions-uri)"
-      $adsExtensionPath = "$(agent.builddirectory)\azuredatastudio-win32-x64\resources\app\extensions"
-      Invoke-WebRequest -Uri $extensionUri -OutFile $tempFilePath
-      Move-Item $tempFilePath $zipFilePath
-      Expand-Archive $zipFilePath -DestinationPath $adsExtensionPath
-    displayName: Install SAW Extensions
-    condition: and(succeeded(), eq(variables['VSCODE_QUALITY'], 'saw'), ne(variables['VSCODE_ARCH'], 'arm64'))
-
   # - powershell: | @anthonydresser unit tests timeout never existing the node process
   #     . build/azure-pipelines/win32/exec.ps1
   #     $ErrorActionPreference = "Stop"
@@ -141,93 +130,31 @@ steps:
   #   displayName: Run core unit tests
   #   condition: and(succeeded(), eq(variables['RUN_TESTS'], 'true'))
 
-  # {{SQL CARBON TODO}} -- reenable
-  # - powershell: |
-  #     # Figure out the full absolute path of the product we just built
-  #     # including the remote server and configure the integration tests
-  #     # to run with these builds instead of running out of sources.
-  #     . build/azure-pipelines/win32/exec.ps1
-  #     $ErrorActionPreference = "Stop"
-  #     $AppRoot = "$(agent.builddirectory)\azuredatastudio-win32-x64"
-  #     $AppProductJson = Get-Content -Raw -Path "$AppRoot\resources\app\product.json" | ConvertFrom-Json
-  #     $AppNameShort = $AppProductJson.nameShort
-  #     # exec { $env:INTEGRATION_TEST_ELECTRON_PATH = "$AppRoot\$AppNameShort.exe"; $env:VSCODE_REMOTE_SERVER_PATH = "$(agent.builddirectory)\azuredatastudio-reh-win32-x64"; .\scripts\test-integration.bat --build --tfs "Integration Tests" }
-  #   displayName: Run core integration tests
-  #   condition: and(succeeded(), eq(variables['RUN_TESTS'], 'true'))
+  - powershell: |
+      # Figure out the full absolute path of the product we just built
+      # including the remote server and configure the integration tests
+      # to run with these builds instead of running out of sources.
+      . build/azure-pipelines/win32/exec.ps1
+      $ErrorActionPreference = "Stop"
+      $AppRoot = "$(agent.builddirectory)\azuredatastudio-win32-x64"
+      $AppProductJson = Get-Content -Raw -Path "$AppRoot\resources\app\product.json" | ConvertFrom-Json
+      $AppNameShort = $AppProductJson.nameShort
+      # exec { $env:INTEGRATION_TEST_ELECTRON_PATH = "$AppRoot\$AppNameShort.exe"; $env:VSCODE_REMOTE_SERVER_PATH = "$(agent.builddirectory)\azuredatastudio-reh-win32-x64"; .\scripts\test-integration.bat --build --tfs "Integration Tests" }
+    displayName: Run core integration tests (x64)
+    condition: and(succeeded(), and(eq(variables['RUN_TESTS'], 'true'), ne(variables['VSCODE_ARCH'], 'arm64')))
 
-  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-    displayName: 'Sign out code'
-    inputs:
-      ConnectedServiceName: 'Code Signing'
-      FolderPath: '$(agent.builddirectory)/azuredatastudio-win32-$(VSCODE_ARCH)'
-      Pattern: |
-        *.exe
-        *.node
-        !**/node_modules/**/*
-        resources/app/node_modules.asar.unpacked/*.dll
-        d3dcompiler_47.dll
-        vulkan-1.dll
-        libGLESv2.dll
-        ffmpeg.dll
-        libEGL.dll
-        Microsoft.SqlTools.Hosting.dll
-        Microsoft.SqlTools.ResourceProvider.Core.dll
-        Microsoft.SqlTools.ResourceProvider.DefaultImpl.dll
-        MicrosoftSqlToolsCredentials.dll
-        MicrosoftSqlToolsServiceLayer.dll
-        Newtonsoft.Json.dll,SqlSerializationService.dll
-        SqlToolsResourceProviderService.dll
-        Microsoft.SqlServer.*.dll
-        Microsoft.Data.Tools.Sql.BatchParser.dll
-      useMinimatch: true
-      signConfigType: inlineSignParams
-      inlineOperation: |
-        [
-          {
-            "keyCode": "CP-230012",
-            "operationSetCode": "SigntoolSign",
-            "parameters": [
-            {
-              "parameterName": "OpusName",
-              "parameterValue": "Azure Data Studio"
-            },
-            {
-              "parameterName": "OpusInfo",
-              "parameterValue": "https://github.com/microsoft/azuredatastudio"
-            },
-            {
-              "parameterName": "PageHash",
-              "parameterValue": "/NPH"
-            },
-            {
-              "parameterName": "FileDigest",
-              "parameterValue": "/fd sha256"
-            },
-            {
-              "parameterName": "TimeStamp",
-              "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-            }
-            ],
-            "toolName": "signtool.exe",
-            "toolVersion": "6.2.9304.0"
-          },
-          {
-            "keyCode": "CP-230012",
-            "operationSetCode": "SigntoolVerify",
-            "parameters": [
-            {
-              "parameterName": "VerifyAll",
-              "parameterValue": "/all"
-            }
-                ],
-            "toolName": "signtool.exe",
-            "toolVersion": "6.2.9304.0"
-          }
-        ]
-      SessionTimeout: 600
-      MaxConcurrency: 5
-      MaxRetryAttempts: 20
-    condition: and(succeeded(), eq(variables['signed'], true))
+  - powershell: |
+      # Figure out the full absolute path of the product we just built
+      # including the remote server and configure the integration tests
+      # to run with these builds instead of running out of sources.
+      . build/azure-pipelines/win32/exec.ps1
+      $ErrorActionPreference = "Stop"
+      $AppRoot = "$(agent.builddirectory)\azuredatastudio-win32-arm64"
+      $AppProductJson = Get-Content -Raw -Path "$AppRoot\resources\app\product.json" | ConvertFrom-Json
+      $AppNameShort = $AppProductJson.nameShort
+      # exec { $env:INTEGRATION_TEST_ELECTRON_PATH = "$AppRoot\$AppNameShort.exe"; $env:VSCODE_REMOTE_SERVER_PATH = "$(agent.builddirectory)\azuredatastudio-reh-win32-x64"; .\scripts\test-integration.bat --build --tfs "Integration Tests" }
+    displayName: Run core integration tests (arm64)
+    condition: and(succeeded(), and(eq(variables['RUN_TESTS'], 'true'), eq(variables['VSCODE_ARCH'], 'arm64')))
 
   - powershell: |
       . build/azure-pipelines/win32/exec.ps1
@@ -236,61 +163,7 @@ steps:
       exec { yarn gulp "vscode-win32-$(VSCODE_ARCH)-system-setup" }
       exec { yarn gulp "vscode-win32-$(VSCODE_ARCH)-archive" }
     displayName: Archive & User & System setup
-
-  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-    displayName: 'Sign installers'
-    inputs:
-      ConnectedServiceName: 'Code Signing'
-      FolderPath: '.build'
-      Pattern: '*.exe'
-      signConfigType: inlineSignParams
-      inlineOperation: |
-        [
-          {
-            "keyCode": "CP-230012",
-            "operationSetCode": "SigntoolSign",
-            "parameters": [
-            {
-              "parameterName": "OpusName",
-              "parameterValue": "Azure Data Studio"
-            },
-            {
-              "parameterName": "OpusInfo",
-              "parameterValue": "https://github.com/microsoft/azuredatastudio"
-            },
-            {
-              "parameterName": "PageHash",
-              "parameterValue": "/NPH"
-            },
-            {
-              "parameterName": "FileDigest",
-              "parameterValue": "/fd sha256"
-            },
-            {
-              "parameterName": "TimeStamp",
-              "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-            }
-            ],
-            "toolName": "signtool.exe",
-            "toolVersion": "6.2.9304.0"
-          },
-          {
-            "keyCode": "CP-230012",
-            "operationSetCode": "SigntoolVerify",
-            "parameters": [
-            {
-              "parameterName": "VerifyAll",
-              "parameterValue": "/all"
-            }
-                ],
-            "toolName": "signtool.exe",
-            "toolVersion": "6.2.9304.0"
-          }
-        ]
-      SessionTimeout: 600
-      MaxConcurrency: 5
-      MaxRetryAttempts: 20
-    condition: and(succeeded(), eq(variables['signed'], true))
+    condition: succeeded()
 
   - task: ArchiveFiles@2
     displayName: 'Archive build scripts source'
@@ -328,6 +201,10 @@ steps:
       failTaskOnFailedTests: true
     continueOnError: true
     condition: and(succeededOrFailed(), eq(variables['RUN_UNSTABLE_TESTS'], 'true'))
+
+  - task: CodeQL3000Finalize@0
+    displayName: CodeQL Finalize
+    condition: eq(variables['Codeql.enabled'], 'True')
 
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Detection'

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/accountListRenderer';
@@ -11,7 +11,7 @@ import { ActionBar, IActionOptions } from 'vs/base/browser/ui/actionbar/actionba
 import { localize } from 'vs/nls';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
-import { RemoveAccountAction, RefreshAccountAction } from 'sql/platform/accounts/common/accountActions';
+import { RemoveAccountAction, RefreshAccountAction, GitHubCopilotSignOutAction } from 'sql/platform/accounts/common/accountActions';
 
 import * as azdata from 'azdata';
 
@@ -129,7 +129,13 @@ export class AccountListRenderer extends AccountPickerListRenderer {
 			// templateData.actions.push(new ApplyFilterAction(ApplyFilterAction.ID, ApplyFilterAction.LABEL), actionOptions);
 		}
 
-		const removeAction = this._instantiationService.createInstance(RemoveAccountAction, account);
-		templateData.actions.push(removeAction, actionOptions);
+		if (account.key.providerId === 'github') {
+			const signOutOfGithubCopilot = this._instantiationService.createInstance(GitHubCopilotSignOutAction, account);
+			templateData.actions.push(signOutOfGithubCopilot, actionOptions);
+		}
+		else {
+			const removeAction = this._instantiationService.createInstance(RemoveAccountAction, account);
+			templateData.actions.push(removeAction, actionOptions);
+		}
 	}
 }

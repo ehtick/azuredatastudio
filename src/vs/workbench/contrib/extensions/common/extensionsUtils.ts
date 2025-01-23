@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -72,7 +72,7 @@ export class KeymapExtensions extends Disposable implements IWorkbenchContributi
 	}
 }
 
-export function onExtensionChanged(accessor: ServicesAccessor): Event<IExtensionIdentifier[]> {
+export function onExtensionChanged(accessor: ServicesAccessor): Event<IExtensionIdentifier[]> { // {{SQL CARBON EDIT}} - export function
 	const extensionService = accessor.get(IExtensionManagementService);
 	const extensionEnablementService = accessor.get(IWorkbenchExtensionEnablementService);
 	const onDidInstallExtensions = Event.chain(extensionService.onDidInstallExtensions)
@@ -107,7 +107,7 @@ export async function getInstalledExtensions(accessor: ServicesAccessor): Promis
 	});
 }
 
-export function isKeymapExtension(tipsService: IExtensionRecommendationsService, extension: IExtensionStatus): boolean {
+export function isKeymapExtension(tipsService: IExtensionRecommendationsService, extension: IExtensionStatus): boolean { // {{SQL CARBON EDIT}} - export function
 	const cats = extension.local.manifest.categories;
 	return cats && cats.indexOf('Keymaps') !== -1 || tipsService.getKeymapRecommendations().some(extensionId => areSameExtensions({ id: extensionId }, extension.local.identifier));
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./media/editor';
 import {
@@ -153,9 +153,10 @@ export default class DiffEditorComponent extends ComponentBase<azdata.DiffEditor
 	private updateLanguageMode() {
 		if (this._editorModel && this._editor) {
 			this._languageMode = this.languageMode;
-			let languageSelection = this._modeService.createById(this._languageMode);
-			this._modelService.setMode(this._editorModel.originalModel.textEditorModel, languageSelection);
-			this._modelService.setMode(this._editorModel.modifiedModel.textEditorModel, languageSelection);
+			// {{SQL CARBON TODO}} - set mode?
+			// let languageSelection = this._modeService.createById(this._languageMode);
+			// this._modelService.setMode(this._editorModel.originalModel.textEditorModel, languageSelection);
+			// this._modelService.setMode(this._editorModel.modifiedModel.textEditorModel, languageSelection);
 		}
 	}
 

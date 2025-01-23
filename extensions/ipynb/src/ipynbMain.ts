@@ -1,11 +1,14 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { ensureAllNewCellsHaveCellIds } from './cellIdService';
+import * as azdata from 'azdata'; // {{SQL CARBON EDIT}}
 import { NotebookSerializer } from './notebookSerializer';
+import { ensureAllNewCellsHaveCellIds } from './cellIdService';
+import { notebookImagePasteSetup } from './notebookImagePaste';
+import { AttachmentCleaner } from './notebookAttachmentCleaner';
 
 // From {nbformat.INotebookMetadata} in @jupyterlab/coreutils
 type NotebookMetadata = {
@@ -33,9 +36,25 @@ export function activate(context: vscode.ExtensionContext) {
 		transientOutputs: false,
 		transientCellMetadata: {
 			breakpointMargin: true,
-			custom: false
+			custom: false,
+			attachments: false
+		},
+		cellContentMetadata: {
+			attachments: true
 		}
-	}));
+	} as vscode.NotebookDocumentContentOptions));
+
+	context.subscriptions.push(vscode.workspace.registerNotebookSerializer('interactive', serializer, {
+		transientOutputs: false,
+		transientCellMetadata: {
+			breakpointMargin: true,
+			custom: false,
+			attachments: false
+		},
+		cellContentMetadata: {
+			attachments: true
+		}
+	} as vscode.NotebookDocumentContentOptions));
 
 	vscode.languages.registerCodeLensProvider({ pattern: '**/*.ipynb' }, {
 		provideCodeLenses: (document) => {
@@ -52,21 +71,27 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(vscode.commands.registerCommand('ipynb.newUntitledIpynb', async () => {
-		const language = 'python';
-		const cell = new vscode.NotebookCellData(vscode.NotebookCellKind.Code, '', language);
-		const data = new vscode.NotebookData([cell]);
-		data.metadata = {
-			custom: {
-				cells: [],
-				metadata: {
-					orig_nbformat: 4
-				},
-				nbformat: 4,
-				nbformat_minor: 2
-			}
-		};
-		const doc = await vscode.workspace.openNotebookDocument('jupyter-notebook', data);
-		await vscode.window.showNotebookDocument(doc);
+		// {{SQL CARBON EDIT}} Open new notebooks using the default ADS notebook viewer if VSCode notebooks aren't enabled.
+		let useVSCodeNotebooks = vscode.workspace.getConfiguration('workbench')?.get<boolean>('useVSCodeNotebooks');
+		if (useVSCodeNotebooks) {
+			const language = 'python';
+			const cell = new vscode.NotebookCellData(vscode.NotebookCellKind.Code, '', language);
+			const data = new vscode.NotebookData([cell]);
+			data.metadata = {
+				custom: {
+					cells: [],
+					metadata: {
+						orig_nbformat: 4
+					},
+					nbformat: 4,
+					nbformat_minor: 2
+				}
+			};
+			const doc = await vscode.workspace.openNotebookDocument('jupyter-notebook', data);
+			await vscode.window.showNotebookDocument(doc);
+		} else {
+			await azdata.nb.showNotebookDocument(vscode.Uri.from({ scheme: 'untitled' }));
+		}
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('ipynb.openIpynbInNotebookEditor', async (uri: vscode.Uri) => {
@@ -77,11 +102,20 @@ export function activate(context: vscode.ExtensionContext) {
 		await vscode.window.showNotebookDocument(document);
 	}));
 
+	context.subscriptions.push(notebookImagePasteSetup());
+
+	const enabled = vscode.workspace.getConfiguration('ipynb').get('pasteImagesAsAttachments.enabled', false);
+	if (enabled) {
+		const cleaner = new AttachmentCleaner();
+		context.subscriptions.push(cleaner);
+	}
+
 	// Update new file contribution
 	vscode.extensions.onDidChange(() => {
 		vscode.commands.executeCommand('setContext', 'jupyterEnabled', vscode.extensions.getExtension('ms-toolsai.jupyter'));
 	});
 	vscode.commands.executeCommand('setContext', 'jupyterEnabled', vscode.extensions.getExtension('ms-toolsai.jupyter'));
+
 
 	return {
 		exportNotebook: (notebook: vscode.NotebookData): string => {
@@ -94,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			const edit = new vscode.WorkspaceEdit();
-			edit.replaceNotebookMetadata(resource, {
+			edit.set(resource, [vscode.NotebookEdit.updateNotebookMetadata({
 				...document.metadata,
 				custom: {
 					...(document.metadata.custom ?? {}),
@@ -103,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 						...metadata
 					},
 				}
-			});
+			})]);
 			return vscode.workspace.applyEdit(edit);
 		},
 	};

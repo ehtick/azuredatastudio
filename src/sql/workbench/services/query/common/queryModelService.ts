@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as GridContentEvents from 'sql/workbench/services/query/common/gridContentEvents';
@@ -21,6 +21,8 @@ import { INotificationService } from 'vs/platform/notification/common/notificati
 import Severity from 'vs/base/common/severity';
 import EditQueryRunner from 'sql/workbench/services/editData/common/editQueryRunner';
 import { IRange } from 'vs/editor/common/core/range';
+import { ServerConnID } from 'sql/workbench/services/query/common/query';
+import { IQueryManagementService } from 'sql/workbench/services/query/common/queryManagement';
 
 const selectionSnippetMaxLen = 100;
 
@@ -68,6 +70,7 @@ export class QueryModelService implements IQueryModelService {
 	private _onRunQueryComplete: Emitter<string>;
 	private _onQueryEvent: Emitter<IQueryEvent>;
 	private _onEditSessionReady: Emitter<azdata.EditSessionReadyParams>;
+	private _onConnectionIdAvailableEmitter: Emitter<ServerConnID>;
 	private _onCellSelectionChangedEmitter = new Emitter<ICellValue[]>();
 
 	// EVENTS /////////////////////////////////////////////////////////////
@@ -77,9 +80,11 @@ export class QueryModelService implements IQueryModelService {
 	public get onQueryEvent(): Event<IQueryEvent> { return this._onQueryEvent.event; }
 	public get onEditSessionReady(): Event<azdata.EditSessionReadyParams> { return this._onEditSessionReady.event; }
 	public get onCellSelectionChanged(): Event<ICellValue[]> { return this._onCellSelectionChangedEmitter.event; }
+	public get onConnectionIdUpdated(): Event<ServerConnID> { return this._onConnectionIdAvailableEmitter.event; }
 
 	// CONSTRUCTOR /////////////////////////////////////////////////////////
 	constructor(
+		@IQueryManagementService protected queryManagementService: IQueryManagementService,
 		@IInstantiationService private _instantiationService: IInstantiationService,
 		@INotificationService private _notificationService: INotificationService,
 		@ILogService private _logService: ILogService
@@ -90,6 +95,7 @@ export class QueryModelService implements IQueryModelService {
 		this._onRunQueryComplete = new Emitter<string>();
 		this._onQueryEvent = new Emitter<IQueryEvent>();
 		this._onEditSessionReady = new Emitter<azdata.EditSessionReadyParams>();
+		this._onConnectionIdAvailableEmitter = new Emitter<ServerConnID>();
 	}
 
 	// IQUERYMODEL /////////////////////////////////////////////////////////
@@ -150,7 +156,7 @@ export class QueryModelService implements IQueryModelService {
 	 */
 	public getQueryRows(uri: string, rowStart: number, numberOfRows: number, batchId: number, resultId: number): Promise<ResultSetSubset | undefined> {
 		if (this._queryInfoMap.has(uri)) {
-			return this._getQueryInfo(uri)!.queryRunner!.getQueryRows(rowStart, numberOfRows, batchId, resultId).then(results => {
+			return this._getQueryInfo(uri)!.queryRunner!.getQueryRowsPaged(rowStart, numberOfRows, batchId, resultId).then(results => {
 				return results;
 			});
 		} else {
@@ -380,6 +386,10 @@ export class QueryModelService implements IQueryModelService {
 			this._onQueryEvent.fire(event);
 		});
 
+		queryRunner.onConnectionIdUpdated(e => {
+			this._onConnectionIdAvailableEmitter.fire(e);
+		});
+
 		info.queryRunner = queryRunner;
 		info.dataService = this._instantiationService.createInstance(DataService, queryRunner.uri);
 		this._queryInfoMap.set(queryRunner.uri, info);
@@ -431,21 +441,17 @@ export class QueryModelService implements IQueryModelService {
 	}
 
 	public async changeConnectionUri(newUri: string, oldUri: string): Promise<void> {
-		// Get existing query runner
-		let queryRunner = this.internalGetQueryRunner(oldUri);
-		if (!queryRunner) {
-			// Nothing to do if we don't have a query runner currently (no connection)
-			return;
-		}
-		else if (this._queryInfoMap.has(newUri)) {
+		if (this._queryInfoMap.has(newUri)) {
 			this._logService.error(`New URI '${newUri}' already has query info associated with it.`);
 			throw new Error(nls.localize('queryModelService.uriAlreadyHasQuery', '{0} already has an existing query', newUri));
 		}
+		await this.queryManagementService.changeConnectionUri(newUri, oldUri);
 
-		await queryRunner.changeConnectionUri(newUri, oldUri);
-
-		// remove the old key and set new key with same query info as old uri. (Info existence is checked in internalGetQueryRunner)
+		// remove the old key and set new key with same query info as old uri.
 		let info = this._queryInfoMap.get(oldUri);
+		if (!info) {
+			return;
+		}
 		info.uri = newUri;
 		this._queryInfoMap.set(newUri, info);
 		this._queryInfoMap.delete(oldUri);

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/urlBrowserDialog';
@@ -13,8 +13,6 @@ import * as TelemetryKeys from 'sql/platform/telemetry/common/telemetryKeys';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { localize } from 'vs/nls';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
-import { attachButtonStyler, attachInputBoxStyler, attachSelectBoxStyler } from 'vs/platform/theme/common/styler';
-import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import * as DOM from 'vs/base/browser/dom';
 import * as strings from 'vs/base/common/strings';
 import { IClipboardService } from 'sql/platform/clipboard/common/clipboardService';
@@ -33,6 +31,8 @@ import { Link } from 'vs/platform/opener/browser/link';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { onUnexpectedError } from 'vs/base/common/errors';
 import { Deferred } from 'sql/base/common/promise';
+import { defaultButtonStyles, defaultInputBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
+import { defaultSelectBoxStyles } from 'sql/platform/theme/browser/defaultStyles';
 
 /**
  * This function adds one year to the current date and returns it in the UTC format.
@@ -110,14 +110,14 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 				this.close();
 			}));
 
-			this._register(attachButtonStyler(this.backButton, this._themeService, { buttonBackground: SIDE_BAR_BACKGROUND, buttonHoverBackground: SIDE_BAR_BACKGROUND }));
+			this._register(this.backButton);
 		}
 
 		let tableContainer: HTMLElement = DOM.append(DOM.append(this._body, DOM.$('.option-section')), DOM.$('table.url-table-content'));
 		tableContainer.setAttribute('role', 'presentation');
 
 		let azureAccountLabel = localize('backupRestoreUrlBrowserDialog.account', "Azure Account");
-		this._accountSelectorBox = this._register(new SelectBox([''], '', this._contextViewService, null, { ariaLabel: azureAccountLabel }));
+		this._accountSelectorBox = this._register(new SelectBox([''], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: azureAccountLabel }));
 		this._accountSelectorBox.disable();
 		let accountSelector = DialogHelper.appendRow(tableContainer, azureAccountLabel, 'url-input-label', 'url-input-box', null, true);
 		DialogHelper.appendInputSelectBox(accountSelector, this._accountSelectorBox);
@@ -147,26 +147,26 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 		));
 		linkAccountButton.appendChild(linkAccount.el);
 
-		let tenantLabel = localize('backupRestoreUrlBrowserDialog.tenant', "Azure AD Tenant");
-		this._tenantSelectorBox = this._register(new SelectBox([], '', this._contextViewService, null, { ariaLabel: tenantLabel }));
+		let tenantLabel = localize('backupRestoreUrlBrowserDialog.tenant', "Microsoft Entra Tenant");
+		this._tenantSelectorBox = this._register(new SelectBox([], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: tenantLabel }));
 		this._tenantSelectorBox.disable();
 		let tenantSelector = DialogHelper.appendRow(tableContainer, tenantLabel, 'url-input-label', 'url-input-box', null, true);
 		DialogHelper.appendInputSelectBox(tenantSelector, this._tenantSelectorBox);
 
 		let subscriptionLabel = localize('backupRestoreUrlBrowserDialog.subscription', "Azure subscription");
-		this._subscriptionSelectorBox = this._register(new SelectBox([], '', this._contextViewService, null, { ariaLabel: subscriptionLabel }));
+		this._subscriptionSelectorBox = this._register(new SelectBox([], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: subscriptionLabel }));
 		this._subscriptionSelectorBox.disable();
 		let subscriptionSelector = DialogHelper.appendRow(tableContainer, subscriptionLabel, 'url-input-label', 'url-input-box', null, true);
 		DialogHelper.appendInputSelectBox(subscriptionSelector, this._subscriptionSelectorBox);
 
 		let storageAccountLabel = localize('backupRestoreUrlBrowserDialog.storageAccount', "Storage account");
-		this._storageAccountSelectorBox = this._register(new SelectBox([], '', this._contextViewService, null, { ariaLabel: storageAccountLabel }));
+		this._storageAccountSelectorBox = this._register(new SelectBox([], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: storageAccountLabel }));
 		this._storageAccountSelectorBox.disable();
 		let storageAccountSelector = DialogHelper.appendRow(tableContainer, storageAccountLabel, 'url-input-label', 'url-input-box', null, true);
 		DialogHelper.appendInputSelectBox(storageAccountSelector, this._storageAccountSelectorBox);
 
 		let blobContainerLabel = localize('backupRestoreUrlBrowserDialog.blobContainer', "Blob container");
-		this._blobContainerSelectorBox = this._register(new SelectBox([], '', this._contextViewService, null, { ariaLabel: blobContainerLabel }));
+		this._blobContainerSelectorBox = this._register(new SelectBox([], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: blobContainerLabel }));
 		this._blobContainerSelectorBox.disable();
 		let blobContainerSelector = DialogHelper.appendRow(tableContainer, blobContainerLabel, 'url-input-label', 'url-input-box', null, true);
 		DialogHelper.appendInputSelectBox(blobContainerSelector, this._blobContainerSelectorBox);
@@ -174,13 +174,16 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 
 		let sharedAccessSignatureLabel = localize('backupRestoreUrlBrowserDialog.sharedAccessSignature', "Shared access signature generated");
 		let sasInput = DialogHelper.appendRow(tableContainer, sharedAccessSignatureLabel, 'url-input-label', 'url-input-box', null, true);
-		this._sasInputBox = this._register(new InputBox(sasInput, this._contextViewService, { flexibleHeight: true }));
+		this._sasInputBox = this._register(new InputBox(sasInput, this._contextViewService, {
+			flexibleHeight: true,
+			inputBoxStyles: defaultInputBoxStyles
+		}));
 		this._sasInputBox.disable();
 		this._register(this._sasInputBox.onDidChange(() => this.enableOkButton()));
 
 		let sasButtonContainer = DialogHelper.appendRow(tableContainer, '', 'url-input-label', 'url-input-box');
 		let sasButtonLabel = localize('backupRestoreUrlBrowserDialog.sharedAccessSignatureButton', "Create Credentials");
-		this._sasButton = this._register(new Button(sasButtonContainer, { title: sasButtonLabel }));
+		this._sasButton = this._register(new Button(sasButtonContainer, { title: sasButtonLabel, ...defaultButtonStyles }));
 		this._sasButton.label = sasButtonLabel;
 		this._sasButton.title = sasButtonLabel;
 		this._register(this._sasButton.onDidClick(e => this.generateSharedAccessSignature()));
@@ -188,14 +191,17 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 		let backupFileLabel = localize('backupRestoreUrlBrowserDialog.backupFile', "Backup file");
 
 		if (this._restoreDialog) {
-			this._backupFileSelectorBox = this._register(new SelectBox([], '', this._contextViewService, null, { ariaLabel: backupFileLabel }));
+			this._backupFileSelectorBox = this._register(new SelectBox([], '', defaultSelectBoxStyles, this._contextViewService, null, { ariaLabel: backupFileLabel }));
 			let backupFileSelector = DialogHelper.appendRow(tableContainer, backupFileLabel, 'url-input-label', 'url-input-box', null, true);
 			DialogHelper.appendInputSelectBox(backupFileSelector, this._backupFileSelectorBox);
 			this._backupFileSelectorBox.setOptions([]);
 			this._backupFileSelectorBox.disable();
 		} else {
 			let fileInput = DialogHelper.appendRow(tableContainer, backupFileLabel, 'url-input-label', 'url-input-box', null, true);
-			this._backupFileInputBox = this._register(new InputBox(fileInput, this._contextViewService, { flexibleHeight: true }));
+			this._backupFileInputBox = this._register(new InputBox(fileInput, this._contextViewService, {
+				flexibleHeight: true,
+				inputBoxStyles: defaultInputBoxStyles
+			}));
 			this._backupFileInputBox.value = this._defaultBackupName;
 		}
 
@@ -208,7 +214,7 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	}
 
 	private setAccountSelectorBoxOptions(accounts: Account[]) {
-		this._accounts = accounts.filter(account => !account.isStale);
+		this._accounts = accounts.filter(account => !account.isStale).sort((a, b) => a.displayInfo.displayName.localeCompare(b.displayInfo.displayName));
 		const accountDisplayNames: string[] = this._accounts.map(account => account.displayInfo.displayName);
 		this._accountSelectorBox.setOptions(accountDisplayNames);
 		this._accountSelectorBox.select(0);
@@ -255,8 +261,8 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	}
 
 	private setSubscriptionsSelectorBoxOptions(subscriptions: azureResource.AzureResourceSubscription[]) {
-		this._subscriptions = subscriptions;
-		const subscriptionDisplayNames: string[] = subscriptions.map(subscription => subscription.name);
+		this._subscriptions = subscriptions.sort((a, b) => a.name.localeCompare(b.name));
+		const subscriptionDisplayNames: string[] = this._subscriptions.map(subscription => subscription.name);
 		this._subscriptionSelectorBox.setOptions(subscriptionDisplayNames);
 		this._subscriptionSelectorBox.select(0);
 		if (this._subscriptions.length === 0) {
@@ -281,7 +287,7 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	}
 
 	private setStorageAccountSelectorBoxOptions(storageAccounts: azureResource.AzureGraphResource[]) {
-		this._storageAccounts = storageAccounts;
+		this._storageAccounts = storageAccounts.sort((a, b) => a.name.localeCompare(b.name));
 		const storageAccountDisplayNames: string[] = this._storageAccounts.map(storageAccount => storageAccount.name);
 		this._storageAccountSelectorBox.setOptions(storageAccountDisplayNames);
 		this._storageAccountSelectorBox.select(0);
@@ -307,7 +313,7 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	}
 
 	private setBlobContainersSelectorBoxOptions(blobContainers: azureResource.BlobContainer[]) {
-		this._blobContainers = blobContainers;
+		this._blobContainers = blobContainers.sort((a, b) => a.name.localeCompare(b.name));
 		const blobContainersDisplayNames: string[] = this._blobContainers.map(blobContainer => blobContainer.name);
 		this._blobContainerSelectorBox.setOptions(blobContainersDisplayNames);
 		this._blobContainerSelectorBox.select(0);
@@ -337,7 +343,7 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	}
 
 	private setBackupFilesOptions(blobs: azureResource.Blob[]) {
-		this._backupFiles = blobs;
+		this._backupFiles = blobs.sort((a, b) => a.name.localeCompare(b.name));
 		const backupFilesDisplayNames: string[] = this._backupFiles.map(backupFile => backupFile.name);
 		this._backupFileSelectorBox.setOptions(backupFilesDisplayNames);
 		this._backupFileSelectorBox.select(0);
@@ -348,11 +354,7 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 		}
 	}
 
-	public open(ownerUri: string,
-		expandPath: string,
-		fileFilters: [{ label: string, filters: string[] }],
-		fileValidationServiceType: string,
-	): void {
+	public open(ownerUri: string): void {
 		this._ownerUri = ownerUri;
 		this.enableOkButton();
 		this.enableCreateCredentialsButton();
@@ -387,9 +389,9 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 	private ok() {
 		let returnValue = '';
 		if (this._restoreDialog) {
-			returnValue = `https://${this._storageAccountSelectorBox.value}.blob${this._selectedAccount.properties.providerSettings.settings.azureStorageResource.endpointSuffix}/${this._blobContainerSelectorBox.value}/${this._backupFileSelectorBox.value}`;
+			returnValue = `https://${this._storageAccountSelectorBox.value}.blob${this._selectedAccount.properties.providerSettings.settings.azureStorageResource.endpointSuffix}${this._blobContainerSelectorBox.value}/${this._backupFileSelectorBox.value}`;
 		} else {
-			returnValue = `https://${this._storageAccountSelectorBox.value}.blob${this._selectedAccount.properties.providerSettings.settings.azureStorageResource.endpointSuffix}/${this._blobContainerSelectorBox.value}/${this._backupFileInputBox.value}`;
+			returnValue = `https://${this._storageAccountSelectorBox.value}.blob${this._selectedAccount.properties.providerSettings.settings.azureStorageResource.endpointSuffix}${this._blobContainerSelectorBox.value}/${this._backupFileInputBox.value}`;
 		}
 		this.onOk.resolve(returnValue);
 		this.close('ok');
@@ -431,21 +433,8 @@ export class BackupRestoreUrlBrowserDialog extends Modal {
 
 
 	private registerThemeStylers(): void {
-		this._register(attachSelectBoxStyler(this._tenantSelectorBox, this._themeService));
-		this._register(attachSelectBoxStyler(this._accountSelectorBox, this._themeService));
-		this._register(attachSelectBoxStyler(this._subscriptionSelectorBox, this._themeService));
-		this._register(attachSelectBoxStyler(this._storageAccountSelectorBox, this._themeService));
-		this._register(attachSelectBoxStyler(this._blobContainerSelectorBox, this._themeService));
-		this._register(attachInputBoxStyler(this._sasInputBox, this._themeService));
-
-		if (this._backupFileInputBox) {
-			this._register(attachInputBoxStyler(this._backupFileInputBox, this._themeService));
-		}
-		if (this._backupFileSelectorBox) {
-			this._register(attachSelectBoxStyler(this._backupFileSelectorBox, this._themeService));
-		}
-		this._register(attachButtonStyler(this._sasButton, this._themeService));
-		this._register(attachButtonStyler(this._okButton, this._themeService));
-		this._register(attachButtonStyler(this._cancelButton, this._themeService));
+		this._register(this._sasButton);
+		this._register(this._okButton);
+		this._register(this._cancelButton);
 	}
 }

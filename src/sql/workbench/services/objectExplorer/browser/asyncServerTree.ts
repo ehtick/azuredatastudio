@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ConnectionProfileGroup } from 'sql/platform/connection/common/connectionProfileGroup';
@@ -37,7 +37,7 @@ export class AsyncServerTree extends WorkbenchAsyncDataTree<ConnectionProfileGro
 			user, container, delegate,
 			renderers, dataSource, options,
 			instantiationService, contextKeyService, listService,
-			themeService, configurationService);
+			configurationService);
 
 		// Adding support for expand/collapse on enter/space
 		this.onKeyDown(e => {
@@ -61,7 +61,7 @@ export class AsyncServerTree extends WorkbenchAsyncDataTree<ConnectionProfileGro
 	 * This method overrides the original implementation to find the node by comparing the ids of the elements.
 	 * If the node is not found in the original implementation, we search for the node in the nodes map by ids.
 	 */
-	public override getDataNode(element: ServerTreeElement, throwError: boolean = true): IAsyncDataTreeNode<ConnectionProfileGroup, ServerTreeElement> | undefined {
+	protected override getDataNode(element: ServerTreeElement, throwError: boolean = true): IAsyncDataTreeNode<ConnectionProfileGroup, ServerTreeElement> | undefined {
 		try {
 			const node = super.getDataNode(element);
 			return node;
@@ -120,19 +120,10 @@ export class AsyncServerTree extends WorkbenchAsyncDataTree<ConnectionProfileGro
 		return node;
 	}
 
-	public override async updateChildren(element?: ServerTreeElement, recursive?: boolean, rerender?: boolean, options?: IAsyncDataTreeUpdateChildrenOptions<ServerTreeElement>): Promise<void> {
-		const expandedChildren = this.getExpandedState(element);
+	public override async updateChildren(element?: ServerTreeElement, recursive: boolean = false, rerender: boolean = false, options: IAsyncDataTreeUpdateChildrenOptions<ServerTreeElement> = {
+		diffDepth: 0
+	}): Promise<void> {
 		await super.updateChildren(element, recursive, rerender, options);
-		await this.expandElements(expandedChildren);
-	}
-
-	public async expandElements(elements: ServerTreeElement[]): Promise<void> {
-		for (let element of elements) {
-			const node = this.getDataNode(element, false);
-			if (node) {
-				await this.expand(node.element);
-			}
-		}
 	}
 
 	/**
@@ -143,11 +134,24 @@ export class AsyncServerTree extends WorkbenchAsyncDataTree<ConnectionProfileGro
 		this.getDataNode(element).stale = true;
 	}
 
-	public async revealSelectFocusElement(element: ServerTreeElement) {
-		await this.reveal(element);
-		await this.setSelection([element]);
+	public revealSelectFocusElement(element: ServerTreeElement) {
+		const dataNode = this.getDataNode(element);
+		// The root of the tree is a special case as it is not rendered
+		// so we instead reveal select and focus on the first child of the root.
+		if (dataNode === this.root) {
+			element = dataNode.children[0].element;
+		}
+		this.reveal(element);
+		this.setSelection([element]);
 		this.setFocus([element]);
 	}
 }
 
 export type ServerTreeElement = ConnectionProfile | ConnectionProfileGroup | TreeNode;
+
+
+export class ConnectionError extends Error {
+	constructor(message: string, public connection: ConnectionProfile) {
+		super(message);
+	}
+}

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -1066,10 +1066,10 @@ suite('Fuzzy Scorer', () => {
 	});
 
 	test('compareFilesByScore - boost shorter prefix match if multiple queries are used', function () {
-		const resourceA = URI.file('src/vs/workbench/browser/actions/windowActions.ts');
-		const resourceB = URI.file('src/vs/workbench/electron-browser/window.ts');
+		const resourceA = URI.file('src/vs/workbench/node/actions/windowActions.ts');
+		const resourceB = URI.file('src/vs/workbench/electron-node/window.ts');
 
-		for (const query of ['window browser', 'window.ts browser']) {
+		for (const query of ['window node', 'window.ts node']) {
 			let res = [resourceA, resourceB].sort((r1, r2) => compareItemsByScore(r1, r2, query, true, ResourceAccessor));
 			assert.strictEqual(res[0], resourceB);
 			assert.strictEqual(res[1], resourceA);

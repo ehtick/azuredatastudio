@@ -48,12 +48,12 @@ else
 				compile-extension:dacpac \
 				compile-extension:datavirtualization \
 				compile-extension:import \
-				compile-extension:schema-compare \
 				compile-extension:machine-learning \
 				compile-extension:mssql \
 				compile-extension:notebook \
 				compile-extension:query-history \
 				compile-extension:resource-deployment \
+				compile-extension:schema-compare \
 				compile-extension:sql-bindings \
 				compile-extension:sql-database-projects
 

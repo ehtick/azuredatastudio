@@ -19,9 +19,6 @@
       "supported": true
     }
   },
-  "enabledApiProposals": [
-    "notebookEditor"
-  ],
   "contributes": {
     "configuration": {
       "type": "object",
@@ -164,11 +161,6 @@
         "title": "%title.reinstallNotebookDependencies%"
       },
       {
-        "command": "books.sqlserver2019",
-        "title": "%title.SQL19PreviewBook%",
-        "category": "%books-preview-category%"
-      },
-      {
         "command": "books.command.openLocalizedBooks",
         "title": "%title.PreviewLocalizedBook%",
         "category": "%books-preview-category%"
@@ -177,15 +169,6 @@
         "command": "notebook.command.revealInBooksViewlet",
         "title": "%title.revealInBooksViewlet%",
         "category": "%books-preview-category%"
-      },
-      {
-        "command": "notebook.command.saveBook",
-        "title": "%title.saveJupyterBook%",
-        "category": "%books-preview-category%",
-        "icon": {
-          "dark": "resources/dark/save_inverse.svg",
-          "light": "resources/light/save.svg"
-        }
       },
       {
         "command": "notebook.command.trustBook",
@@ -198,15 +181,6 @@
       },
       {
         "command": "notebook.command.searchBook",
-        "title": "%title.searchJupyterBook%",
-        "category": "%books-preview-category%",
-        "icon": {
-          "dark": "resources/dark/search_inverse.svg",
-          "light": "resources/light/search.svg"
-        }
-      },
-      {
-        "command": "notebook.command.searchProvidedBook",
         "title": "%title.searchJupyterBook%",
         "category": "%books-preview-category%",
         "icon": {
@@ -378,22 +352,10 @@
         },
         {
           "command": "jupyter.cmd.managePackages",
-          "when": "false"
-        },
-        {
-          "command": "books.sqlserver2019",
-          "when": "sqlserver2019"
-        },
-        {
-          "command": "notebook.command.saveBook",
-          "when": "false"
+          "when": "notebook:pythonInstalled && !notebook:runningOnSAW"
         },
         {
           "command": "notebook.command.searchBook",
-          "when": "false"
-        },
-        {
-          "command": "notebook.command.searchProvidedBook",
           "when": "false"
         },
         {
@@ -485,16 +447,6 @@
           "group": "inline"
         },
         {
-          "command": "notebook.command.searchProvidedBook",
-          "when": "view == providedBooksView && viewItem == providedBook",
-          "group": "inline"
-        },
-        {
-          "command": "notebook.command.saveBook",
-          "when": "view == providedBooksView && viewItem == providedBook",
-          "group": "inline"
-        },
-        {
           "command": "notebook.command.closeBook",
           "when": "view == bookTreeView && viewItem == savedBook && listMultiSelection == false"
         },
@@ -543,10 +495,6 @@
           "group": "navigation"
         },
         {
-          "command": "books.sqlserver2019",
-          "when": "view == providedBooksView"
-        },
-        {
           "command": "notebook.command.openNotebookFolder",
           "when": "view == bookTreeView",
           "group": "navigation"
@@ -577,10 +525,6 @@
         {
           "id": "bookTreeView",
           "name": "%title.SavedBooks%"
-        },
-        {
-          "id": "providedBooksView",
-          "name": "%title.ProvidedBooks%"
         }
       ]
     },
@@ -692,10 +636,10 @@
     "js-yaml": "^3.12.1",
     "node-fetch": "^2.6.7",
     "request": "^2.88.0",
-    "tar": "^6.1.9",
+    "tar": "^6.2.1",
     "vscode-languageclient": "^5.3.0-next.1",
     "vscode-nls": "^4.0.0",
-    "ws": "^7.4.6"
+    "ws": "^7.5.10"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.4.32",
@@ -707,16 +651,16 @@
     "@types/request": "^2.48.1",
     "@types/rimraf": "^2.0.2",
     "@types/sinon": "^9.0.4",
-    "@types/tar": "^4.0.3",
+    "@types/tar": "^6.1.10",
     "@types/uuid": "^3.4.5",
     "assert": "^1.4.1",
-    "mocha": "^7.1.1",
+    "mocha": "^9.2.2",
     "nock": "^13.0.2",
     "should": "^13.2.3",
     "sinon": "^9.0.2",
     "typemoq": "^2.1.0",
-    "@microsoft/vscodetestcover": "^1.2.1",
-    "@microsoft/azdata-test": "^3.0.1"
+    "@microsoft/vscodetestcover": "^1.2.2",
+    "@microsoft/azdata-test": "^3.0.4"
   },
   "resolutions": {
     "url-parse": "^1.5.8",

@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IProcessEnvironment } from 'vs/base/common/platform';
 import { process } from 'vs/base/parts/sandbox/electron-sandbox/globals';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 
 export const IShellEnvironmentService = createDecorator<IShellEnvironmentService>('shellEnvironmentService');
 
@@ -26,4 +26,4 @@ export class ShellEnvironmentService implements IShellEnvironmentService {
 	}
 }
 
-registerSingleton(IShellEnvironmentService, ShellEnvironmentService);
+registerSingleton(IShellEnvironmentService, ShellEnvironmentService, InstantiationType.Delayed);

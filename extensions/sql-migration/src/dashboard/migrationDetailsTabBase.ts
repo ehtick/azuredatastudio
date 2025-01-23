@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -18,6 +18,7 @@ import { canDeleteMigration, canRetryMigration } from '../constants/helper';
 import { logError, TelemetryViews } from '../telemetry';
 import { MenuCommands, MigrationTargetType } from '../api/utils';
 import { openRetryMigrationDialog } from '../dialog/retryMigration/retryMigrationDialog';
+import { CancelFeedbackDialog } from '../dialog/help/cancelFeedbackDialog';
 
 export const infoFieldLgWidth: string = '330px';
 export const infoFieldWidth: string = '250px';
@@ -147,7 +148,7 @@ export abstract class MigrationDetailsTabBase<T> extends TabBase<T> {
 				await this.refresh();
 				const dialog = new ConfirmCutoverDialog(this.model);
 				await dialog.initialize();
-
+				await this.refresh();
 				if (this.model.CutoverError) {
 					await this.statusBar.showError(
 						loc.MIGRATION_CUTOVER_ERROR,
@@ -167,25 +168,16 @@ export abstract class MigrationDetailsTabBase<T> extends TabBase<T> {
 			}).component();
 
 		this.disposables.push(
-			this.cancelButton.onDidClick((e) => {
-				void vscode.window.showInformationMessage(
-					loc.CANCEL_MIGRATION_CONFIRMATION,
-					{ modal: true },
-					loc.YES,
-					loc.NO
-				).then(async (v) => {
-					if (v === loc.YES) {
-						await this.statusBar.clearError();
-						await this.model.cancelMigration();
-						await this.refresh();
-						if (this.model.CancelMigrationError) {
-							{
-								await this.statusBar.showError(
-									loc.MIGRATION_CANCELLATION_ERROR,
-									loc.MIGRATION_CANCELLATION_ERROR,
-									this.model.CancelMigrationError.message);
-							}
-						}
+			this.cancelButton.onDidClick(async (e) => {
+				const cancelFeedbackDialog = new CancelFeedbackDialog();
+				const cancelReasonsList: string[] = [
+					loc.WIZARD_CANCEL_REASON_CONTINUE_WITH_MIGRATION_LATER,
+					loc.WIZARD_CANCEL_REASON_MIGRATION_TAKING_LONGER
+				];
+				cancelFeedbackDialog.updateCancelReasonsList(cancelReasonsList); // Fix: Use the element access expression with an argument
+				await cancelFeedbackDialog.openDialog(async (isCancelled: boolean, cancellationReason: string) => {
+					if (isCancelled) {
+						await this.cancelMigrationAndLogTelemetry(cancellationReason);
 					}
 				});
 			}));
@@ -247,7 +239,7 @@ export abstract class MigrationDetailsTabBase<T> extends TabBase<T> {
 					await this.statusBar.clearError();
 					if (canRetryMigration(this.model.migration)) {
 						const errorMessage = getMigrationErrors(this.model.migration);
-						await openRetryMigrationDialog(
+						openRetryMigrationDialog(
 							errorMessage,
 							async () => {
 								try {
@@ -365,6 +357,20 @@ export abstract class MigrationDetailsTabBase<T> extends TabBase<T> {
 			])
 			.withLayout({ flexFlow: 'column', width: '100%' })
 			.component();
+	}
+
+	private async cancelMigrationAndLogTelemetry(cancellationReason: string): Promise<void> {
+		await this.statusBar.clearError();
+		await this.model.cancelMigration(cancellationReason);
+		await this.refresh();
+		if (this.model.CancelMigrationError) {
+			{
+				await this.statusBar.showError(
+					loc.MIGRATION_CANCELLATION_ERROR,
+					loc.MIGRATION_CANCELLATION_ERROR,
+					this.model.CancelMigrationError.message);
+			}
+		}
 	}
 
 	protected async createInfoCard(

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Action, IAction, IActionRunner } from 'vs/base/common/actions';
@@ -8,15 +8,16 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { IQueryModelService } from 'sql/workbench/services/query/common/queryModel';
 import { SelectBox } from 'sql/base/browser/ui/selectBox/selectBox';
 import { IConnectionManagementService } from 'sql/platform/connection/common/connectionManagement';
+import { IAdsTelemetryService } from 'sql/platform/telemetry/common/telemetry';
+import * as TelemetryKeys from 'sql/platform/telemetry/common/telemetryKeys';
 import { EditDataEditor } from 'sql/workbench/contrib/editData/browser/editDataEditor';
 import * as nls from 'vs/nls';
 import * as dom from 'vs/base/browser/dom';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { INotificationService } from 'vs/platform/notification/common/notification';
 import Severity from 'vs/base/common/severity';
-import { attachSelectBoxStyler } from 'vs/platform/theme/common/styler';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
+import { defaultSelectBoxStyles } from 'sql/platform/theme/browser/defaultStyles';
 const $ = dom.$;
 
 /**
@@ -136,7 +137,6 @@ export class ChangeMaxRowsAction extends EditDataAction {
 	}
 
 	public override run(): Promise<void> {
-
 		return Promise.resolve(null);
 	}
 }
@@ -158,17 +158,14 @@ export class ChangeMaxRowsActionItem extends Disposable implements IActionViewIt
 	constructor(
 		private _editor: EditDataEditor,
 		public action: IAction,
-		@IContextViewService contextViewService: IContextViewService,
-		@IThemeService private _themeService: IThemeService) {
+		@IContextViewService contextViewService: IContextViewService) {
 		super();
 		this._options = ['200', '1000', '10000'];
 		this._currentOptionsIndex = 0;
-		this.selectBox = new SelectBox(this._options, this._options[this._currentOptionsIndex], contextViewService);
+		this.selectBox = this._register(new SelectBox(this._options, this._options[this._currentOptionsIndex], defaultSelectBoxStyles, contextViewService));
 		this._registerListeners();
 		this._refreshOptions();
 		this.defaultRowCount = Number(this._options[this._currentOptionsIndex]);
-
-		this._register(attachSelectBoxStyler(this.selectBox, _themeService));
 	}
 
 	public render(container: HTMLElement): void {
@@ -204,7 +201,7 @@ export class ChangeMaxRowsActionItem extends Disposable implements IActionViewIt
 		this.container.blur();
 	}
 
-	private _refreshOptions(databaseIndex?: number): void {
+	private _refreshOptions(): void {
 		this.selectBox.setOptions(this._options, this._currentOptionsIndex);
 	}
 
@@ -213,7 +210,6 @@ export class ChangeMaxRowsActionItem extends Disposable implements IActionViewIt
 			this._currentOptionsIndex = this._options.findIndex(x => x === selection.selected);
 			this._editor.editDataInput.onRowDropDownSet(Number(selection.selected));
 		}));
-		this._register(attachSelectBoxStyler(this.selectBox, this._themeService));
 	}
 }
 
@@ -225,10 +221,11 @@ export class ShowQueryPaneAction extends EditDataAction {
 	private static EnabledClass = 'filterLabel';
 	public static ID = 'showQueryPaneAction';
 	private readonly showSqlLabel = nls.localize('editData.showSql', "Show SQL Pane");
-	private readonly closeSqlLabel = nls.localize('editData.closeSql', "Close SQL Pane");
+	private readonly closeSqlLabel = nls.localize('editData.hideSql', "Hide SQL Pane");
 
 	constructor(editor: EditDataEditor,
-		@IConnectionManagementService _connectionManagementService: IConnectionManagementService
+		@IConnectionManagementService _connectionManagementService: IConnectionManagementService,
+		@IAdsTelemetryService private _telemetryService: IAdsTelemetryService
 	) {
 		super(editor, ShowQueryPaneAction.ID, ShowQueryPaneAction.EnabledClass, _connectionManagementService);
 		this.label = this.showSqlLabel;
@@ -248,6 +245,12 @@ export class ShowQueryPaneAction extends EditDataAction {
 
 	public override run(): Promise<void> {
 		this.editor.toggleQueryPane();
+		this._telemetryService.createActionEvent(
+			TelemetryKeys.TelemetryView.EditDataEditor,
+			TelemetryKeys.TelemetryAction.ShowQueryPaneAction
+		).withAdditionalProperties({
+			queryPaneEnabled: this.queryPaneEnabled
+		}).send();
 		this.updateLabel(this.editor.queryPaneEnabled());
 		return Promise.resolve(null);
 	}

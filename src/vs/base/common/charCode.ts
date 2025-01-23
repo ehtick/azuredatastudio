@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 // Names from https://blog.codinghorror.com/ascii-pronunciation-rules-for-programmers/
@@ -224,6 +224,12 @@ export const enum CharCode {
 	 * The `~` character.
 	 */
 	Tilde = 126,
+
+	/**
+	 * The &nbsp; (no-break space) character.
+	 * Unicode Character 'NO-BREAK SPACE' (U+00A0)
+	 */
+	NoBreakSpace = 160,
 
 	U_Combining_Grave_Accent = 0x0300,								//	U+0300	Combining Grave Accent
 	U_Combining_Acute_Accent = 0x0301,								//	U+0301	Combining Acute Accent

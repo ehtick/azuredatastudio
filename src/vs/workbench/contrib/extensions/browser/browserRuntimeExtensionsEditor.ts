@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Action } from 'vs/base/common/actions';
 import { IExtensionHostProfile } from 'vs/workbench/services/extensions/common/extensions';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { AbstractRuntimeExtensionsEditor, IRuntimeExtension } from 'vs/workbench/contrib/extensions/browser/abstractRuntimeExtensionsEditor';
+import { ReportExtensionIssueAction } from 'vs/workbench/contrib/extensions/common/reportExtensionIssueAction';
 
 export class RuntimeExtensionsEditor extends AbstractRuntimeExtensionsEditor {
 
@@ -23,6 +24,9 @@ export class RuntimeExtensionsEditor extends AbstractRuntimeExtensionsEditor {
 	}
 
 	protected _createReportExtensionIssueAction(element: IRuntimeExtension): Action | null {
+		if (element.marketplaceInfo) {
+			return this._instantiationService.createInstance(ReportExtensionIssueAction, element.description);
+		}
 		return null;
 	}
 

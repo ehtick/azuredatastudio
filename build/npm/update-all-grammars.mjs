@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { spawn as _spawn } from 'child_process';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import url from 'url'
+import url from 'url';
 
 async function spawn(cmd, args, opts) {
 	return new Promise((c, e) => {
@@ -20,7 +20,7 @@ async function main() {
 
 	for (const extension of readdirSync('extensions')) {
 		try {
-			let packageJSON = JSON.parse(readFileSync(join('extensions', extension, 'package.json')).toString());
+			const packageJSON = JSON.parse(readFileSync(join('extensions', extension, 'package.json')).toString());
 			if (!(packageJSON && packageJSON.scripts && packageJSON.scripts['update-grammar'])) {
 				continue;
 			}

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -411,6 +411,22 @@ suite('Buffer', () => {
 			assert.strictEqual(unit[1], 17);
 			assert.strictEqual(u2[0], 17);
 		}
+	});
+
+	test('indexOf', () => {
+		const haystack = VSBuffer.fromString('abcaabbccaaabbbccc');
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('')), 0);
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('a'.repeat(100))), -1);
+
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('a')), 0);
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('c')), 2);
+
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('abcaa')), 0);
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('caaab')), 8);
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('ccc')), 15);
+
+		assert.strictEqual(haystack.indexOf(VSBuffer.fromString('cccb')), -1);
+
 	});
 
 	suite('base64', () => {

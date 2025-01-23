@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Schemas } from 'vs/base/common/network';
@@ -109,6 +109,6 @@ function detectLanguageId(modelService: IModelService, languageService: ILanguag
 	return languageService.guessLanguageIdByFilepathOrFirstLine(resource);
 }
 
-export function cssEscape(str: string): string {
+function cssEscape(str: string): string {
 	return str.replace(/[\11\12\14\15\40]/g, '/'); // HTML class names can not contain certain whitespace characters, use / instead, which doesn't exist in file names.
 }

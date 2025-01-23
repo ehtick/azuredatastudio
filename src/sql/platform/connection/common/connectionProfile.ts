@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ConnectionProfileGroup } from 'sql/platform/connection/common/connectionProfileGroup';
@@ -9,10 +9,11 @@ import { ProviderConnectionInfo } from 'sql/platform/connection/common/providerC
 import * as interfaces from 'sql/platform/connection/common/interfaces';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ICapabilitiesService } from 'sql/platform/capabilities/common/capabilitiesService';
-import { isString } from 'vs/base/common/types';
+import { isString, isUndefinedOrNull } from 'vs/base/common/types';
 import { deepClone } from 'vs/base/common/objects';
 import * as Constants from 'sql/platform/connection/common/constants';
 import { URI } from 'vs/base/common/uri';
+import { adjustForMssqlAppName } from 'sql/platform/connection/common/utils';
 
 export interface IconPath {
 	light: URI;
@@ -65,15 +66,22 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 				let capabilities = this.capabilitiesService.getCapabilities(this.providerName);
 				if (capabilities && capabilities.connection && capabilities.connection.connectionOptions) {
 					const options = capabilities.connection.connectionOptions;
+					// MSSQL Provider doesn't treat appName as special type anymore.
 					let appNameOption = options.find(option => option.specialValueType === interfaces.ConnectionOptionSpecialType.appName);
 					if (appNameOption) {
 						let appNameKey = appNameOption.name;
 						this.options[appNameKey] = Constants.applicationName;
+					} else if (this.providerName === Constants.mssqlProviderName || this.providerName === Constants.mssqlCmsProviderName) {
+						// Update AppName here for MSSQL and MSSQL-CMS provider to be able to match connection URI with STS.
+						appNameOption = options.find(option => option.name === Constants.mssqlApplicationNameOption);
+						if (appNameOption) {
+							this.options[Constants.mssqlApplicationNameOption] = adjustForMssqlAppName(model.options[Constants.mssqlApplicationNameOption]);
+						}
 					}
 					// Set values for advanced options received in model.
 					Object.keys(model.options).forEach(a => {
 						let option = options.find(opt => opt.name === a);
-						if (option !== undefined) {
+						if (option !== undefined && option.defaultValue?.toString().toLocaleLowerCase() !== model.options[a]?.toString().toLocaleLowerCase()) {
 							this.options[option.name] = model.options[a];
 						}
 					});
@@ -205,18 +213,6 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 		return super.title;
 	}
 
-	public getEditorFullTitleWithOptions(): string {
-		let textResult = '';
-		if (this.connectionName) {
-			textResult += `${this.connectionName}: `;
-		}
-		textResult += this.serverInfo;
-		if (textResult.length === 0) {
-			return undefined;
-		}
-		return textResult;
-	}
-
 	public override set title(value: string) {
 		this._title = value;
 	}
@@ -249,9 +245,10 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 
 	/**
 	 * Returns a key derived the connections options (providerName, authenticationType, serverName, databaseName, userName, groupid)
-	 * and all the other properties if useFullOptions is enabled for the provider.
+	 * and all the other properties (except empty ones) if useFullOptions is enabled for the provider.
 	 * This key uniquely identifies a connection in a group
-	 * Example: "providerName:MSSQL|authenticationType:|databaseName:database|serverName:server3|userName:user|group:testid"
+	 * Example (original format): "providerName:MSSQL|authenticationType:|databaseName:database|serverName:server3|userName:user|group:testid"
+	 * Example (new format): "providerName:MSSQL|databaseName:database|serverName:server3|userName:user|groupId:testid"
 	 * @param getOriginalOptions will return the original URI format regardless if useFullOptions was set or not. (used for retrieving passwords)
 	 */
 	public override getOptionsKey(getOriginalOptions?: boolean): string {
@@ -261,7 +258,12 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 			id += ProviderConnectionInfo.idSeparator + 'databaseDisplayName' + ProviderConnectionInfo.nameValueSeparator + databaseDisplayName;
 		}
 
-		return id + ProviderConnectionInfo.idSeparator + 'groupId' + ProviderConnectionInfo.nameValueSeparator + this.groupId;
+		let groupProp = 'group'
+		if (!getOriginalOptions && this.serverCapabilities && this.serverCapabilities.useFullOptions) {
+			groupProp = 'groupId'
+		}
+
+		return id + ProviderConnectionInfo.idSeparator + groupProp + ProviderConnectionInfo.nameValueSeparator + this.groupId;
 	}
 
 	/**
@@ -284,7 +286,9 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 			serverName: this.serverName,
 			databaseName: this.databaseName,
 			authenticationType: this.authenticationType,
+			serverCapabilities: this.serverCapabilities,
 			getOptionsKey: this.getOptionsKey,
+			getOptionKeyIdNames: this.getOptionKeyIdNames,
 			matches: this.matches,
 			groupId: this.groupId,
 			groupFullName: this.groupFullName,
@@ -354,7 +358,13 @@ export class ConnectionProfile extends ProviderConnectionInfo implements interfa
 			id: connectionInfo.id
 		};
 
-		profile.options = connectionInfo.options;
+		Object.keys(connectionInfo.options).forEach(element => {
+			// Allow empty strings to ensure "user": "" is populated if empty << Required by SSMS 19.2
+			// Do not change this design until SSMS 19 goes out of support.
+			if (!isUndefinedOrNull(connectionInfo.options[element])) {
+				profile.options[element] = connectionInfo.options[element];
+			}
+		});
 
 		return profile;
 	}

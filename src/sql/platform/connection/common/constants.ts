@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 // constants
@@ -11,16 +11,21 @@ export const outputChannelName = 'MSSQL';
 export const capabilitiesOptions = 'OPTIONS_METADATA';
 
 export const mssqlProviderName = 'MSSQL';
+export const mssqlCmsProviderName = 'MSSQL-CMS';
 export const mysqlProviderName = 'MYSQL';
 export const pgsqlProviderName = 'PGSQL';
 export const anyProviderName = '*';
 export const connectionProviderContextKey = 'connectionProvider';
 
 export const applicationName = 'azdata';
+export const mssqlApplicationNameOption = 'applicationName';
 
 export const defaultEngine = 'defaultEngine';
 
 export const passwordChars = '***************';
+
+export const enableSqlAuthenticationProviderConfig = 'mssql.enableSqlAuthenticationProvider';
+
 
 /* default authentication type setting name*/
 export const defaultAuthenticationType = 'defaultAuthenticationType';
@@ -41,11 +46,11 @@ export enum AuthenticationType {
 	 */
 	Integrated = 'Integrated',
 	/**
-	 * Azure Active Directory - Universal with MFA support
+	 * Microsoft Entra ID - Universal with MFA support
 	 */
 	AzureMFA = 'AzureMFA',
 	/**
-	 * Azure Active Directory - Password
+	 * Microsoft Entra ID - Password
 	 */
 	AzureMFAAndUser = 'AzureMFAAndUser',
 	/**

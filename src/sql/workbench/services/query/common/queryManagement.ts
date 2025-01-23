@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import QueryRunner from 'sql/workbench/services/query/common/queryRunner';
@@ -18,6 +18,7 @@ import { ResultSetSubset } from 'sql/workbench/services/query/common/query';
 import { isUndefined } from 'vs/base/common/types';
 import { ILogService } from 'vs/platform/log/common/log';
 import * as nls from 'vs/nls';
+import { CancellationToken } from 'vs/base/common/cancellation';
 
 export const SERVICE_ID = 'queryManagementService';
 
@@ -50,11 +51,25 @@ export interface IQueryManagementService {
 	runQueryString(ownerUri: string, queryString: string): Promise<void>;
 	runQueryAndReturn(ownerUri: string, queryString: string): Promise<azdata.SimpleExecuteResult>;
 	parseSyntax(ownerUri: string, query: string): Promise<azdata.SyntaxParseResult>;
+	/**
+	 * Fetches the specified rows - this will fetch all the rows at once.
+	 * @param rowData The rows to fetch
+	 * @deprecated getQueryRowsPaged should be preferred as it is much more performant for large data sets
+	 */
 	getQueryRows(rowData: azdata.QueryExecuteSubsetParams): Promise<ResultSetSubset>;
+	/**
+	 * Fetches the specified rows with paging - getting subsets of the total rows one page at a time and then returning the entire set once
+	 * completed.
+	 * @param rowData The rows to fetch
+	 * @param cancellationToken Optional cancellation token for canceling the operation while fetching rows
+	 * @param onProgressCallback Optional callback that will be called each time a page of rows is fetched
+	 */
+	getQueryRowsPaged(rowData: azdata.QueryExecuteSubsetParams, cancellationToken?: CancellationToken, onProgressCallback?: (availableRows: number) => void): Promise<ResultSetSubset>;
 	disposeQuery(ownerUri: string): Promise<void>;
 	changeConnectionUri(newUri: string, oldUri: string): Promise<void>;
 	saveResults(requestParams: azdata.SaveResultsRequestParams): Promise<azdata.SaveResultRequestResult>;
 	setQueryExecutionOptions(uri: string, options: azdata.QueryExecutionOptions): Promise<void>;
+	copyResults(params: azdata.CopyResultsRequestParams): Promise<void>;
 
 	// Callbacks
 	onQueryComplete(result: azdata.QueryExecuteCompleteNotificationResult): void;
@@ -93,6 +108,7 @@ export interface IQueryRequestHandler {
 	disposeQuery(ownerUri: string): Promise<void>;
 	connectionUriChanged(newUri: string, oldUri: string): Promise<void>;
 	saveResults(requestParams: azdata.SaveResultsRequestParams): Promise<azdata.SaveResultRequestResult>;
+	copyResults(requestParams: azdata.CopyResultsRequestParams): Promise<void>;
 	setQueryExecutionOptions(ownerUri: string, options: azdata.QueryExecutionOptions): Promise<void>;
 
 	// Edit Data actions
@@ -121,7 +137,7 @@ export class QueryManagementService implements IQueryManagementService {
 	constructor(
 		@IConnectionManagementService private _connectionService: IConnectionManagementService,
 		@IAdsTelemetryService private _telemetryService: IAdsTelemetryService,
-		@ILogService private _logService: ILogService,
+		@ILogService private _logService: ILogService
 	) {
 	}
 
@@ -275,6 +291,43 @@ export class QueryManagementService implements IQueryManagementService {
 		});
 	}
 
+	public async getQueryRowsPaged(rowData: azdata.QueryExecuteSubsetParams, cancellationToken?: CancellationToken, onProgressCallback?: (availableRows: number) => void): Promise<ResultSetSubset> {
+		const pageSize = 500;
+		return this._runAction(rowData.ownerUri, async (runner): Promise<ResultSetSubset> => {
+			const result = [];
+			let start = rowData.rowsStartIndex;
+			this._logService.trace(`Getting ${rowData.rowsCount} rows starting from index: ${rowData.rowsStartIndex}.`);
+			let pageIdx = 1;
+			do {
+				const rowCount = Math.min(pageSize, rowData.rowsStartIndex + rowData.rowsCount - start);
+				this._logService.trace(`Page ${pageIdx} - Getting ${rowCount} rows starting from index: ${start}.`);
+				const rowSet = await runner.getQueryRows({
+					ownerUri: rowData.ownerUri,
+					batchIndex: rowData.batchIndex,
+					resultSetIndex: rowData.resultSetIndex,
+					rowsCount: rowCount,
+					rowsStartIndex: start
+				});
+				this._logService.trace(`Page ${pageIdx} - Received ${rowSet.resultSubset.rows.length} rows starting from index: ${start}.`);
+				result.push(...rowSet.resultSubset.rows);
+				start += rowCount;
+				pageIdx++;
+				if (onProgressCallback) {
+					onProgressCallback(start - rowData.rowsStartIndex);
+				}
+			} while (start < rowData.rowsStartIndex + rowData.rowsCount && (cancellationToken === undefined || !cancellationToken.isCancellationRequested));
+			if (cancellationToken?.isCancellationRequested) {
+				this._logService.trace(`Stop getting more rows since cancellation has been requested.`);
+			} else {
+				this._logService.trace(`Successfully fetched ${result.length} rows. Expected Rows: ${rowData.rowsCount}.`);
+			}
+			return {
+				rows: result,
+				rowCount: result.length
+			};
+		});
+	}
+
 	public disposeQuery(ownerUri: string): Promise<void> {
 		this._queryRunners.delete(ownerUri);
 		return this._runAction(ownerUri, (runner) => {
@@ -286,16 +339,16 @@ export class QueryManagementService implements IQueryManagementService {
 		let item = this._queryRunners.get(oldUri);
 		if (!item) {
 			this._logService.error(`No query runner found for old URI : '${oldUri}'`);
-			throw new Error(nls.localize('queryManagement.noQueryRunnerForUri', 'Could not find Query Runner for uri: {0}', oldUri));
-		}
-		if (this._queryRunners.get(newUri)) {
+		} else if (this._queryRunners.get(newUri)) {
 			this._logService.error(`New URI : '${newUri}' already has a query runner.`);
 			throw new Error(nls.localize('queryManagement.uriAlreadyHasQueryRunner', 'Uri: {0} unexpectedly already has a query runner.', newUri));
+		} else {
+			this._queryRunners.set(newUri, item);
+			this._queryRunners.delete(oldUri);
 		}
-		this._queryRunners.set(newUri, item);
-		this._queryRunners.delete(oldUri);
-		return this._runAction(newUri, (runner) => {
-			return runner.connectionUriChanged(newUri, oldUri);
+
+		return this._runAction(newUri, (handler) => {
+			return handler.connectionUriChanged(newUri, oldUri);
 		});
 	}
 
@@ -311,8 +364,17 @@ export class QueryManagementService implements IQueryManagementService {
 		});
 	}
 
+	public copyResults(requestParams: azdata.CopyResultsRequestParams): Promise<void> {
+		return this._runAction(requestParams.ownerUri, (runner) => {
+			return runner.copyResults(requestParams);
+		});
+	}
+
 	public onQueryComplete(result: azdata.QueryExecuteCompleteNotificationResult): void {
 		this._notify(result.ownerUri, (runner: QueryRunner) => {
+			if (result.serverConnectionId) {
+				runner.handleServerConnId(result.serverConnectionId);
+			}
 			runner.handleQueryComplete(result.batchSummaries.map(s => ({ ...s, range: selectionDataToRange(s.selection) })));
 		});
 	}

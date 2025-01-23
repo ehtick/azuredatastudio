@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as ts from 'typescript';
@@ -52,11 +52,18 @@ const CORE_TYPES = [
 	'BigInt64Array',
 	'btoa',
 	'atob',
+	'AbortController',
 	'AbortSignal',
 	'MessageChannel',
 	'MessagePort',
 	'URL',
-	'URLSearchParams'
+	'URLSearchParams',
+	'ReadonlyArray',
+	'Event',
+	'EventTarget',
+	'BroadcastChannel',
+	'performance',
+	'Blob'
 ];
 
 // Types that are defined in a common layer but are known to be only
@@ -66,7 +73,9 @@ const NATIVE_TYPES = [
 	'INativeEnvironmentService',
 	'AbstractNativeEnvironmentService',
 	'INativeWindowConfiguration',
-	'ICommonNativeHostService'
+	'ICommonNativeHostService',
+	'INativeHostService',
+	'IMainProcessService'
 ];
 
 const RULES: IRule[] = [
@@ -75,6 +84,12 @@ const RULES: IRule[] = [
 	{
 		target: '**/{vs,sql}/**/test/**',
 		skip: true // -> skip all test files
+	},
+
+	// TODO@bpasero remove me once electron utility process has landed
+	{
+		target: '**/vs/workbench/services/extensions/electron-sandbox/nativeLocalProcessExtensionHost.ts',
+		skip: true
 	},
 
 	// Common: vs/base/common/platform.ts
@@ -117,7 +132,7 @@ const RULES: IRule[] = [
 
 	// Common: vs/platform/native/common/native.ts
 	{
-		target: '**/vs/platform/native/common/native.ts',
+		target: '**/{vs,sql}/platform/native/common/native.ts',
 		allowedTypes: CORE_TYPES,
 		disallowedTypes: [/* Ignore native types that are defined from here */],
 		disallowedDefinitions: [
@@ -187,10 +202,19 @@ const RULES: IRule[] = [
 
 	// Electron (sandbox)
 	{
-		target: '**/{vs,sql}/**/electron-sandbox/**',
+		target: '**/{vs,sql}/**/electron-sandbox/**/!(commandLine.ts)', // {{SQL CARBON EDIT}} commandLine currently uses querystring, so skip that one for now
 		allowedTypes: CORE_TYPES,
 		disallowedDefinitions: [
 			'@types/node'	// no node.js
+		]
+	},
+
+	// {{SQL CARBON TODO}} chgagnon investigate the use of querystring
+	{
+		target: '**/{vs,sql}/**/electron-sandbox/commandLine.ts',
+		allowedTypes: [
+			...CORE_TYPES,
+			'@types/node'
 		]
 	},
 
@@ -262,7 +286,7 @@ function checkFile(program: ts.Program, sourceFile: ts.SourceFile, rule: IRule) 
 
 		if (rule.disallowedTypes?.some(disallowed => disallowed === text)) {
 			const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-			console.log(`[build/lib/layersChecker.ts]: Reference to type '${text}' violates layer '${rule.target}' (${sourceFile.fileName} (${line + 1},${character + 1})`);
+			console.log(`[build/lib/layersChecker.ts]: Reference to type '${text}' violates layer '${rule.target}' (${sourceFile.fileName} (${line + 1},${character + 1}). Learn more about our source code organization at https://github.com/microsoft/vscode/wiki/Source-Code-Organization.`);
 
 			hasErrors = true;
 			return;
@@ -289,7 +313,7 @@ function checkFile(program: ts.Program, sourceFile: ts.SourceFile, rule: IRule) 
 									if (definitionFileName.indexOf(disallowedDefinition) >= 0) {
 										const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
 
-										console.log(`[build/lib/layersChecker.ts]: Reference to symbol '${text}' from '${disallowedDefinition}' violates layer '${rule.target}' (${sourceFile.fileName} (${line + 1},${character + 1})`);
+										console.log(`[build/lib/layersChecker.ts]: Reference to symbol '${text}' from '${disallowedDefinition}' violates layer '${rule.target}' (${sourceFile.fileName} (${line + 1},${character + 1}) Learn more about our source code organization at https://github.com/microsoft/vscode/wiki/Source-Code-Organization.`);
 
 										hasErrors = true;
 										return;

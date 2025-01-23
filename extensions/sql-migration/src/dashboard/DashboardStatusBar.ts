@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -102,7 +102,7 @@ export class DashboardStatusBar implements vscode.Disposable {
 				450,
 				'flyout');
 			dialog.content = [tab];
-			dialog.okButton.label = loc.ERROR_DIALOG_CLEAR_BUTTON_LABEL;
+			dialog.okButton.label = loc.CLEAR;
 			dialog.okButton.focused = true;
 			dialog.okButton.position = 'left';
 			dialog.cancelButton.label = loc.CLOSE;

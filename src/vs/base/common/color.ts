@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { CharCode } from 'vs/base/common/charCode';
@@ -257,6 +257,16 @@ export class Color {
 
 	static fromHex(hex: string): Color {
 		return Color.Format.CSS.parseHex(hex) || Color.red;
+	}
+
+	static equals(a: Color | null, b: Color | null): boolean {
+		if (!a && !b) {
+			return true;
+		}
+		if (!a || !b) {
+			return false;
+		}
+		return a.equals(b);
 	}
 
 	readonly rgba: RGBA;

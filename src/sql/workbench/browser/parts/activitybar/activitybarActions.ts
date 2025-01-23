@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as DOM from 'vs/base/browser/dom';
@@ -29,7 +29,8 @@ export class AccountsActionViewItem extends ActivityActionViewItem {
 		@IConfigurationService configurationService: IConfigurationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 	) {
-		super(action, { draggable: false, colors, icon: true, hoverOptions: hoverOptions }, themeService, hoverService, configurationService, keybindingService);
+		super(action, { draggable: false, colors, icon: true, hoverOptions: hoverOptions },
+			(/*badgesEnabledForCompositeId*/) => false, themeService, hoverService, configurationService, keybindingService);
 	}
 
 	override render(container: HTMLElement): void {

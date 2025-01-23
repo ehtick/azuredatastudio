@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -11,8 +11,10 @@ import { flakySuite } from 'vs/base/test/node/testUtils';
 flakySuite('ID', () => {
 
 	test('getMachineId', async function () {
-		const id = await getMachineId();
+		const errors = [];
+		const id = await getMachineId(err => errors.push(err));
 		assert.ok(id);
+		assert.strictEqual(errors.length, 0);
 	});
 
 	test('getMac', async () => {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as azdata from 'azdata';
 import * as vscode from 'vscode';
@@ -169,7 +169,7 @@ class AzureTerminal implements vscode.Pseudoterminal {
 	public readonly onDidWrite: vscode.Event<string>;
 
 	private socket: WS | undefined = undefined;
-	private intervalTimer: NodeJS.Timer | undefined = undefined;
+	private intervalTimer: NodeJS.Timeout | undefined = undefined;
 	private terminalDimensions: vscode.TerminalDimensions | undefined;
 
 	constructor(private readonly consoleUri: string, private readonly token: string, private shell: string) {

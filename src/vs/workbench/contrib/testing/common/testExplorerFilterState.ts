@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { Emitter, Event } from 'vs/base/common/event';
 import { splitGlobAware } from 'vs/base/common/glob';
@@ -199,7 +199,7 @@ export const enum TestFilterTerm {
 	Hidden = '@hidden',
 }
 
-export const allTestFilterTerms: readonly TestFilterTerm[] = [
+const allTestFilterTerms: readonly TestFilterTerm[] = [
 	TestFilterTerm.Failed,
 	TestFilterTerm.Executed,
 	TestFilterTerm.CurrentDoc,

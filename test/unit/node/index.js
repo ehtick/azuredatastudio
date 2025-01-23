@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 //@ts-check
@@ -9,7 +9,7 @@
 process.env.MOCHA_COLORS = '1'; // Force colors (note that this must come before any mocha imports)
 
 const assert = require('assert');
-const mocha = require('mocha');
+const Mocha = require('mocha');
 const path = require('path');
 const fs = require('fs');
 const glob = require('glob');
@@ -27,7 +27,7 @@ const optimist = require('optimist')
 const TEST_GLOB = '**/test/**/*.test.js';
 
 const excludeGlobs = [
-	'**/{browser,electron-sandbox,electron-browser,electron-main}/**/*.test.js',
+	'**/{browser,electron-sandbox,electron-main}/**/*.test.js',
 	'**/vs/platform/environment/test/node/nativeModules.test.js', // native modules are compiled against Electron and this test would fail with node.js
 	'**/vs/base/parts/storage/test/node/storage.test.js', // same as above, due to direct dependency to sqlite native module
 	'**/vs/workbench/contrib/testing/test/**' // flaky (https://github.com/microsoft/vscode/issues/137853)
@@ -56,6 +56,23 @@ if (majorRequiredNodeVersion !== currentMajorNodeVersion) {
 }
 
 function main() {
+
+	// VSCODE_GLOBALS: node_modules
+	globalThis._VSCODE_NODE_MODULES = new Proxy(Object.create(null), { get: (_target, mod) => require(String(mod)) });
+
+	// VSCODE_GLOBALS: package/product.json
+	globalThis._VSCODE_PRODUCT_JSON = require(`${REPO_ROOT}/product.json`);
+	globalThis._VSCODE_PACKAGE_JSON = require(`${REPO_ROOT}/package.json`);
+
+	// Test file operations that are common across platforms. Used for test infra, namely snapshot tests
+	Object.assign(globalThis, {
+		__readFileInTests: (/** @type {string} */ path) => fs.promises.readFile(path, 'utf-8'),
+		__writeFileInTests: (/** @type {string} */ path, /** @type {BufferEncoding} */ contents) => fs.promises.writeFile(path, contents),
+		__readDirInTests: (/** @type {string} */ path) => fs.promises.readdir(path),
+		__unlinkInTests: (/** @type {string} */ path) => fs.promises.unlink(path),
+		__mkdirPInTests: (/** @type {string} */ path) => fs.promises.mkdir(path, { recursive: true }),
+	});
+
 	process.on('uncaughtException', function (e) {
 		console.error(e.stack || e);
 	});
@@ -94,7 +111,6 @@ function main() {
 
 	const loaderConfig = {
 		nodeRequire: require,
-		nodeMain: __filename,
 		baseUrl: fileUriFromPath(src, { isWindows: process.platform === 'win32' }),
 		'sql': `../${out}/sql`, // {{SQL CARBON EDIT}}
 		catchError: true,
@@ -135,7 +151,24 @@ function main() {
 		return write.apply(process.stderr, args);
 	};
 
-	/** @type { (callback:(err:any)=>void)=>void } */
+
+	const runner = new Mocha({
+		ui: 'tdd'
+	});
+
+	/**
+	 * @param {string[]} modules
+	 */
+	async function loadModules(modules) {
+		for (const file of modules) {
+			runner.suite.emit(Mocha.Suite.constants.EVENT_FILE_PRE_REQUIRE, globalThis, file, runner);
+			const m = await new Promise((resolve, reject) => loader([file], resolve, reject));
+			runner.suite.emit(Mocha.Suite.constants.EVENT_FILE_REQUIRE, m, file, runner);
+			runner.suite.emit(Mocha.Suite.constants.EVENT_FILE_POST_REQUIRE, globalThis, file, runner);
+		}
+	}
+
+	/** @type { null|((callback:(err:any)=>void)=>void) } */
 	let loadFunc = null;
 
 	if (argv.runGlob) {
@@ -148,7 +181,7 @@ function main() {
 
 					return test.replace(/(\.js)|(\.d\.ts)|(\.js\.map)$/, '');
 				});
-				loader(modulesToLoad, () => cb(null), cb);
+				loadModules(modulesToLoad).then(() => cb(null), cb);
 			};
 
 			glob(argv.runGlob, { cwd: src }, function (err, files) { doRun(files); });
@@ -161,7 +194,7 @@ function main() {
 			return path.relative(src, path.resolve(test)).replace(/(\.js)|(\.js\.map)$/, '').replace(/\\/g, '/');
 		});
 		loadFunc = (cb) => {
-			loader(modulesToLoad, () => cb(null), cb);
+			loadModules(modulesToLoad).then(() => cb(null), cb);
 		};
 	} else {
 		loadFunc = (cb) => {
@@ -173,7 +206,7 @@ function main() {
 						modules.push(file.replace(/\.js$/, ''));
 					}
 				}
-				loader(modules, function () { cb(null); }, cb);
+				loadModules(modules).then(() => cb(null), cb);
 			});
 		};
 	}
@@ -188,7 +221,7 @@ function main() {
 
 		if (!argv.run && !argv.runGlob) {
 			// set up last test
-			mocha.suite('Loader', function () {
+			Mocha.suite('Loader', function () {
 				test('should not explode while loading', function () {
 					assert.ok(!didErr, 'should not explode while loading');
 				});
@@ -197,8 +230,8 @@ function main() {
 
 		// report failing test for every unexpected error during any of the tests
 		const unexpectedErrors = [];
-		mocha.suite('Errors', function () {
-			test.skip('should not have unexpected errors in tests', function () { // {{SQL CARBON TODO}} Reinstate test - failing due to "SDK is not initialized"
+		Mocha.suite('Errors', function () {
+			test('should not have unexpected errors in tests', function () {
 				if (unexpectedErrors.length) {
 					unexpectedErrors.forEach(function (stack) {
 						console.error('');
@@ -223,7 +256,7 @@ function main() {
 			});
 
 			// fire up mocha
-			mocha.run();
+			runner.run(failures => process.exit(failures ? 1 : 0));
 		});
 	});
 }

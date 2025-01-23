@@ -1,10 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 .monaco-select-box {
 	width: 100%;
+	cursor: pointer;
+	border-radius: 2px;
 }
 
 .monaco-select-box-dropdown-container {
@@ -21,7 +23,7 @@
 
 .monaco-action-bar .action-item .monaco-select-box {
 	cursor: pointer;
-	min-width: 110px;
+	min-width: 100px;
 	min-height: 18px;
 	padding: 2px 23px 2px 8px;
 }

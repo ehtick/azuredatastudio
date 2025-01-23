@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
@@ -64,7 +64,17 @@ export class GlobalPointerMoveMonitor implements IDisposable {
 		try {
 			initialElement.setPointerCapture(pointerId);
 			this._hooks.add(toDisposable(() => {
-				initialElement.releasePointerCapture(pointerId);
+				try {
+					initialElement.releasePointerCapture(pointerId);
+				} catch (err) {
+					// See https://github.com/microsoft/vscode/issues/161731
+					//
+					// `releasePointerCapture` sometimes fails when being invoked with the exception:
+					//     DOMException: Failed to execute 'releasePointerCapture' on 'Element':
+					//     No active pointer with the given id is found.
+					//
+					// There's no need to do anything in case of failure
+				}
 			}));
 		} catch (err) {
 			// See https://github.com/microsoft/vscode/issues/144584

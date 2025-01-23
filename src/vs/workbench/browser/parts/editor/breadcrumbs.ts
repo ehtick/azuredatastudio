@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { BreadcrumbsWidget } from 'vs/base/browser/ui/breadcrumbs/breadcrumbsWidget';
@@ -10,7 +10,7 @@ import { IDisposable } from 'vs/base/common/lifecycle';
 import { localize } from 'vs/nls';
 import { IConfigurationOverrides, IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { Extensions, IConfigurationRegistry, ConfigurationScope } from 'vs/platform/configuration/common/configurationRegistry';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { GroupIdentifier, IEditorPartOptions } from 'vs/workbench/common/editor';
@@ -48,7 +48,7 @@ export class BreadcrumbsService implements IBreadcrumbsService {
 	}
 }
 
-registerSingleton(IBreadcrumbsService, BreadcrumbsService, true);
+registerSingleton(IBreadcrumbsService, BreadcrumbsService, InstantiationType.Delayed);
 
 
 //#region config

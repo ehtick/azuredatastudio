@@ -1,14 +1,17 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// This is the place for extensions to expose APIs.
 declare module 'mssql' {
 	import * as azdata from 'azdata';
 
 	/**
-	 * Covers defining what the mssql extension exports to other extensions
+	 * Covers defining what the mssql extension exports to other extensions.
+	 *
+	 * This file should only contain definitions which rely on STABLE azdata typings
+	 * (from azdata.d.ts). Anything which relies on PROPOSED typings (from azdata.proposed.d.ts)
+	 * should go in mssql.proposed.d.ts.
 	 *
 	 * IMPORTANT: THIS IS NOT A HARD DEFINITION unlike vscode; therefore no enums or classes should be defined here
 	 * (const enums get evaluated when typescript -> javascript so those are fine)
@@ -42,20 +45,7 @@ declare module 'mssql' {
 
 		readonly sqlProjects: ISqlProjectsService;
 
-		readonly sqlAssessment: ISqlAssessmentService;
-
 		readonly azureBlob: IAzureBlobService;
-	}
-
-	/**
-	 * A browser supporting actions over the object explorer connections provided by this extension.
-	 * Currently this is the
-	 */
-	export interface MssqlObjectExplorerBrowser {
-		/**
-		 * Gets the matching node given a context object, e.g. one from a right-click on a node in Object Explorer
-		 */
-		getNode<T extends ITreeNode>(objectExplorerContext: azdata.ObjectExplorerContext): Thenable<T>;
 	}
 
 	/**
@@ -66,15 +56,7 @@ declare module 'mssql' {
 		getChildren(refreshChildren: boolean): ITreeNode[] | Thenable<ITreeNode[]>;
 	}
 
-	/**
-	 * A HDFS file node. This is a leaf node in the object explorer tree, and its contents
-	 * can be queried
-	 */
-	export interface IFileNode extends ITreeNode {
-		getFileContentsAsString(maxBytes?: number): Thenable<string>;
-	}
-
-	//#region --- schema compare
+	//#region --- Schema Compare
 	export interface SchemaCompareResult extends azdata.ResultStatus {
 		operationId: string;
 		areEqual: boolean;
@@ -221,7 +203,7 @@ declare module 'mssql' {
 
 	//#endregion
 
-	//#region --- dacfx
+	//#region --- DacFx
 	export const enum ExtractTarget {
 		dacpac = 0,
 		file = 1,
@@ -312,7 +294,7 @@ declare module 'mssql' {
 
 	//#endregion
 
-	//#region --- Sql Projects
+	//#region --- SQL Projects
 
 	/**
 	 * Interface for working with .sqlproj files
@@ -348,9 +330,10 @@ declare module 'mssql' {
 		 * @param projectUri Absolute path of the project, including .sqlproj
 		 * @param systemDatabase Type of system database
 		 * @param suppressMissingDependencies Whether to suppress missing dependencies
+		 * @param referenceType Type of reference - ArtifactReference or PackageReference
 		 * @param databaseLiteral Literal name used to reference another database in the same server, if not using SQLCMD variables
 		 */
-		addSystemDatabaseReference(projectUri: string, systemDatabase: SystemDatabase, suppressMissingDependencies: boolean, databaseLiteral?: string): Promise<azdata.ResultStatus>;
+		addSystemDatabaseReference(projectUri: string, systemDatabase: SystemDatabase, suppressMissingDependencies: boolean, referenceType: SystemDbReferenceType, databaseLiteral?: string): Promise<azdata.ResultStatus>;
 
 		/**
 		 * Add a nuget package database reference to a project
@@ -385,6 +368,21 @@ declare module 'mssql' {
 		 * @param path Path of the folder, typically relative to the .sqlproj file
 		 */
 		deleteFolder(projectUri: string, path: string): Promise<azdata.ResultStatus>;
+
+		/**
+		 * Exclude a folder and its contents from a project
+		 * @param projectUri Absolute path of the project, including .sqlproj
+		 * @param path Path of the folder, typically relative to the .sqlproj file
+		 */
+		excludeFolder(projectUri: string, path: string): Promise<azdata.ResultStatus>;
+
+		/**
+		 * Move a folder and its contents within a project
+		 * @param projectUri Absolute path of the project, including .sqlproj
+		 * @param sourcePath Source path of the folder, typically relative to the .sqlproj file
+		 * @param destinationPath Destination path of the folder, typically relative to the .sqlproj file
+		 */
+		moveFolder(projectUri: string, sourcePath: string, destinationPath: string): Promise<azdata.ResultStatus>;
 
 		/**
 		 * Add a post-deployment script to a project
@@ -431,18 +429,18 @@ declare module 'mssql' {
 		/**
 		 * Move a post-deployment script in a project
 		 * @param projectUri Absolute path of the project, including .sqlproj
-		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 * @param path Path of the script, including .sql, relative to the .sqlproj
+		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 */
-		movePostDeploymentScript(projectUri: string, destinationPath: string, path: string): Promise<azdata.ResultStatus>;
+		movePostDeploymentScript(projectUri: string, path: string, destinationPath: string): Promise<azdata.ResultStatus>;
 
 		/**
 		 * Move a pre-deployment script in a project
 		 * @param projectUri Absolute path of the project, including .sqlproj
-		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 * @param path Path of the script, including .sql, relative to the .sqlproj
+		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 */
-		movePreDeploymentScript(projectUri: string, destinationPath: string, path: string): Promise<azdata.ResultStatus>;
+		movePreDeploymentScript(projectUri: string, path: string, destinationPath: string): Promise<azdata.ResultStatus>;
 
 		/**
 		 * Close a SQL project
@@ -546,10 +544,10 @@ declare module 'mssql' {
 		/**
 		 * Move a SQL object script in a project
 		 * @param projectUri Absolute path of the project, including .sqlproj
-		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 * @param path Path of the script, including .sql, relative to the .sqlproj
+		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 */
-		moveSqlObjectScript(projectUri: string, destinationPath: string, path: string): Promise<azdata.ResultStatus>;
+		moveSqlObjectScript(projectUri: string, path: string, destinationPath: string): Promise<azdata.ResultStatus>;
 
 		/**
 		 * Get all the database references in a project
@@ -617,12 +615,11 @@ declare module 'mssql' {
 		/**
 		 * Move a None item in a project
 		 * @param projectUri Absolute path of the project, including .sqlproj
-		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 * @param path Path of the item, including extension, relative to the .sqlproj
+		 * @param destinationPath Destination path of the file or folder, relative to the .sqlproj
 		 */
-		moveNoneItem(projectUri: string, destinationPath: string, path: string): Promise<azdata.ResultStatus>;
+		moveNoneItem(projectUri: string, path: string, destinationPath: string): Promise<azdata.ResultStatus>;
 	}
-
 
 	//#region Results
 
@@ -751,6 +748,11 @@ declare module 'mssql' {
 		MSDB = 1
 	}
 
+	export const enum SystemDbReferenceType {
+		ArtifactReference = 0,
+		PackageReference = 1
+	}
+
 	export interface SqlCmdVariable {
 		varName: string;
 		value: string;
@@ -844,17 +846,7 @@ declare module 'mssql' {
 	}
 	//#endregion
 
-	/**
-	 * Sql Assessment
-	 */
-
-	// SqlAssessment interfaces  -----------------------------------------------------------------------
-
-	export interface ISqlAssessmentService {
-		assessmentInvoke(ownerUri: string, targetType: azdata.sqlAssessment.SqlAssessmentTargetType): Promise<azdata.SqlAssessmentResult>;
-		getAssessmentItems(ownerUri: string, targetType: azdata.sqlAssessment.SqlAssessmentTargetType): Promise<azdata.SqlAssessmentResult>;
-		generateAssessmentScript(items: azdata.SqlAssessmentResultItem[], targetServerName: string, targetDatabaseName: string, taskExecutionMode: azdata.TaskExecutionMode): Promise<azdata.ResultStatus>;
-	}
+	//#region --- Blob storage
 
 	export interface CreateSasResponse {
 		sharedAccessSignature: string;
@@ -873,16 +865,22 @@ declare module 'mssql' {
 		createSas(connectionUri: string, blobContainerUri: string, blobStorageKey: string, storageAccountName: string, expirationDate: string): Promise<CreateSasResponse>;
 	}
 
-	// Object Management - Begin.
+	//#endregion
+
+	//#region --- Object Management
 	export namespace ObjectManagement {
 
 		/**
 		 * Object types.
 		 */
 		export const enum NodeType {
+			ApplicationRole = "ApplicationRole",
 			Column = "Column",
 			Database = "Database",
+			DatabaseRole = "DatabaseRole",
 			ServerLevelLogin = "ServerLevelLogin",
+			ServerLevelServerRole = "ServerLevelServerRole",
+			Server = "Server",
 			Table = "Table",
 			User = "User",
 			View = "View"
@@ -899,7 +897,7 @@ declare module 'mssql' {
 		}
 
 		/**
-		 * Base interface for the object view information
+		 * Base interface for the object view information.
 		 */
 		export interface ObjectViewInfo<T extends SqlObject> {
 			/**
@@ -909,293 +907,21 @@ declare module 'mssql' {
 		}
 
 		/**
-		 * Server level login.
+		 * Interface representing an item in the search result.
 		 */
-		export interface Login extends SqlObject {
+		export interface SearchResultItem {
 			/**
-			 * Authentication type.
-			 */
-			authenticationType: AuthenticationType;
-			/**
-			 * Password for the login.
-			 * Only applicable when the authentication type is 'Sql'.
-			 */
-			password: string | undefined;
-			/**
-			 * Old password of the login.
-			 * Only applicable when the authentication type is 'Sql'.
-			 * The old password is required when updating the login's own password and it doesn't have the 'ALTER ANY LOGIN' permission.
-			 */
-			oldPassword: string | undefined;
-			/**
-			 * Whether the password complexity policy is enforced.
-			 * Only applicable when the authentication type is 'Sql'.
-			 */
-			enforcePasswordPolicy: boolean | undefined;
-			/**
-			 * Whether the password expiration policy is enforced.
-			 * Only applicable when the authentication type is 'Sql'.
-			 */
-			enforcePasswordExpiration: boolean | undefined;
-			/**
-			 * Whether SQL Server should prompt for an updated password when the next the login is used.
-			 * Only applicable when the authentication type is 'Sql'.
-			 */
-			mustChangePassword: boolean | undefined;
-			/**
-			 * Whether the login is locked out due to password policy violation.
-			 * Only applicable when the authentication type is 'Sql'.
-			 */
-			isLockedOut: boolean;
-			/**
-			 * The default database for the login.
-			 */
-			defaultDatabase: string;
-			/**
-			 * The default language for the login.
-			 */
-			defaultLanguage: string;
-			/**
-			 * The server roles of the login.
-			 */
-			serverRoles: string[];
-			/**
-			 * The database users the login is mapped to.
-			 */
-			userMapping: ServerLoginUserInfo[];
-			/**
-			 * Whether the login is enabled.
-			 */
-			isEnabled: boolean;
-			/**
-			 * Whether the connect permission is granted to the login.
-			 */
-			connectPermission: boolean;
-		}
-
-		/**
-		 * The authentication types.
-		 */
-		export const enum AuthenticationType {
-			Windows = 'Windows',
-			Sql = 'Sql',
-			AzureActiveDirectory = 'AAD'
-		}
-
-		/**
-		 * The user mapping information for login.
-		 */
-		export interface ServerLoginUserInfo {
-			/**
-			 * Target database name.
-			 */
-			database: string;
-			/**
-			 * User name.
-			 */
-			user: string;
-			/**
-			 * Default schema of the user.
-			 */
-			defaultSchema: string;
-			/**
-			 * Databases roles of the user.
-			 */
-			databaseRoles: string[];
-		}
-
-		/**
-		 * The information required to render the login view.
-		 */
-		export interface LoginViewInfo extends ObjectViewInfo<Login> {
-			/**
-			 * Whether Windows Authentication is supported.
-			 */
-			supportWindowsAuthentication: boolean;
-			/**
-			 * Whether Azure Active Directory Authentication is supported.
-			 */
-			supportAADAuthentication: boolean;
-			/**
-			 * Whether SQL Authentication is supported.
-			 */
-			supportSQLAuthentication: boolean;
-			/**
-			 * Whether the locked out state can be changed.
-			 */
-			canEditLockedOutState: boolean;
-			/**
-			 * Name of the databases in the server.
-			 */
-			databases: string[];
-			/**
-			 * Available languages in the server.
-			 */
-			languages: string[];
-			/**
-			 * All server roles in the server.
-			 */
-			serverRoles: string[];
-			/**
-			 * Whether advanced password options are supported.
-			 * Advanced password options: check policy, check expiration, must change, unlock.
-			 * Notes: 2 options to control the advanced options because Analytics Platform supports advanced options but does not support advanced options.
-			 */
-			supportAdvancedPasswordOptions: boolean;
-			/**
-			 * Whether advanced options are supported.
-			 * Advanced options: default database, default language and connect permission.
-			 */
-			supportAdvancedOptions: boolean;
-		}
-
-		/**
-		 * The permission information a principal has on a securable.
-		 */
-		export interface Permission {
-			/**
-			 * Name of the permission.
+			 * name of the object.
 			 */
 			name: string;
 			/**
-			 * Whether the permission is granted or denied.
+			 * type of the object.
 			 */
-			grant: boolean;
+			type: string;
 			/**
-			 * Whether the pincipal can grant this permission to other principals.
-			 * The value will be ignored if the grant property is set to false.
+			 * schema of the object.
 			 */
-			withGrant: boolean;
-		}
-
-		/**
-		 * The permissions a principal has over a securable.
-		 */
-		export interface SecurablePermissions {
-			/**
-			 * The securable.
-			 */
-			securable: SqlObject;
-			/**
-			 * The Permissions.
-			 */
-			permissions: Permission[];
-		}
-
-		/**
-		 * Extend property for objects.
-		 */
-		export interface ExtendedProperty {
-			/**
-			 * Name of the property.
-			 */
-			name: string;
-			/**
-			 * Value of the property.
-			 */
-			value: string;
-		}
-
-		/**
-		 * User types.
-		 */
-		export const enum UserType {
-			/**
-			 * User with a server level login.
-			 */
-			WithLogin = 'WithLogin',
-			/**
-			 * User based on a Windows user/group that has no login, but can connect to the Database Engine through membership in a Windows group.
-			 */
-			WithWindowsGroupLogin = 'WithWindowsGroupLogin',
-			/**
-			 * Contained user, authentication is done within the database.
-			 */
-			Contained = 'Contained',
-			/**
-			 * User that cannot authenticate.
-			 */
-			NoConnectAccess = 'NoConnectAccess'
-		}
-
-		/**
-		 * Database user.
-		 */
-		export interface User extends SqlObject {
-			/**
-			 * Type of the user.
-			 */
-			type: UserType;
-			/**
-			 * Default schema of the user.
-			 */
-			defaultSchema: string | undefined;
-			/**
-			 * Schemas owned by the user.
-			 */
-			ownedSchemas: string[];
-			/**
-			 * Database roles that the user belongs to.
-			 */
-			databaseRoles: string[];
-			/**
-			 * The name of the server login associated with the user.
-			 * Only applicable when the user type is 'WithLogin'.
-			 */
-			loginName: string | undefined;
-			/**
-			 * The default language of the user.
-			 * Only applicable when the user type is 'Contained'.
-			 */
-			defaultLanguage: string | undefined;
-			/**
-			 * Authentication type.
-			 * Only applicable when user type is 'Contained'.
-			 */
-			authenticationType: AuthenticationType | undefined;
-			/**
-			 * Password of the user.
-			 * Only applicable when the user type is 'Contained' and the authentication type is 'Sql'.
-			 */
-			password: string | undefined;
-		}
-
-		/**
-		 * The information required to render the user view.
-		 */
-		export interface UserViewInfo extends ObjectViewInfo<User> {
-			/**
-			 * Whether contained user is supported.
-			 */
-			supportContainedUser: boolean;
-			/**
-			 * Whether Windows authentication is supported.
-			 */
-			supportWindowsAuthentication: boolean;
-			/**
-			 * Whether Azure Active Directory authentication is supported.
-			 */
-			supportAADAuthentication: boolean;
-			/**
-			 * Whether SQL Authentication is supported.
-			 */
-			supportSQLAuthentication: boolean;
-			/**
-			 * All languages supported by the database.
-			 */
-			languages: string[];
-			/**
-			 * All schemas in the database.
-			 */
-			schemas: string[];
-			/**
-			 * Name of all the logins in the server.
-			 */
-			logins: string[];
-			/**
-			 * Name of all the database roles.
-			 */
-			databaseRoles: string[];
+			schema: string | undefined;
 		}
 	}
 
@@ -1243,6 +969,464 @@ declare module 'mssql' {
 		 * @param objectUrn SMO Urn of the object to be dropped. More information: https://learn.microsoft.com/sql/relational-databases/server-management-objects-smo/overview-smo
 		 */
 		drop(connectionUri: string, objectType: ObjectManagement.NodeType, objectUrn: string): Thenable<void>;
+		/**
+		 * Search for objects.
+		 * @param contextId The object view's context id.
+		 * @param objectTypes The object types to search for.
+		 * @param searchText Search text.
+		 * @param schema Schema to search in.
+		 */
+		search(contextId: string, objectTypes: string[], searchText?: string, schema?: string): Thenable<ObjectManagement.SearchResultItem[]>;
+		/**
+		 * Detach a database.
+		 * @param connectionUri The URI of the server connection.
+		 * @param database The target database.
+		 * @param dropConnections Whether to drop active connections to this database.
+		 * @param updateStatistics Whether to update the optimization statistics related to this database.
+		 * @param generateScript Whether to generate a TSQL script for the operation instead of detaching the database.
+		 * @returns A string value representing the generated TSQL query if generateScript was set to true, and an empty string otherwise.
+		 */
+		detachDatabase(connectionUri: string, database: string, dropConnections: boolean, updateStatistics: boolean, generateScript: boolean): Thenable<string>;
+		/**
+		 * Attach one or more databases.
+		 * @param connectionUri The URI of the server connection.
+		 * @param databases The name, owner, and file paths for each database that will be attached.
+		 * @param generateScript Whether to generate a TSQL script for the operation instead of detaching the database.
+		 * @returns A string value representing the generated TSQL query if generateScript was set to true, and an empty string otherwise.
+		 */
+		attachDatabases(connectionUri: string, databases: DatabaseFileData[], generateScript: boolean): Thenable<string>;
+		/**
+		 * Backup a database.
+		 * @param connectionUri The URI of the server connection.
+		 * @param backupInfo Various settings for how to backup the database.
+		 * @param taskMode Whether to run the backup operation, generate a script for it, or both.
+		 * @returns A response indicating if the backup or scripting operation started successfully.
+		 */
+		backupDatabase(connectionUri: string, backupInfo: BackupInfo, taskMode: azdata.TaskExecutionMode): Thenable<azdata.BackupResponse>;
+		/**
+		 * Drop a database.
+		 * @param connectionUri The URI of the server connection.
+		 * @param database The target database.
+		 * @param dropConnections Whether to drop active connections to this database.
+		 * @param deleteBackupHistory Whether to delete backup and restore history information for this database.
+		 * @param generateScript Whether to generate a TSQL script for the operation instead of detaching the database.
+		 * @returns A string value representing the generated TSQL query if generateScript was set to true, and an empty string otherwise.
+		 */
+		dropDatabase(connectionUri: string, database: string, dropConnections: boolean, deleteBackupHistory: boolean, generateScript: boolean): Thenable<string>;
+		/**
+		 * Gets the file path for the default database file folder for a SQL Server instance.
+		 * @param connectionUri The URI of the connection for the specific server.
+		 * @returns The file path to the data folder.
+		 */
+		getDataFolder(connectionUri: string): Thenable<string>;
+		/**
+		 * Gets the file path for the default database backup file folder for a SQL Server instance.
+		 * @param connectionUri The URI of the connection for the specific server.
+		 * @returns The file path to the backup folder.
+		 */
+		getBackupFolder(connectionUri: string): Thenable<string>;
+		/**
+		 * Retrieves other database files associated with a specified primary file, such as Data, Log, and FileStream files.
+		 * @param connectionUri The URI of the connection for the specific server.
+		 * @param primaryFilePath The file path for the primary database file on the target server.
+		 * @returns An array of file path strings for each of the associated files.
+		 */
+		getAssociatedFiles(connectionUri: string, primaryFilePath: string): Thenable<string[]>;
+		/**
+		 * Clears all query store data from the database
+		 * @param connectionUri The URI of the server connection.
+		 * @param database The target database.
+		 */
+		purgeQueryStoreData(connectionUri: string, database: string): Thenable<void>;
+		/**
+		 * Create a new credential
+		 * @param connectionUri The URI of the server connection.
+		 * @param credentialInfo
+		 */
+		createCredential(connectionUri: string, credentialInfo: azdata.CredentialInfo): Thenable<void>;
+		/**
+		 * Gets all the credentials that exist in the current server
+		 * @param connectionUri The URI of the server connection.
+		 */
+		getCredentialNames(connectionUri: string): Thenable<string[]>;
 	}
-	// Object Management - End.
+
+	/**
+	 * Various settings options for performing a database backup.
+	 */
+	export interface BackupInfo {
+		/**
+		 * Name of the datbase to perfom backup
+		 */
+		databaseName: string;
+
+		/**
+		 * Component to backup - Database or Files
+		 */
+		backupComponent: number;
+
+		/**
+		 * Type of backup - Full/Differential/Log
+		 */
+		backupType: number;
+
+		/**
+		 * Backup device - Disk, Url, etc.
+		 */
+		backupDeviceType: number;
+
+		/**
+		 *  The text input of selected files
+		 */
+		selectedFiles: string;
+
+		/**
+		 * Backupset name
+		 */
+		backupsetName: string;
+
+		/**
+		 * List of {key: backup path, value: device type}
+		 */
+		selectedFileGroup: { [path: string]: string };
+
+		/**
+		 * List of {key: backup path, value: device type}
+		 */
+		backupPathDevices: { [path: string]: number };
+
+		/**
+		 * List of selected backup paths
+		 */
+		backupPathList: string[];
+
+
+		/**
+		 * Indicates if the backup should be copy-only
+		 */
+		isCopyOnly: boolean;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether a media is formatted as the first step of the backup operation.
+		 */
+		formatMedia: boolean;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether the devices associated with a backup operation are initialized as part of the backup operation.
+		 */
+		initialize: boolean;
+
+		/**
+		 * Gets or sets Boolean property that determines whether the tape header is read.
+		 */
+		skipTapeHeader: boolean;
+
+		/**
+		 * Gets or sets the name used to identify a particular media set.
+		 */
+		mediaName: string;
+
+		/**
+		 * Gets or sets a textual description of the medium that contains a backup set.
+		 */
+		mediaDescription: string;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether a checksum value is calculated during backup or restore operations.
+		 */
+		checksum: boolean;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether the backup or restore continues after a checksum error occurs.
+		 */
+		continueAfterError: boolean;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether to truncate the database log.
+		 */
+		logTruncation: boolean;
+
+		/**
+		 * Gets or sets a Boolean property value that determines whether to backup the tail of the log
+		 */
+		tailLogBackup: boolean;
+
+		/**
+		 * Gets or sets the number of days that must elapse before a backup set can be overwritten.
+		 */
+		retainDays: number;
+
+		/**
+		 * Gets or sets the backup compression option.
+		 * This should be converted to BackupCompressionOptions when setting it to Backup object.
+		 */
+		compressionOption: number;
+
+		/**
+		 * Gets or sets a Boolean property that determines whether verify is required.
+		 */
+		verifyBackupRequired: boolean;
+
+		/**
+		 * Specifies the algorithm type used for backup encryption.
+		 * This should be converted to BackupEncryptionAlgorithm when creating BackupEncryptionOptions object.
+		 */
+		encryptionAlgorithm: number;
+
+		/**
+		 * Specifies the encryptor type used to encrypt an encryption key.
+		 * This should be converted to BackupEncryptorType when creating BackupEncryptionOptions object.
+		 */
+		encryptorType: number;
+
+		/**
+		 * Gets or sets the name of the encryptor.
+		 */
+		encryptorName: string;
+	}
+
+	export interface DatabaseFileData {
+		databaseName: string;
+		databaseFilePaths: string[];
+		owner: string;
+	}
+	//#endregion
+
+	//#region --- Query Store
+
+	export interface IQueryStoreService {
+		/**
+		 * Gets the query for a Regressed Queries report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeIntervalRecent Time interval during which to look for performance regressions for the report
+		 * @param timeIntervalHistory Time interval during which to establish baseline performance for the report
+		 * @param minExecutionCount Minimum number of executions for a query to be included
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getRegressedQueriesSummary(connectionOwnerUri: string, timeIntervalRecent: TimeInterval, timeIntervalHistory: TimeInterval, minExecutionCount: number, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a detailed Regressed Queries report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeIntervalRecent Time interval during which to look for performance regressions for the report
+		 * @param timeIntervalHistory Time interval during which to establish baseline performance for the report
+		 * @param minExecutionCount Minimum number of executions for a query to be included
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getRegressedQueriesDetailedSummary(connectionOwnerUri: string, timeIntervalRecent: TimeInterval, timeIntervalHistory: TimeInterval, minExecutionCount: number, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a Tracked Queries report
+		 * @param querySearchText Search text for a query
+		 */
+		getTrackedQueriesReport(querySearchText: string): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a High Variation Queries report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeInterval Time interval for the report
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getHighVariationQueriesSummary(connectionOwnerUri: string, timeInterval: TimeInterval, orderByColumnId: string, descending: boolean, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a detailed High Variation Queries report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeInterval Time interval for the report
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getHighVariationQueriesDetailedSummary(connectionOwnerUri: string, timeInterval: TimeInterval, orderByColumnId: string, descending: boolean, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a Top Resource Consumers report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeInterval Time interval for the report
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getTopResourceConsumersSummary(connectionOwnerUri: string, timeInterval: TimeInterval, orderByColumnId: string, descending: boolean, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a detailed Top Resource Consumers report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeInterval Time interval for the report
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getTopResourceConsumersDetailedSummary(connectionOwnerUri: string, timeInterval: TimeInterval, orderByColumnId: string, descending: boolean, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a Plan Summary chart view
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param queryId Query ID to view a summary of plans for
+		 * @param timeIntervalMode Mode of the time interval search
+		 * @param timeInterval Time interval for the report
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 */
+		getPlanSummaryChartView(connectionOwnerUri: string, queryId: number, timeIntervalMode: PlanTimeIntervalMode, timeInterval: TimeInterval, selectedMetric: Metric, selectedStatistic: Statistic): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a Plan Summary grid view
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param queryId Query ID to view a summary of plans for
+		 * @param timeIntervalMode Mode of the time interval search
+		 * @param timeInterval Time interval for the report
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 */
+		getPlanSummaryGridView(connectionOwnerUri: string, orderByColumnId: string, descending: boolean, queryId: number, timeIntervalMode: PlanTimeIntervalMode, timeInterval: TimeInterval, selectedMetric: Metric, selectedStatistic: Statistic): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query to view a forced plan
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param queryId Query ID to view the plan for
+		 * @param planId Plan ID to view
+		 */
+		getForcedPlan(connectionOwnerUri: string, queryId: number, planId: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for a Forced Plan Queries report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param timeInterval Time interval for the report
+		 * @param orderByColumnId Name of the column to order results by
+		 * @param descending Direction of the result ordering
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getForcedPlanQueriesReport(connectionOwnerUri: string, timeInterval: TimeInterval, orderByColumnId: string, descending: boolean, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+
+		/**
+		 * Gets the query for an Overall Resource Consumption report
+		 * @param connectionOwnerUri Connection URI for the database
+		 * @param specifiedTimeInterval Time interval for the report
+		 * @param specifiedBucketInterval Bucket interval for the report
+		 * @param selectedMetric Metric to summarize
+		 * @param selectedStatistic Statistic to calculate on SelecticMetric
+		 * @param topQueriesReturned Number of queries to return if ReturnAllQueries is not set
+		 * @param returnAllQueries True to include all queries in the report; false to only include the top queries, up to the value specified by TopQueriesReturned
+		 * @param minNumberOfQueryPlans Minimum number of query plans for a query to included in the report
+		 */
+		getOverallResourceConsumptionReport(connectionOwnerUri: string, specifiedTimeInterval: TimeInterval, specifiedBucketInterval: BucketInterval, selectedMetric: Metric, selectedStatistic: Statistic, topQueriesReturned: number, returnAllQueries: boolean, minNumberOfQueryPlans: number): Promise<QueryStoreQueryResult>;
+	}
+
+	//#region Results
+
+	/**
+	 * Result containing a finalized query for a report
+	 */
+	export interface QueryStoreQueryResult extends azdata.ResultStatus {
+		/**
+		 * Finalized query for a report
+		 */
+		query: string;
+	}
+
+	//#endregion
+
+	//#region Types
+
+	export const enum BucketInterval { // values from SSMS: $\Sql\ssms\core\QueryStoreModel\Common\BucketInterval.cs
+		Minute = 0,
+		Hour = 1,
+		Day = 2,
+		Week = 3,
+		Month = 4,
+		Automatic = 5
+	}
+
+	export const enum PlanTimeIntervalMode { // values from SSMS: $\Sql\ssms\core\QueryStoreModel\PlanSummary\PlanSummaryConfiguration.cs
+		SpecifiedRange = 0,
+		AllHistory = 1
+	}
+
+	export const enum Metric { // values from SSMS: $\Sql\ssms\core\QueryStoreModel\Common\Metric.cs
+		CPUTime = 0,
+		Duration = 1,
+		LogicalWrites = 2,
+		LogicalReads = 3,
+		MemoryConsumption = 4,
+		PhysicalReads = 5,
+		ExecutionCount = 6,
+		ClrTime = 7,
+		Dop = 8,
+		RowCount = 9,
+		LogMemoryUsed = 10,
+		TempDbMemoryUsed = 11,
+		WaitTime = 12
+	}
+
+	export const enum Statistic { // values from SSMS: $\Sql\ssms\core\QueryStoreModel\Common\Statistic.cs
+		Avg = 0,
+		Min = 1,
+		Max = 2,
+		Stdev = 3,
+		Last = 4,
+		Total = 5,
+		Variation = 6
+	}
+
+	export const enum TimeIntervalOptions // values from SSMS: $\Sql\ssms\core\QueryStoreModel\Common\TimeInterval.cs
+	{
+		Last5Minutes = 0,
+		Last15Minutes = 1,
+		Last30Minutes = 2,
+		LastHour = 3,
+		Last12Hours = 4,
+		LastDay = 5,
+		Last2Days = 6,
+		LastWeek = 7,
+		Last2Weeks = 8,
+		LastMonth = 9,
+		Last3Months = 10,
+		Last6Months = 11,
+		LastYear = 12,
+		AllTime = 13,
+		Custom = 14
+	}
+
+	export interface TimeInterval {
+		startDateTimeInUtc?: string,
+		endDateTimeInUtc?: string,
+		timeIntervalOptions?: TimeIntervalOptions
+	}
+
+	//#endregion
+
+	//#endregion
 }

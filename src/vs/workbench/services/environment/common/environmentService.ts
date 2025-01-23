@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { refineServiceDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -24,7 +24,9 @@ export interface IWorkbenchEnvironmentService extends IEnvironmentService {
 
 	// --- Paths
 	readonly logFile: URI;
+	readonly windowLogsPath: URI;
 	readonly extHostLogsPath: URI;
+	readonly extHostTelemetryLogFile: URI;
 
 	// --- Extensions
 	readonly extensionEnabledProposedApi?: string[];
@@ -40,6 +42,7 @@ export interface IWorkbenchEnvironmentService extends IEnvironmentService {
 	readonly debugRenderer: boolean;
 	readonly logExtensionHostCommunication?: boolean;
 	readonly enableSmokeTestDriver?: boolean;
+	readonly profDurationMarkers?: string[];
 
 	// --- Editors to open
 	readonly filesToOpenOrCreate?: IPath[] | undefined;

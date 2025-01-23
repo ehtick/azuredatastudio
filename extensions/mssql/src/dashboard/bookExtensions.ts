@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -56,7 +56,7 @@ namespace BookContributions {
 	export function fromExtension(
 		extension: vscode.Extension<any>
 	): BookContribution[] {
-		const contributions = extension.packageJSON && extension.packageJSON.contributes;
+		const contributions = extension.packageJSON?.contributes as unknown[];
 		if (!contributions) {
 			return [];
 		}

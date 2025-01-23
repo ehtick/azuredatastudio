@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as UUID from 'vscode-languageclient/lib/utils/uuid';
@@ -142,6 +142,30 @@ export class PerFolderServerInstance implements IServerInstance {
 		}
 	}
 
+	private stopSync(): void {
+		try {
+			this._isStopping = true;
+			if (this.baseDir) {
+				let exists = fs.pathExistsSync(this.baseDir);
+				if (exists) {
+					fs.removeSync(this.baseDir);
+				}
+			}
+			if (this._isStarted) {
+				let install = this.options.install;
+				let stopCommand = `"${install.pythonExecutable}" "${this.notebookScriptPath}" stop ${this._port}`;
+				utils.executeBufferedCommandSync(stopCommand, install.execOptions);
+			}
+		} catch (error) {
+			// For now, we don't care as this is non-critical
+			this.notify(this.options.install, localize('serverStopError', "Error stopping Notebook Server: {0}", utils.getErrorMessage(error)));
+		} finally {
+			this._isStarted = false;
+			ensureProcessEnded(this.childProcess);
+			this.handleConnectionClosed();
+		}
+	}
+
 	private async configureJupyter(): Promise<void> {
 		this.createInstanceFolders();
 		let resourcesFolder = path.join(this.options.install.extensionPath, 'resources', constants.jupyterConfigRootFolder);
@@ -200,11 +224,60 @@ export class PerFolderServerInstance implements IServerInstance {
 		}
 	}
 
+	private async areConfigFilesSafe(): Promise<boolean> {
+		// If not on Windows, we don't need to check for potentially unsafe Jupyter configuration files
+		if (process.platform !== 'win32') {
+			return true;
+		}
+
+		// Check for potentially unsafe Jupyter configuration files in the ProgramData directory
+		let programData = process.env.PROGRAMDATA;
+
+		// default to C:\ProgramData if PROGRAMDATA is not set
+		if (!programData) {
+			programData = path.join('C:', 'ProgramData');
+		}
+
+		// These config files in ProgramData can be modified by non-admin users on Windows,
+		// potentially allowing arbitrary code execution
+		const configFilesToCheck = [
+			path.join(programData, 'jupyter', 'jupyter_config.py'),
+			path.join(programData, 'ipython', 'ipython_config.py')
+		];
+
+		try {
+			const unsafeConfigFiles = configFilesToCheck.filter(fs.existsSync);
+
+			if (unsafeConfigFiles.length > 0) {
+				const message = localize('unsafeConfigMessage', "Found potentially unsafe Jupyter configuration files that could allow code execution: {0}", unsafeConfigFiles.join(', '));
+				const blockLoading = localize('unsafeDoNotLoad', 'Do Not Load');
+				const ignoreAndLoad = localize('unsafeLoadAyway', 'Load Anyway');
+
+				const choice = await vscode.window.showWarningMessage(message, { modal: true }, blockLoading, ignoreAndLoad);
+				if (choice !== ignoreAndLoad) {
+					return false;
+				}
+			}
+
+			// unsafe config either doesn't exist or user chose to ignore them
+			return true;
+		} catch (error) {
+			// If we can't check the files, err on the side of caution
+			return false;
+		}
+	}
+
 	/**
 	 * Starts a Jupyter instance using the provided a start command. Server is determined to have
 	 * started when the log message with URL to connect to is emitted.
 	 */
 	protected async startInternal(): Promise<void> {
+		// don't start server is there are potentially unsafe Jupyter configuration files in the Program Data directory
+		let configFilesSafe = await this.areConfigFilesSafe();
+		if (!configFilesSafe) {
+			throw new Error('Potentially unsafe Jupyter configuration files found in Program Data directory');
+		}
+
 		let startCommand: string;
 		let notebookConfig: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration(constants.notebookConfigKey);
 		let allowRoot: boolean = notebookConfig.get(constants.allowRoot);
@@ -214,12 +287,12 @@ export class PerFolderServerInstance implements IServerInstance {
 		let notebookDirectory = this.getNotebookDirectory();
 		this._token = await utils.getRandomToken();
 		const allowRootParam = allowRoot ? '--allow-root' : '';
-		startCommand = `"${this.options.install.pythonExecutable}" "${this.notebookScriptPath}" --no-browser --ip=127.0.0.1 ${allowRootParam} --no-mathjax --notebook-dir "${notebookDirectory}" --NotebookApp.token=${this._token}`;
+		startCommand = `"${this.options.install.pythonExecutable}" "${this.notebookScriptPath}" --no-browser --ip=127.0.0.1 ${allowRootParam} --ServerApp.root_dir "${notebookDirectory}" --ServerApp.token=${this._token}`;
 		this.notifyStarting(this.options.install, startCommand);
 
 		// Execute the command
 		await this.executeStartCommand(startCommand);
-		sendNotebookActionEvent(NbTelemetryView.Jupyter, NbTelemetryAction.JupyterServerStarted, { pythonVersion: this.options.install.installedPythonVersion, usingExistingPython: String(JupyterServerInstallation.getExistingPythonSetting()), usingConda: String(this.options.install.usingConda) });
+		sendNotebookActionEvent(NbTelemetryView.Jupyter, NbTelemetryAction.JupyterServerStarted, { pythonVersion: this.options.install.installedPythonVersion, usingConda: String(this.options.install.usingConda) });
 	}
 
 	private executeStartCommand(startCommand: string): Promise<void> {
@@ -269,7 +342,9 @@ export class PerFolderServerInstance implements IServerInstance {
 		this.childProcess.addListener('error', this.handleConnectionError);
 		this.childProcess.addListener('exit', this.handleConnectionClosed);
 
-		process.addListener('exit', this.stop);
+		// Have to use the synchronous Stop callback for Exit events since it's required in the Node.JS docs: https://nodejs.org/api/process.html#event-exit
+		// The process exits immediately after calling the Stop callback, so if execution is yielded with an await, then any code after that isn't run.
+		process.addListener('exit', this.stopSync);
 
 		// TODO #897 covers serializing stdout and stderr to a location where we can read from so that user can see if they run into trouble
 	}

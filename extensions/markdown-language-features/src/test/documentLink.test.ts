@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -134,7 +134,7 @@ async function getLinksForFile(file: vscode.Uri): Promise<vscode.DocumentLink[]>
 		}
 	});
 
-	test('Should navigate to fragment within current untitled file', async () => { // TODO: skip for now for ls migration
+	test.skip('Should navigate to fragment within current untitled file', async () => { // TODO: skip for now for ls migration
 		const testFile = workspaceFile('x.md').with({ scheme: 'untitled' });
 		await withFileContents(testFile, joinLines(
 			'[](#second)',
@@ -169,9 +169,8 @@ async function withFileContents(file: vscode.Uri, contents: string): Promise<voi
 }
 
 async function executeLink(link: vscode.DocumentLink) {
-	debugLog('executeingLink', link.target?.toString(), Date.now());
+	debugLog('executingLink', link.target?.toString(), Date.now());
 
-	const args: any[] = JSON.parse(decodeURIComponent(link.target!.query));
-	await vscode.commands.executeCommand(link.target!.path, vscode.Uri.from(args[0]), ...args.slice(1));
+	await vscode.commands.executeCommand('vscode.open', link.target!);
 	debugLog('executedLink', vscode.window.activeTextEditor?.document.toString(), Date.now());
 }

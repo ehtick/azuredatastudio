@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./code';
 import 'vs/css!./media/output';
@@ -35,7 +35,7 @@ const componentRegistry = <IMimeComponentRegistry>Registry.as(Extensions.MimeCom
 	templateUrl: decodeURI(require.toUrl('./output.component.html'))
 })
 export class OutputComponent extends CellView implements OnInit, AfterViewInit {
-	@ViewChild('output', { read: ElementRef }) override output: ElementRef;
+	@ViewChild('output', { read: ElementRef }) protected override output: ElementRef;
 	@ViewChild(ComponentHostDirective) componentHost: ComponentHostDirective;
 	@Input() cellOutput: nb.ICellOutput;
 	@Input() cellModel: ICellModel;

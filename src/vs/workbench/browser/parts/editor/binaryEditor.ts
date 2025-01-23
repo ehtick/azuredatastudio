@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -12,7 +12,6 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ByteSize } from 'vs/platform/files/common/files';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { EditorPlaceholder, IEditorPlaceholderContents } from 'vs/workbench/browser/parts/editor/editorPlaceholder';
 
 export interface IOpenCallbacks {
@@ -37,10 +36,9 @@ export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
 		private readonly callbacks: IOpenCallbacks,
 		telemetryService: ITelemetryService,
 		themeService: IThemeService,
-		@IStorageService storageService: IStorageService,
-		@IInstantiationService instantiationService: IInstantiationService
+		@IStorageService storageService: IStorageService
 	) {
-		super(id, telemetryService, themeService, storageService, instantiationService);
+		super(id, telemetryService, themeService, storageService);
 	}
 
 	override getTitle(): string {
@@ -48,7 +46,7 @@ export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
 	}
 
 	protected async getContents(input: EditorInput, options: IEditorOptions): Promise<IEditorPlaceholderContents> {
-		const model = await input.resolve();
+		const model = await input.resolve(options);
 
 		// Assert Model instance
 		if (!(model instanceof BinaryEditorModel)) {
@@ -61,7 +59,7 @@ export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
 
 		return {
 			icon: '$(warning)',
-			label: localize('binaryError', "The file is not displayed in the editor because it is either binary or uses an unsupported text encoding."),
+			label: localize('binaryError', "The file is not displayed in the text editor because it is either binary or uses an unsupported text encoding."),
 			actions: [
 				{
 					label: localize('openAnyway', "Open Anyway"),

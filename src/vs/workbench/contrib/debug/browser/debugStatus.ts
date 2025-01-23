@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
@@ -18,8 +18,8 @@ export class DebugStatusContribution implements IWorkbenchContribution {
 
 	constructor(
 		@IStatusbarService private readonly statusBarService: IStatusbarService,
-		@IDebugService readonly debugService: IDebugService,
-		@IConfigurationService readonly configurationService: IConfigurationService
+		@IDebugService private readonly debugService: IDebugService,
+		@IConfigurationService configurationService: IConfigurationService
 	) {
 
 		const addStatusBarEntry = () => {
@@ -72,9 +72,7 @@ export class DebugStatusContribution implements IWorkbenchContribution {
 	}
 
 	dispose(): void {
-		if (this.entryAccessor) {
-			this.entryAccessor.dispose();
-		}
+		this.entryAccessor?.dispose();
 		dispose(this.toDispose);
 	}
 }

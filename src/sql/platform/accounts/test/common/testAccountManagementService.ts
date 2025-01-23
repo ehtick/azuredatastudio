@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -35,8 +35,8 @@ export class TestAccountManagementService implements IAccountManagementService {
 		return undefined;
 	}
 
-	async copyUserCodeAndOpenBrowser(userCode: string, uri: string): Promise<void> {
-		return;
+	async copyUserCodeAndOpenBrowser(userCode: string, uri: string): Promise<boolean> {
+		return true;
 	}
 
 	getAccountProviderMetadata(): Promise<azdata.AccountProviderMetadata[]> {
@@ -57,6 +57,14 @@ export class TestAccountManagementService implements IAccountManagementService {
 
 	getAccountSecurityToken(account: azdata.Account, tenant: string, resource: azdata.AzureResource): Promise<azdata.accounts.AccountSecurityToken> {
 		return Promise.resolve(undefined!);
+	}
+
+	promptProvider() {
+		return Promise.resolve('');
+	}
+
+	updateAccountListAuthSessions(provider: azdata.Account): Promise<void> {
+		return Promise.resolve();
 	}
 
 	removeAccount(accountKey: azdata.AccountKey): Promise<boolean> {
@@ -107,6 +115,7 @@ export class AccountProviderStub implements azdata.AccountProvider {
 	getAccountSecurityToken(account: azdata.Account, tenant: string, resource: azdata.AzureResource): Thenable<{ token: string }> {
 		return Promise.resolve(undefined!);
 	}
+
 	initialize(storedAccounts: azdata.Account[]): Thenable<azdata.Account[]> {
 		return Promise.resolve(storedAccounts);
 	}

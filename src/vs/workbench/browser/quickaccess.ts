@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -17,14 +17,18 @@ export const defaultQuickAccessContextKeyValue = 'inFilesPicker';
 export const defaultQuickAccessContext = ContextKeyExpr.and(inQuickPickContext, ContextKeyExpr.has(defaultQuickAccessContextKeyValue));
 
 export interface IWorkbenchQuickAccessConfiguration {
-	workbench: {
-		commandPalette: {
-			history: number;
-			preserveInput: boolean;
+	readonly workbench: {
+		readonly commandPalette: {
+			readonly history: number;
+			readonly preserveInput: boolean;
+			readonly experimental: {
+				readonly suggestCommands: boolean;
+				readonly enableNaturalLanguageSearch: boolean;
+			};
 		};
-		quickOpen: {
-			enableExperimentalNewVersion: boolean;
-			preserveInput: boolean;
+		readonly quickOpen: {
+			readonly enableExperimentalNewVersion: boolean;
+			readonly preserveInput: boolean;
 		};
 	};
 }

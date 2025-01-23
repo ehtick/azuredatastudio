@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-const path = require('path');
-const testRunner = require('../../../../test/integration/electron/testrunner');
+import * as path from 'path';
+import * as testRunner from '../../../../test/integration/electron/testrunner';
 
-const options: any = {
+const options: import('mocha').MochaOptions = {
 	ui: 'tdd',
 	color: true,
 	timeout: 60000

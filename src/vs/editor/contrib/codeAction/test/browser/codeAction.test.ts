@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as assert from 'assert';
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -10,8 +10,8 @@ import { Range } from 'vs/editor/common/core/range';
 import { LanguageFeatureRegistry } from 'vs/editor/common/languageFeatureRegistry';
 import * as languages from 'vs/editor/common/languages';
 import { TextModel } from 'vs/editor/common/model/textModel';
-import { CodeActionItem, getCodeActions } from 'vs/editor/contrib/codeAction/browser/codeAction';
-import { CodeActionKind, CodeActionTriggerSource } from 'vs/editor/contrib/codeAction/browser/types';
+import { getCodeActions } from 'vs/editor/contrib/codeAction/browser/codeAction';
+import { CodeActionItem, CodeActionKind, CodeActionTriggerSource } from 'vs/editor/contrib/codeAction/common/types';
 import { createTextModel } from 'vs/editor/test/common/testTextModel';
 import { IMarkerData, MarkerSeverity } from 'vs/platform/markers/common/markers';
 import { Progress } from 'vs/platform/progress/common/progress';
@@ -80,13 +80,13 @@ suite('CodeAction', () => {
 		},
 		tsLint: {
 			abc: {
-				$ident: 57,
+				$ident: 'funny' + 57,
 				arguments: <IMarkerData[]>[],
 				id: '_internal_command_delegation',
 				title: 'abc'
 			},
 			bcd: {
-				$ident: 47,
+				$ident: 'funny' + 47,
 				arguments: <IMarkerData[]>[],
 				id: '_internal_command_delegation',
 				title: 'bcd'
@@ -119,9 +119,9 @@ suite('CodeAction', () => {
 		disposables.add(registry.register('fooLang', provider));
 
 		const expected = [
-			// CodeActions with a diagnostics array are shown first ordered by diagnostics.message
-			new CodeActionItem(testData.diagnostics.abc, provider),
+			// CodeActions with a diagnostics array are shown first without further sorting
 			new CodeActionItem(testData.diagnostics.bcd, provider),
+			new CodeActionItem(testData.diagnostics.abc, provider),
 
 			// CodeActions without diagnostics are shown in the given order without any further sorting
 			new CodeActionItem(testData.command.abc, provider),

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as descriptors from './descriptors';
@@ -38,11 +38,10 @@ export const IInstantiationService = createDecorator<IInstantiationService>('ins
  * Given a list of arguments as a tuple, attempt to extract the leading, non-service arguments
  * to their own tuple.
  */
-type GetLeadingNonServiceArgs<Args> =
-	Args extends [...BrandedService[]] ? []
-	: Args extends [infer A, ...BrandedService[]] ? [A]
-	: Args extends [infer A, ...infer R] ? [A, ...GetLeadingNonServiceArgs<R>]
-	: never;
+export type GetLeadingNonServiceArgs<TArgs extends any[]> =
+	TArgs extends [] ? []
+	: TArgs extends [...infer TFirst, BrandedService] ? GetLeadingNonServiceArgs<TFirst>
+	: TArgs;
 
 export interface IInstantiationService {
 

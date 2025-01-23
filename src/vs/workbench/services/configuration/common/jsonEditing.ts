@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
@@ -10,11 +10,6 @@ import { JSONPath } from 'vs/base/common/json';
 export const IJSONEditingService = createDecorator<IJSONEditingService>('jsonEditingService');
 
 export const enum JSONEditingErrorCode {
-
-	/**
-	 * Error when trying to write and save to the file while it is dirty in the editor.
-	 */
-	ERROR_FILE_DIRTY,
 
 	/**
 	 * Error when trying to write to a file that contains JSON errors.

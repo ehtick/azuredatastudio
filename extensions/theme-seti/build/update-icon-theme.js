@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 'use strict';
@@ -44,10 +44,15 @@ const nonBuiltInLanguages = { // { fileNames, extensions  }
 // list of languagesId that inherit the icon from another language
 const inheritIconFromLanguage = {
 	"jsonc": 'json',
+	"jsonl": 'json',
 	"postcss": 'css',
 	"django-html": 'html',
 	"blade": 'php'
-}
+};
+
+const ignoreExtAssociation = {
+	"properties": true
+};
 
 const FROM_DISK = true; // set to true to take content from a repo checked out next to the vscode repo
 
@@ -399,7 +404,7 @@ exports.update = function () {
 					if (!nonBuiltInLanguages[lang] && !inheritIconFromLanguage[lang]) {
 						for (let i2 = 0; i2 < exts.length; i2++) {
 							// remove the extension association, unless it is different from the preferred
-							if (ext2Def[exts[i2]] === preferredDef) {
+							if (ext2Def[exts[i2]] === preferredDef || ignoreExtAssociation[exts[i2]]) {
 								delete ext2Def[exts[i2]];
 							}
 						}

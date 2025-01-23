@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as arrays from 'vs/base/common/arrays';
@@ -25,6 +25,11 @@ function stackToString(stack: string[] | string | undefined): string | undefined
 }
 
 function detectSystemErrorMessage(exception: any): string {
+
+	// Custom node.js error from us
+	if (exception.code === 'ERR_UNC_HOST_NOT_ALLOWED') {
+		return `${exception.message}. Please update the 'security.allowedUNCHosts' setting if you want to allow this host.`;
+	}
 
 	// See https://nodejs.org/api/errors.html#errors_class_system_error
 	if (typeof exception.code === 'string' && typeof exception.errno === 'number' && typeof exception.syscall === 'string') {

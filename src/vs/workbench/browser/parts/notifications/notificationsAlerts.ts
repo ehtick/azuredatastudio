@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { alert } from 'vs/base/browser/ui/aria/aria';
@@ -8,7 +8,7 @@ import { localize } from 'vs/nls';
 import { INotificationViewItem, INotificationsModel, NotificationChangeType, INotificationChangeEvent, NotificationViewItemContentChangeKind } from 'vs/workbench/common/notifications';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { Severity } from 'vs/platform/notification/common/notification';
+import { NotificationPriority, Severity } from 'vs/platform/notification/common/notification';
 import { Event } from 'vs/base/common/event';
 
 export class NotificationsAlerts extends Disposable {
@@ -46,7 +46,7 @@ export class NotificationsAlerts extends Disposable {
 	}
 
 	private triggerAriaAlert(notification: INotificationViewItem): void {
-		if (notification.silent) {
+		if (notification.priority === NotificationPriority.SILENT) {
 			return;
 		}
 

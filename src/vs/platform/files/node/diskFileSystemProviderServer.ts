@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
@@ -102,7 +102,7 @@ export abstract class AbstractDiskFileSystemProviderChannel<T> extends Disposabl
 		const cts = new CancellationTokenSource();
 
 		const emitter = new Emitter<ReadableStreamEventPayload<VSBuffer>>({
-			onLastListenerRemove: () => {
+			onDidRemoveLastListener: () => {
 
 				// Ensure to cancel the read operation when there is no more
 				// listener on the other side to prevent unneeded work.
@@ -211,10 +211,10 @@ export abstract class AbstractDiskFileSystemProviderChannel<T> extends Disposabl
 		// we create a `SessionFileWatcher` and a `Emitter` for that session.
 
 		const emitter = new Emitter<IFileChange[] | string>({
-			onFirstListenerAdd: () => {
+			onWillAddFirstListener: () => {
 				this.sessionToWatcher.set(sessionId, this.createSessionFileWatcher(uriTransformer, emitter));
 			},
-			onLastListenerRemove: () => {
+			onDidRemoveLastListener: () => {
 				dispose(this.sessionToWatcher.get(sessionId));
 				this.sessionToWatcher.delete(sessionId);
 			}

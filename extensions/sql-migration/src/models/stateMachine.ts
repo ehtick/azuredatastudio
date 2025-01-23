@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -8,16 +8,16 @@ import * as azurecore from 'azurecore';
 import * as vscode from 'vscode';
 import * as contracts from '../service/contracts';
 import * as features from '../service/features';
-import { SqlMigrationService, SqlManagedInstance, startDatabaseMigration, StartDatabaseMigrationRequest, StorageAccount, SqlVMServer, getLocationDisplayName, getSqlManagedInstanceDatabases, AzureSqlDatabaseServer, VirtualMachineInstanceView } from '../api/azure';
+import { SqlMigrationService, SqlManagedInstance, startDatabaseMigration, StartDatabaseMigrationRequest, StorageAccount, SqlVMServer, getSqlManagedInstanceDatabases, AzureSqlDatabaseServer, VirtualMachineInstanceView } from '../api/azure';
 import * as constants from '../constants/strings';
 import * as nls from 'vscode-nls';
 import { v4 as uuidv4 } from 'uuid';
 import { sendSqlMigrationActionEvent, TelemetryAction, TelemetryViews, logError } from '../telemetry';
 import { hashString, deepClone, getBlobContainerNameWithFolder, Blob, getLastBackupFileNameWithoutFolder, MigrationTargetType } from '../api/utils';
-import { SKURecommendationPage } from '../wizard/skuRecommendationPage';
+import { SKURecommendationPage } from '../wizard/skuRecommendation/skuRecommendationPage';
 import { excludeDatabases, getEncryptConnectionValue, getSourceConnectionId, getSourceConnectionProfile, getSourceConnectionServerInfo, getSourceConnectionString, getSourceConnectionUri, getTrustServerCertificateValue, SourceDatabaseInfo, TargetDatabaseInfo } from '../api/sqlUtils';
 import { LoginMigrationModel } from './loginMigrationModel';
-import { TdeMigrationDbResult, TdeMigrationModel } from './tdeModels';
+import { TdeMigrationDbResult, TdeMigrationModel, TdeValidationResult } from './tdeModels';
 import { NetworkInterfaceModel } from '../api/dataModels/azure/networkInterfaceModel';
 const localize = nls.loadMessageBundle();
 
@@ -29,9 +29,22 @@ export enum ValidateIrState {
 	Canceled = 'Canceled',
 }
 
+export enum ValidateLoginMigrationValidationState {
+	Pending = 'Pending',
+	Running = 'Running',
+	Succeeded = 'Succeeded',
+	Failed = 'Failed',
+	Canceled = 'Canceled',
+}
+
 export interface ValidationResult {
 	errors: string[];
 	state: ValidateIrState;
+}
+
+export interface LoginMigrationValidationResult {
+	errors: string[];
+	state: ValidateLoginMigrationValidationState;
 }
 
 export enum State {
@@ -84,6 +97,7 @@ export enum FileStorageType {
 }
 
 export enum Page {
+	ImportAssessment,
 	DatabaseSelector,
 	SKURecommendation,
 	TargetSelection,
@@ -150,7 +164,11 @@ export interface SavedInfo {
 	blobs: Blob[];
 	targetDatabaseNames: string[];
 	sqlMigrationService: SqlMigrationService | undefined;
+	serviceSubscription: azurecore.azureResource.AzureResourceSubscription | null;
+	serviceResourceGroup: azurecore.azureResource.AzureResourceResourceGroup | null;
 	serverAssessment: ServerAssessment | null;
+	xEventsFilesFolderPath: string | null;
+	collectAdhocQueries: boolean | null;
 	skuRecommendation: SkuRecommendationSavedInfo | null;
 }
 
@@ -189,8 +207,10 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public _vmInstanceView!: VirtualMachineInstanceView;
 	public _databaseBackup!: DatabaseBackupModel;
 	public _storageAccounts!: StorageAccount[];
+	public _storageAccount!: azurecore.azureResource.AzureGraphResource;
 	public _fileShares!: azurecore.azureResource.FileShare[];
 	public _blobContainers!: azurecore.azureResource.BlobContainer[];
+	public _blobContainer!: azurecore.azureResource.BlobContainer;
 	public _lastFileNames!: azurecore.azureResource.Blob[];
 	public _blobContainerFolders!: string[];
 	public _sourceDatabaseNames!: string[];
@@ -199,14 +219,18 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public _targetServerName!: string;
 	public _targetUserName!: string;
 	public _targetPassword!: string;
+	public _targetPort!: string;
 	public _sourceTargetMapping: Map<string, TargetDatabaseInfo | undefined> = new Map();
 
+	public _sqlMigrationServiceSubscription!: azurecore.azureResource.AzureResourceSubscription;
 	public _sqlMigrationServiceResourceGroup!: azurecore.azureResource.AzureResourceResourceGroup;
 	public _sqlMigrationService!: SqlMigrationService | undefined;
 	public _sqlMigrationServices!: SqlMigrationService[];
 	public _nodeNames!: string[];
 
 	public _databasesForAssessment!: string[];
+	public _xEventsFilesFolderPath: string = '';
+	public _collectAdhocQueries: boolean = false;
 	public _assessmentResults!: ServerAssessment;
 	public _assessedDatabaseList!: string[];
 	public _runAssessments: boolean = true;
@@ -215,6 +239,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public mementoString: string;
 
 	public _databasesForMigration: string[] = [];
+	public _databaseInfosForMigrationMap: Map<string, SourceDatabaseInfo | undefined> = new Map();
 	public _databaseInfosForMigration: SourceDatabaseInfo[] = [];
 	public _didUpdateDatabasesForMigration: boolean = false;
 	public _didDatabaseMappingChange: boolean = false;
@@ -226,12 +251,14 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public _validateIrSqlDb: ValidationResult[] = [];
 	public _validateIrSqlMi: ValidationResult[] = [];
 	public _validateIrSqlVm: ValidationResult[] = [];
+	public _validateLoginMigration: LoginMigrationValidationResult[] = [];
 
 	public _skuRecommendationResults!: SkuRecommendation;
 	public _skuRecommendationPerformanceDataSource!: PerformanceDataSourceOptions;
 	private _skuRecommendationApiResponse!: contracts.SkuRecommendationResult;
 	public _skuRecommendationReportFilePaths: string[];
 	public _skuRecommendationPerformanceLocation!: string;
+	public _armTemplateResult!: ArmTemplate;
 
 	public _perfDataCollectionStartDate!: Date | undefined;
 	public _perfDataCollectionStopDate!: Date | undefined;
@@ -240,7 +267,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public _perfDataCollectionErrors!: string[];
 	public _perfDataCollectionIsCollecting!: boolean;
 
-	public _aadDomainName!: string;
+	public _aadDomainName: string = "";
 	public _loginMigrationModel: LoginMigrationModel;
 
 	public readonly _refreshGetSkuRecommendationIntervalInMinutes = 10;
@@ -249,6 +276,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public readonly _numberOfPerformanceDataQueryIterations = 19;
 	public readonly _defaultDataPointStartTime = '1900-01-01 00:00:00';
 	public readonly _defaultDataPointEndTime = '2200-01-01 00:00:00';
+	public readonly _sqlMiEndpointSuffix = "database.windows.net";
 	public readonly _recommendationTargetPlatforms = [MigrationTargetType.SQLDB, MigrationTargetType.SQLMI, MigrationTargetType.SQLVM];
 
 	public refreshPerfDataCollectionFrequency = this._performanceDataQueryIntervalInSeconds * 1000;
@@ -268,6 +296,8 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public serverName!: string;
 
 	public tdeMigrationConfig: TdeMigrationModel = new TdeMigrationModel();
+
+	public isSchemaMigrationSupported: boolean = true;
 
 	private _stateChangeEventEmitter = new vscode.EventEmitter<StateChangeEvent>();
 	private _currentState: State;
@@ -296,7 +326,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 
 		this._skuScalingFactor = 100;
 		this._skuTargetPercentile = 95;
-		this._skuEnablePreview = false;
+		this._skuEnablePreview = true;
 		this._skuEnableElastic = false;
 		this._loginMigrationModel = new LoginMigrationModel();
 	}
@@ -342,6 +372,28 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 				r.state === ValidateIrState.Succeeded)
 	}
 
+	public get isLoginMigrationTargetValidated(): boolean {
+		const results = this._validateLoginMigration ?? [];
+		// Validating if Sys admin and Entra Id validations have succeeded. User mapping validation is optional.
+		return results.length > 1
+			&& results.slice(0, 2).every(r =>
+				r.errors.length === 0 &&
+				r.state === ValidateLoginMigrationValidationState.Succeeded);
+	}
+
+	public get migrationTargetServerName(): string {
+		switch (this._targetType) {
+			case MigrationTargetType.SQLMI:
+				return (this._targetServerInstance as azurecore.azureResource.AzureSqlManagedInstance)?.name;
+			case MigrationTargetType.SQLVM:
+				return (this._targetServerInstance as SqlVMServer)?.name;
+			case MigrationTargetType.SQLDB:
+				return (this._targetServerInstance as AzureSqlDatabaseServer)?.name;
+			default:
+				return '';
+		}
+	}
+
 	public get isBackupContainerNetworkShare(): boolean {
 		return this._databaseBackup?.networkContainerType === NetworkContainerType.NETWORK_SHARE;
 	}
@@ -384,8 +436,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 	public async getDatabaseAssessments(targetType: MigrationTargetType[]): Promise<ServerAssessment> {
 		const connectionString = await getSourceConnectionString();
 		try {
-			const xEventsFilesFolderPath = '';		// to-do: collect by prompting the user in the UI - for now, blank = disabled
-			const response = (await this.migrationService.getAssessments(connectionString, this._databasesForAssessment, xEventsFilesFolderPath))!;
+			const response = (await this.migrationService.getAssessments(connectionString, this._databasesForAssessment, this._xEventsFilesFolderPath ?? '', this._collectAdhocQueries ?? false))!;
 			this._assessmentApiResponse = response;
 			this._assessedDatabaseList = this._databasesForAssessment.slice();
 
@@ -444,6 +495,25 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 		this.generateAssessmentTelemetry().catch(e => console.error(e));
 		return this._assessmentResults;
 	}
+
+	public async getArmTemplate(targetType: string): Promise<ArmTemplate> {
+		try {
+			const response = (await this.migrationService.getArmTemplate(targetType))!
+			if (response) {
+				this._armTemplateResult = {
+					templates: response
+				};
+			}
+		}
+		catch (error) {
+			logError(TelemetryViews.ProvisioningScriptWizard, 'GenerateProvisioningScriptFailed', error);
+			this._armTemplateResult = {
+				generateTemplateError: error
+			};
+		}
+		return this._armTemplateResult;
+	}
+
 
 	public async getSkuRecommendations(): Promise<SkuRecommendation> {
 		try {
@@ -643,7 +713,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 
 				void vscode.window.showInformationMessage(constants.AZURE_RECOMMENDATION_START_POPUP);
 
-				await this.startSkuTimers(page, this.refreshPerfDataCollectionFrequency);
+				await this.startSkuTimers(page);
 			}
 		}
 		catch (error) {
@@ -672,7 +742,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 		}
 	}
 
-	public async startSkuTimers(page: SKURecommendationPage, refreshIntervalInMs: number): Promise<void> {
+	public async startSkuTimers(page: SKURecommendationPage): Promise<void> {
 		const classVariable = this;
 
 		if (!this._autoRefreshPerfDataCollectionHandle) {
@@ -685,7 +755,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 							await page.refreshSkuRecommendationComponents();	// update timer
 						}
 					},
-					refreshIntervalInMs);
+					this.refreshPerfDataCollectionFrequency);
 			}
 		}
 
@@ -757,7 +827,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 			}
 		}
 		catch (error) {
-			logError(TelemetryViews.DataCollectionWizard, 'RefreshDataCollectionFailed', error);
+			console.log(error);		// use console.log() instead of logError() to avoid spamming telemetry with this error, which can be frequent
 		}
 
 		return true;
@@ -927,10 +997,6 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 		return this.extensionContext.extensionPath;
 	}
 
-	public getLocationDisplayName(location: string): Promise<string> {
-		return getLocationDisplayName(location);
-	}
-
 	public async getManagedDatabases(): Promise<string[]> {
 		return (
 			await getSqlManagedInstanceDatabases(this._azureAccount,
@@ -960,7 +1026,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 				this._targetSubscription?.id,
 				this._resourceGroup?.name,
 				this._targetServerInstance.name,
-				this.tdeMigrationConfig._networkPath,
+				this.tdeMigrationConfig.getAppliedNetworkPath(),
 				accessToken,
 				reportUpdate);
 
@@ -985,6 +1051,55 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 		}
 
 		opResult.success = opResult.errors.length === 0; //Set success when there are no errors.
+		return opResult;
+	}
+
+	public async getTdeValidationTitles(): Promise<OperationResult<string[]>> {
+		const opResult: OperationResult<string[]> = {
+			success: false,
+			result: [],
+			errors: []
+		};
+
+		try {
+			opResult.result = await this.migrationService.getTdeValidationTitles() ?? [];
+		} catch (e) {
+			console.error(e);
+		}
+
+		return opResult;
+	}
+
+	public async runTdeValidation(networkSharePath: string): Promise<OperationResult<TdeValidationResult[]>> {
+		const opResult: OperationResult<TdeValidationResult[]> = {
+			success: false,
+			result: [],
+			errors: []
+		};
+
+		const connectionString = await getSourceConnectionString();
+
+		try {
+			let tdeValidationResult = await this.migrationService.runTdeValidation(
+				connectionString,
+				networkSharePath);
+
+			if (tdeValidationResult !== undefined) {
+				opResult.result = tdeValidationResult?.map((e) => {
+					return {
+						validationTitle: e.validationTitle,
+						validationDescription: e.validationDescription,
+						validationTroubleshootingTips: e.validationTroubleshootingTips,
+						validationErrorMessage: e.validationErrorMessage,
+						validationStatus: e.validationStatus,
+						validationStatusString: e.validationStatusString
+					};
+				});
+			}
+		} catch (e) {
+			console.error(e);
+		}
+
 		return opResult;
 	}
 
@@ -1035,7 +1150,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 					});
 
 					// skip databases that don't have tables selected
-					if (selectedTables === 0) {
+					if (selectedTables === 0 && !targetDatabaseInfo?.enableSchemaMigration) {
 						continue;
 					}
 
@@ -1057,6 +1172,15 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 						// when connecting to a target Azure SQL DB, use true/false
 						encryptConnection: true,
 						trustServerCertificate: false,
+					};
+
+					// Schema + data configuration
+					requestBody.properties.sqlSchemaMigrationConfiguration = {
+						enableSchemaMigration: targetDatabaseInfo?.enableSchemaMigration ?? false
+					};
+
+					requestBody.properties.sqlDataMigrationConfiguration = {
+						enableDataMigration: selectedTables > 0
 					};
 
 					// send an empty array when 'all' tables are selected for migration
@@ -1107,7 +1231,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 				requestBody.properties.sourceDatabaseName = this._databasesForMigration[i];
 				const response = await startDatabaseMigration(
 					this._azureAccount,
-					this._targetSubscription,
+					this._sqlMigrationServiceSubscription,
 					this._sqlMigrationService?.location!,
 					this._targetServerInstance,
 					this._targetDatabaseNames[i],
@@ -1117,6 +1241,8 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 				response.databaseMigration.properties.sourceDatabaseName = this._databasesForMigration[i];
 				response.databaseMigration.properties.backupConfiguration = requestBody.properties.backupConfiguration!;
 				response.databaseMigration.properties.offlineConfiguration = requestBody.properties.offlineConfiguration!;
+				response.databaseMigration.properties.sqlSchemaMigrationConfiguration = requestBody.properties.sqlSchemaMigrationConfiguration!;
+				response.databaseMigration.properties.sqlDataMigrationConfiguration = requestBody.properties.sqlDataMigrationConfiguration!;
 
 				let wizardEntryPoint = WizardEntryPoint.Default;
 				if (this.resumeAssessment) {
@@ -1130,10 +1256,10 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 						TelemetryAction.StartMigration,
 						{
 							'sessionId': this._sessionId,
-							'tenantId': this._azureAccount.properties.tenants[0].id,
-							'subscriptionId': this._targetSubscription?.id,
-							'resourceGroup': this._resourceGroup?.name,
-							'location': this._targetServerInstance.location,
+							'tenantId': this._azureTenant?.id,
+							'subscriptionId': this._sqlMigrationServiceSubscription?.id,
+							'resourceGroup': this._sqlMigrationServiceResourceGroup?.name,
+							'location': this._location.name,
 							'targetType': this._targetType,
 							'hashedServerName': hashString(this._assessmentApiResponse?.assessmentResult?.name),
 							'hashedDatabaseName': hashString(this._databasesForMigration[i]),
@@ -1196,13 +1322,19 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 			targetDatabaseNames: [],
 			sqlMigrationService: undefined,
 			serverAssessment: null,
+			xEventsFilesFolderPath: null,
+			collectAdhocQueries: null,
 			skuRecommendation: null,
+			serviceResourceGroup: null,
+			serviceSubscription: null,
 		};
 		switch (currentPage) {
 			case Page.Summary:
 
 			case Page.IntegrationRuntime:
 				saveInfo.sqlMigrationService = this._sqlMigrationService;
+				saveInfo.serviceSubscription = this._sqlMigrationServiceSubscription;
+				saveInfo.serviceResourceGroup = this._sqlMigrationServiceResourceGroup;
 				saveInfo.migrationMode = this._databaseBackup.migrationMode;
 				saveInfo.networkContainerType = this._databaseBackup.networkContainerType;
 
@@ -1223,6 +1355,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 				saveInfo.migrationTargetType = this._targetType;
 				saveInfo.databaseList = this._databasesForMigration;
 				saveInfo.serverAssessment = this._assessmentResults;
+				saveInfo.xEventsFilesFolderPath = this._xEventsFilesFolderPath;
 
 				if (this._skuRecommendationPerformanceDataSource) {
 					const skuRecommendation: SkuRecommendationSavedInfo = {
@@ -1239,6 +1372,7 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 
 			case Page.DatabaseSelector:
 				saveInfo.databaseAssessment = this._databasesForAssessment;
+				saveInfo.xEventsFilesFolderPath = this._xEventsFilesFolderPath;
 				await this.extensionContext.globalState.update(`${this.mementoString}.${serverName}`, saveInfo);
 		}
 	}
@@ -1282,7 +1416,13 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 			this._databaseBackup.subscription = this.savedInfo.subscription || undefined!;
 
 			this._sqlMigrationService = this.savedInfo.sqlMigrationService;
+			this._sqlMigrationServiceSubscription = this.savedInfo.serviceSubscription || undefined!;
+			this._sqlMigrationServiceResourceGroup = this.savedInfo.serviceResourceGroup || undefined!;
 
+			this._assessedDatabaseList = this.savedInfo.databaseAssessment ?? [];
+			this._databasesForAssessment = this.savedInfo.databaseAssessment ?? [];
+			this._xEventsFilesFolderPath = this.savedInfo.xEventsFilesFolderPath ?? '';
+			this._collectAdhocQueries = this.savedInfo.collectAdhocQueries ?? false;
 			const savedAssessmentResults = this.savedInfo.serverAssessment;
 			if (savedAssessmentResults) {
 				this._assessmentResults = savedAssessmentResults;
@@ -1323,11 +1463,24 @@ export class MigrationStateModel implements Model, vscode.Disposable {
 		return this._targetType === MigrationTargetType.SQLMI;
 	}
 
+	/**
+	 * The function sets the MI target server name
+	 */
+	private setMiTargetServerName(): void {
+		// Public endpoint format : <mi_name>.public.<dns_zone>.database.windows.net
+		// Private endpoint format : <mi_name>.<dns-zone>.database.windows.net
+		const sqlMi = this._targetServerInstance as SqlManagedInstance;
+		const sqlMiName = sqlMi.name;
+		const sqlMiPublicEndpointIdentifier = sqlMi.properties.publicDataEndpointEnabled ? ".public" : "";
+		const sqlMiDnsZone = sqlMi.properties.dnsZone;
+		this._targetServerName = sqlMiName + sqlMiPublicEndpointIdentifier + "." +
+			sqlMiDnsZone + "." + this._sqlMiEndpointSuffix;
+	}
+
 	public setTargetServerName(): void {
 		switch (this._targetType) {
 			case MigrationTargetType.SQLMI:
-				const sqlMi = this._targetServerInstance as SqlManagedInstance;
-				this._targetServerName = sqlMi.properties.fullyQualifiedDomainName;
+				this.setMiTargetServerName();
 				break;
 			case MigrationTargetType.SQLDB:
 				const sqlDb = this._targetServerInstance as AzureSqlDatabaseServer;
@@ -1366,6 +1519,11 @@ export interface ServerAssessment {
 export interface SkuRecommendation {
 	recommendations?: contracts.SkuRecommendationResult;
 	recommendationError?: Error;
+}
+
+export interface ArmTemplate {
+	templates?: string[];
+	generateTemplateError?: Error;
 }
 
 export interface OperationResult<T> {

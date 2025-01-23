@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IJSONSchema } from 'vs/base/common/jsonSchema';
@@ -100,5 +100,13 @@ const CustomEditorsContribution: IJSONSchema = {
 export const customEditorsExtensionPoint = ExtensionsRegistry.registerExtensionPoint<ICustomEditorsExtensionPoint[]>({
 	extensionPoint: 'customEditors',
 	deps: [languagesExtPoint],
-	jsonSchema: CustomEditorsContribution
+	jsonSchema: CustomEditorsContribution,
+	activationEventsGenerator: (contribs: ICustomEditorsExtensionPoint[], result: { push(item: string): void }) => {
+		for (const contrib of contribs) {
+			const viewType = contrib[Fields.viewType];
+			if (viewType) {
+				result.push(`onCustomEditor:${viewType}`);
+			}
+		}
+	},
 });

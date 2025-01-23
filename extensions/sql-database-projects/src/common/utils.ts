@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import type * as azdataType from 'azdata';
@@ -16,6 +16,7 @@ import * as fse from 'fs-extra';
 import * as which from 'which';
 import { promises as fs } from 'fs';
 import { ISqlProject, SqlTargetPlatform } from 'sqldbproj';
+import { SystemDatabase } from './typeHelper';
 
 export interface ValidationResult {
 	errorMessage: string;
@@ -157,11 +158,19 @@ export function convertSlashesForSqlProj(filePath: string): string {
  * @param systemDb
  * @returns
  */
-export function systemDatabaseToString(systemDb: mssql.SystemDatabase): string {
-	if (systemDb === mssql.SystemDatabase.Master) {
+export function systemDatabaseToString(systemDb: SystemDatabase): string {
+	if (systemDb === mssql.SystemDatabase.Master || systemDb === vscodeMssql.SystemDatabase.Master) {
 		return constants.master;
 	} else {
 		return constants.msdb;
+	}
+}
+
+export function getSystemDatabase(name: string): SystemDatabase {
+	if (getAzdataApi()) {
+		return name === constants.master ? mssql.SystemDatabase.Master : mssql.SystemDatabase.MSDB;
+	} else {
+		return name === constants.master ? vscodeMssql.SystemDatabase.Master : vscodeMssql.SystemDatabase.MSDB;
 	}
 }
 
@@ -315,15 +324,14 @@ export async function getSchemaCompareService(): Promise<ISchemaCompareService> 
 	}
 }
 
-export async function getSqlProjectsService(): Promise<mssql.ISqlProjectsService> {
+export async function getSqlProjectsService(): Promise<ISqlProjectsService> {
 	if (getAzdataApi()) {
 		const ext = vscode.extensions.getExtension(mssql.extension.name) as vscode.Extension<mssql.IExtension>;
 		const api = await ext.activate();
 		return api.sqlProjects;
 	} else {
-		throw new Error(constants.errorNotSupportedInVsCode('SqlProjectService'));
-		// const api = await getVscodeMssqlApi();
-		// return api.sqlProjects;
+		const api = await getVscodeMssqlApi();
+		return api.sqlProjects;
 	}
 }
 
@@ -636,36 +644,6 @@ export function getFoldersAlongPath(startFolder: string, endFolder: string): str
 }
 
 /**
- * Determines whether provided value is a well-known database source and therefore is allowed to be sent in telemetry.
- *
- * @param value Value to check if it is a well-known database source
- * @returns Normalized database source value if it is well-known, otherwise returns undefined
- */
-export function getWellKnownDatabaseSource(value: string): string | undefined {
-	const upperCaseValue = value.toUpperCase();
-	return constants.WellKnownDatabaseSources
-		.find(wellKnownSource => wellKnownSource.toUpperCase() === upperCaseValue);
-}
-
-/**
- * Filters an array of specified database project sources to only those that are well-known.
- *
- * @param databaseSourceValues Array of database source values to filter
- * @returns Array of well-known database sources
- */
-export function getWellKnownDatabaseSources(databaseSourceValues: string[]): string[] {
-	const databaseSourceSet = new Set<string>();
-	for (let databaseSourceValue of databaseSourceValues) {
-		const wellKnownDatabaseSourceValue = getWellKnownDatabaseSource(databaseSourceValue);
-		if (wellKnownDatabaseSourceValue) {
-			databaseSourceSet.add(wellKnownDatabaseSourceValue);
-		}
-	}
-
-	return Array.from(databaseSourceSet);
-}
-
-/**
  * Returns SQL version number from docker image name which is in the beginning of the image name
  * @param imageName docker image name
  * @returns SQL server version
@@ -740,21 +718,57 @@ export async function fileContainsCreateTableStatement(fullPath: string, project
 /**
  * Gets target platform based on the server edition/version
  * @param serverInfo server information
+ * @param serverUrl optional server URL, only used to check if it's a known domain for Microsoft Fabric DW
  * @returns target platform for the database project
  */
-export async function getTargetPlatformFromServerVersion(serverInfo: azdataType.ServerInfo | vscodeMssql.ServerInfo): Promise<SqlTargetPlatform | undefined> {
+export async function getTargetPlatformFromServerVersion(serverInfo: azdataType.ServerInfo | vscodeMssql.IServerInfo, serverUrl?: string): Promise<SqlTargetPlatform | undefined> {
 	const isCloud = serverInfo.isCloud;
 
 	let targetPlatform;
 	if (isCloud) {
 		const engineEdition = serverInfo.engineEditionId;
-		targetPlatform = engineEdition === vscodeMssql.DatabaseEngineEdition.SqlDataWarehouse ? SqlTargetPlatform.sqlDW : SqlTargetPlatform.sqlAzure;
+		const azdataApi = getAzdataApi();
+		if (azdataApi) {
+			if (isSqlDwUnifiedServer(serverUrl)) {
+				targetPlatform = SqlTargetPlatform.sqlDwUnified;
+			} else if (engineEdition === azdataApi.DatabaseEngineEdition.SqlOnDemand) {
+				targetPlatform = SqlTargetPlatform.sqlDwServerless;
+			} else if (engineEdition === azdataApi.DatabaseEngineEdition.SqlDbFabric) {
+				targetPlatform = SqlTargetPlatform.sqlDbFabric;
+			} else if (engineEdition === azdataApi.DatabaseEngineEdition.SqlDataWarehouse) {
+				targetPlatform = SqlTargetPlatform.sqlDW;
+			} else {
+				targetPlatform = SqlTargetPlatform.sqlAzure;
+			}
+		} else {
+			if (isSqlDwUnifiedServer(serverUrl)) {
+				targetPlatform = SqlTargetPlatform.sqlDwUnified;
+			} else if (engineEdition === vscodeMssql.DatabaseEngineEdition.SqlOnDemand) {
+				targetPlatform = SqlTargetPlatform.sqlDwServerless;
+			} else if (engineEdition === vscodeMssql.DatabaseEngineEdition.SqlDbFabric) {
+				targetPlatform = SqlTargetPlatform.sqlDbFabric;
+			} else if (engineEdition === vscodeMssql.DatabaseEngineEdition.SqlDataWarehouse) {
+				targetPlatform = SqlTargetPlatform.sqlDW;
+			} else {
+				targetPlatform = SqlTargetPlatform.sqlAzure;
+			}
+		}
 	} else {
 		const serverMajorVersion = serverInfo.serverMajorVersion;
 		targetPlatform = serverMajorVersion ? constants.onPremServerVersionToTargetPlatform.get(serverMajorVersion) : undefined;
 	}
 
 	return targetPlatform;
+}
+
+/**
+ * Determines if a server name is a known domain for Microsoft Fabric DW. This is required because the engine edition for Fabric DW is the same as Serverless.
+ * @param server The server name to check
+ * @returns True if the server name matches a known domain for Microsoft Fabric DW, otherwise false
+ */
+export function isSqlDwUnifiedServer(server?: string): boolean | undefined {
+	const serverLowerCase = server?.toLowerCase();
+	return serverLowerCase?.includes("datawarehouse.pbidedicated.windows.net") || serverLowerCase?.includes("datawarehouse.fabric.microsoft.com");
 }
 
 /**
@@ -826,5 +840,11 @@ export async function ensureFileExists(absoluteFilePath: string, contents?: stri
 		if (!await exists(absoluteFilePath)) {
 			throw new Error(constants.noFileExist(absoluteFilePath));
 		}
+	}
+}
+
+export function throwIfFailed(result: azdataType.ResultStatus | vscodeMssql.ResultStatus): void {
+	if (!result.success) {
+		throw new Error(constants.errorPrefix(result.errorMessage));
 	}
 }

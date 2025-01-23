@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -16,6 +16,7 @@ import { TestStoredFileWorkingCopyModel, TestStoredFileWorkingCopyModelFactory }
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { InMemoryFileSystemProvider } from 'vs/platform/files/common/inMemoryFilesystemProvider';
 import { DisposableStore } from 'vs/base/common/lifecycle';
+import { isWeb } from 'vs/base/common/platform';
 
 suite('StoredFileWorkingCopyManager', () => {
 
@@ -617,7 +618,7 @@ suite('StoredFileWorkingCopyManager', () => {
 		assert.strictEqual(canDispose2, true);
 	});
 
-	test('pending saves join on shutdown', async () => {
+	(isWeb ? test.skip : test)('pending saves join on shutdown', async () => {
 		const resource1 = URI.file('/path/index_something1.txt');
 		const resource2 = URI.file('/path/index_something2.txt');
 

@@ -1,36 +1,39 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 // !! Do not remove the following START and END markers, they are parsed by the smoketest build
 
 //*START
 export interface IElement {
-	tagName: string;
-	className: string;
-	textContent: string;
-	attributes: { [name: string]: string };
-	children: IElement[];
-	top: number;
-	left: number;
+	readonly tagName: string;
+	readonly className: string;
+	readonly textContent: string;
+	readonly attributes: { [name: string]: string };
+	readonly children: IElement[];
+	readonly top: number;
+	readonly left: number;
 }
 
 export interface ILocaleInfo {
-	language: string;
-	locale?: string;
+	readonly language: string;
+	readonly locale?: string;
 }
 
 export interface ILocalizedStrings {
-	open: string;
-	close: string;
-	find: string;
+	readonly open: string;
+	readonly close: string;
+	readonly find: string;
+}
+
+export interface ILogFile {
+	readonly relativePath: string;
+	readonly contents: string;
 }
 
 export interface IWindowDriver {
-	click(selector: string, xoffset?: number | undefined, yoffset?: number | undefined): Promise<void>;
 	setValue(selector: string, text: string): Promise<void>;
-	getTitle(): Promise<string>;
 	isActiveElement(selector: string): Promise<boolean>;
 	getElements(selector: string, recursive: boolean): Promise<IElement[]>;
 	getElementXY(selector: string, xoffset?: number, yoffset?: number): Promise<{ x: number; y: number }>;
@@ -39,6 +42,7 @@ export interface IWindowDriver {
 	writeInTerminal(selector: string, text: string): Promise<void>;
 	getLocaleInfo(): Promise<ILocaleInfo>;
 	getLocalizedStrings(): Promise<ILocalizedStrings>;
+	getLogs(): Promise<ILogFile[]>;
 	exitApplication(): Promise<void>;
 }
 //*END
