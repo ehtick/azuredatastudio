@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -187,7 +187,7 @@ export class FileConfigPage extends ImportPage {
 	private async populateDatabaseDropdown(): Promise<boolean> {
 		let idx = -1;
 		let count = -1;
-		let dbNames = await this.model.allDatabases.map(dbName => {
+		let dbNames = this.model.allDatabases.map(dbName => {
 			count++;
 			if (this.model.database && dbName === this.model.database) {
 				idx = count;

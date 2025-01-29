@@ -1,10 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { window, Account, accounts, CategoryValue, DropDownComponent, IconPath, DisplayType, Component } from 'azdata';
+import { window, Account, accounts, CategoryValue, DropDownComponent, IconPath, DisplayType, Component, ModelView, DeclarativeTableComponent, DeclarativeDataType, FlexContainer } from 'azdata';
 import * as vscode from 'vscode';
+import * as azdata from 'azdata';
+import { promises as fs } from 'fs';
 import { IconPathHelper } from '../constants/iconPathHelper';
 import * as crypto from 'crypto';
 import * as azure from './azure';
@@ -12,8 +14,17 @@ import { azureResource, Tenant } from 'azurecore';
 import * as constants from '../constants/strings';
 import { logError, TelemetryViews } from '../telemetry';
 import { AdsMigrationStatus } from '../dashboard/tabBase';
-import { getMigrationMode, getMigrationStatus, getMigrationTargetType, hasRestoreBlockingReason, PipelineStatusCodes } from '../constants/helper';
+import { getMigrationMode, getMigrationStatus, getSchemaMigrationStatus, getMigrationType, getMigrationTargetType, hasRestoreBlockingReason, PipelineStatusCodes } from '../constants/helper';
 import * as os from 'os';
+import * as styles from '../constants/styles';
+import { SqlMigrationService, SqlMigrationServiceAuthenticationKeys, getSqlMigrationService, getSqlMigrationServiceAuthKeys, regenerateSqlMigrationServiceAuthKey } from './azure';
+import { MigrationStateModel } from '../models/stateMachine';
+import * as contracts from '../service/contracts';
+import { CssStyles } from 'azdata';
+import { DeclarativeTableCellValue } from 'azdata';
+import path = require('path');
+import { spawn } from "child_process"
+import { collectSourceLogins, getSourceConnectionId, getSourceConnectionString, LoginTableInfo } from './sqlUtils';
 
 export type TargetServerType = azure.SqlVMServer | azureResource.AzureSqlManagedInstance | azure.AzureSqlDatabaseServer;
 
@@ -176,6 +187,7 @@ export function filterMigrations(databaseMigrations: azure.DatabaseMigration[], 
 				|| migration.properties.sourceDatabaseName?.toLowerCase().includes(filter)
 				|| getMigrationStatus(migration)?.toLowerCase().includes(filter)
 				|| getMigrationMode(migration)?.toLowerCase().includes(filter)
+				|| getMigrationType(migration)?.toLocaleLowerCase().includes(filter)
 				|| getMigrationTargetType(migration)?.toLowerCase().includes(filter)
 				|| azure.getResourceName(migration.properties.scope)?.toLowerCase().includes(filter)
 				|| azure.getResourceName(migration.id)?.toLowerCase().includes(filter)
@@ -239,9 +251,9 @@ export function selectDefaultDropdownValue(dropDown: DropDownComponent, value?: 
 		if (value) {
 			const searchValue = value.toLowerCase();
 			if (useDisplayName) {
-				selectedIndex = dropDown.values.findIndex((v: any) => (v as CategoryValue)?.displayName?.toLowerCase() === searchValue);
+				selectedIndex = dropDown.values?.findIndex((v: any) => (v as CategoryValue)?.displayName?.toLowerCase() === searchValue);
 			} else {
-				selectedIndex = dropDown.values.findIndex((v: any) => (v as CategoryValue)?.name?.toLowerCase() === searchValue);
+				selectedIndex = dropDown.values?.findIndex((v: any) => (v as CategoryValue)?.name?.toLowerCase() === searchValue);
 			}
 		} else {
 			selectedIndex = -1;
@@ -300,10 +312,6 @@ export function decorate(decorator: (fn: Function, key: string) => Function): Fu
 
 		descriptor[fnKey] = decorator(fn, key);
 	};
-}
-
-export function getSessionIdHeader(sessionId: string): { [key: string]: string } {
-	return { 'SqlMigrationSessionId': sessionId };
 }
 
 export function getMigrationStatusWithErrors(migration: azure.DatabaseMigration): string {
@@ -401,6 +409,93 @@ export function getMigrationStatusImage(migration: azure.DatabaseMigration): Ico
 	}
 }
 
+export function getSchemaMigrationStatusImage(migration: azure.DatabaseMigration): IconPath {
+	const status = getSchemaMigrationStatus(migration);
+	switch (status) {
+		case constants.MigrationState.CollectionCompleted:
+		case constants.MigrationState.PrefetchObjects:
+		case constants.MigrationState.GetDependency:
+		case constants.MigrationState.ScriptObjects:
+		case constants.MigrationState.ScriptViewIndexes:
+		case constants.MigrationState.ScriptOwnership:
+		case constants.MigrationState.GeneratingScript:
+		case constants.MigrationState.DeployingSchema:
+		case constants.MigrationState.GeneratingScriptCompleted:
+		case constants.MigrationState.DeploymentCompleted:
+			return IconPathHelper.inProgressMigration;
+		case constants.MigrationState.Completed:
+			return IconPathHelper.completedMigration;
+		case constants.MigrationState.Failed:
+		case constants.MigrationState.CompletedWithError:
+			return IconPathHelper.error;
+		default:
+			return IconPathHelper.notStartedMigration;
+	}
+}
+
+export function getObjectsCollectionStatusImage(migration: azure.DatabaseMigration): IconPath {
+	const status = getSchemaMigrationStatus(migration);
+	switch (status) {
+		case constants.MigrationState.CollectionCompleted:
+		case constants.MigrationState.PrefetchObjects:
+		case constants.MigrationState.GetDependency:
+		case constants.MigrationState.ScriptObjects:
+		case constants.MigrationState.ScriptViewIndexes:
+		case constants.MigrationState.ScriptOwnership:
+		case constants.MigrationState.GeneratingScript:
+		case constants.MigrationState.GeneratingScriptCompleted:
+		case constants.MigrationState.DeployingSchema:
+		case constants.MigrationState.DeploymentCompleted:
+		case constants.MigrationState.Completed:
+		case constants.MigrationState.CompletedWithError:
+			return IconPathHelper.completedMigration;
+		default:
+			return IconPathHelper.notStartedMigration;
+	}
+}
+
+export function getScriptGenerationStatusImage(migration: azure.DatabaseMigration): IconPath {
+	var scriptGeneration = migration?.properties.migrationStatusDetails?.sqlSchemaMigrationStatus?.scriptGeneration ?? undefined;
+	var errors = scriptGeneration === undefined ? [] : scriptGeneration.errors ?? [];
+
+	const status = getSchemaMigrationStatus(migration);
+	switch (status) {
+		case constants.MigrationState.PrefetchObjects:
+		case constants.MigrationState.GetDependency:
+		case constants.MigrationState.ScriptObjects:
+		case constants.MigrationState.ScriptViewIndexes:
+		case constants.MigrationState.ScriptOwnership:
+		case constants.MigrationState.GeneratingScript:
+			return IconPathHelper.inProgressMigration;
+		case constants.MigrationState.Completed:
+		case constants.MigrationState.CompletedWithError:
+		case constants.MigrationState.GeneratingScriptCompleted:
+		case constants.MigrationState.DeployingSchema:
+		case constants.MigrationState.DeploymentCompleted:
+			return errors.length > 0 ? IconPathHelper.error : IconPathHelper.completedMigration;
+		default:
+			return IconPathHelper.notStartedMigration;
+	}
+}
+
+export function getScriptDeploymentStatusImage(migration: azure.DatabaseMigration): IconPath {
+	var scriptDeployment = migration?.properties.migrationStatusDetails?.sqlSchemaMigrationStatus?.scriptDeployment ?? undefined;
+	var errors = scriptDeployment === undefined ? [] : scriptDeployment.errors ?? [];
+
+	const status = getSchemaMigrationStatus(migration);
+	switch (status) {
+		case constants.MigrationState.DeployingSchema:
+			return IconPathHelper.inProgressMigration;
+		case constants.MigrationState.Completed:
+		case constants.MigrationState.DeploymentCompleted:
+			return IconPathHelper.completedMigration;
+		case constants.MigrationState.CompletedWithError:
+			return errors.length > 0 ? IconPathHelper.error : IconPathHelper.completedMigration;
+		default:
+			return IconPathHelper.notStartedMigration;
+	}
+}
+
 export function get12HourTime(date: Date | undefined): string {
 	const localeTimeStringOptions: Intl.DateTimeFormatOptions = {
 		hour: '2-digit',
@@ -466,7 +561,7 @@ export function getAzureTenants(account?: Account): Tenant[] {
 	return account?.properties.tenants || [];
 }
 
-export async function getAzureSubscriptions(account?: Account): Promise<azureResource.AzureResourceSubscription[]> {
+export async function getAzureSubscriptions(account?: Account, tenantId?: string): Promise<azureResource.AzureResourceSubscription[]> {
 	let subscriptions: azureResource.AzureResourceSubscription[] = [];
 	try {
 		subscriptions = account && !isAccountTokenStale(account)
@@ -475,8 +570,9 @@ export async function getAzureSubscriptions(account?: Account): Promise<azureRes
 	} catch (e) {
 		logError(TelemetryViews.Utils, 'utils.getAzureSubscriptions', e);
 	}
-	subscriptions.sort((a, b) => a.name.localeCompare(b.name));
-	return subscriptions;
+	const filtered = subscriptions.filter(subscription => subscription.tenant === tenantId);
+	filtered.sort((a, b) => a.name.localeCompare(b.name));
+	return filtered;
 }
 
 export async function getAzureSubscriptionsDropdownValues(subscriptions: azureResource.AzureResourceSubscription[]): Promise<CategoryValue[]> {
@@ -609,6 +705,251 @@ export async function getManagedInstancesDropdownValues(managedInstances: azureR
 		];
 	}
 	return managedInstancesValues;
+}
+
+// retrieve the auth keys
+export async function retrieveAuthKeys(migrationStateModel: MigrationStateModel): Promise<SqlMigrationServiceAuthenticationKeys> {
+
+	let defaultKeys: SqlMigrationServiceAuthenticationKeys = {
+		authKey1: '',
+		authKey2: ''
+	};
+
+	const service = migrationStateModel._sqlMigrationService;
+	if (service) {
+		const account = migrationStateModel._azureAccount;
+		const subscription = migrationStateModel._sqlMigrationServiceSubscription;
+		const resourceGroup = service.properties.resourceGroup;
+		const location = service.location;
+		const serviceName = service.name;
+		if (service?.properties?.integrationRuntimeState) {
+			service.properties.integrationRuntimeState = undefined;
+		}
+		const keys = await getSqlMigrationServiceAuthKeys(
+			account,
+			subscription,
+			resourceGroup,
+			location,
+			serviceName);
+
+		return keys;
+	}
+	return defaultKeys;
+}
+
+// invoke and execute the script
+export async function invokeScript(scriptPath: string): Promise<void> {
+
+	var child = spawn("powershell.exe", [scriptPath]);
+	child.stdout.on("data", function (data: string) {
+		console.log("Powershell Data: " + data);
+	});
+	child.stderr.on("data", function (data: string) {
+		console.log("Powershell Errors: " + data);
+	});
+	child.on("exit", function () {
+		console.log("Powershell Script finished");
+	});
+	child.stdin.end(); //end input
+}
+
+// creates powershell script container
+export async function createPowershellscriptContentContainer(view: azdata.ModelView, migrationStateModel: MigrationStateModel):
+	Promise<azdata.Component> {
+	const container = view.modelBuilder.flexContainer().withLayout({
+		flexFlow: 'column',
+	}).component();
+
+	const def = view.modelBuilder.text().withProps({
+		value: constants.POWERSHELL_SCRIPT_DESCRIPTION,
+		CSSStyles: {
+			'margin-top': '8px',
+			'margin-bottom': '8px',
+		},
+	}).component();
+
+	const saveScriptButton = view.modelBuilder.button().withProps({
+		label: constants.SAVE_SCRIPT,
+		ariaLabel: constants.SAVE_SCRIPT,
+		iconWidth: '18px',
+		iconHeight: '18px',
+		height: '40px',
+		width: '100px',
+		iconPath: IconPathHelper.save,
+		CSSStyles: {
+			'padding': '8px 8px',
+		},
+	}).component();
+
+	const scriptpath = path.join(__dirname, '../scripts/SHIR-auto-configuration.ps1');
+	const scriptpath2 = path.join(__dirname, '../../scripts/SHIR-auto-configuration.ps1');
+
+	let scriptContent;
+	try {
+		scriptContent = await fs.readFile(scriptpath);
+	} catch (err) {
+		scriptContent = await fs.readFile(scriptpath2);
+	}
+
+	// inject auth keys in the script
+	const authKeys = await retrieveAuthKeys(migrationStateModel);
+	const modifiedScriptContent = await injectKeysIntoShirScriptContent
+		(authKeys.authKey1, authKeys.authKey2, scriptContent.toString());
+
+	// write it back to different file
+	const modifiedScriptPath = path.join(__dirname, '../scripts/SHIR-auto-configuration-with-auth-keys.ps1');
+	const modifiedScriptPath2 = path.join(__dirname, '../../scripts/SHIR-auto-configuration.ps1');
+
+	try {
+		await fs.writeFile(modifiedScriptPath, modifiedScriptContent);
+	} catch (err) {
+		await fs.writeFile(modifiedScriptPath2, modifiedScriptContent);
+	}
+
+	saveScriptButton.onDidClick(async () => {
+		const options: vscode.SaveDialogOptions = {
+			defaultUri: vscode.Uri.file(suggestReportFile(Date.now())),
+			filters: { 'Windows PowerShell Script': ['ps1'] }
+		};
+
+		const choosenPath = await vscode.window.showSaveDialog(options);
+		if (choosenPath !== undefined) {
+			const value = modifiedScriptContent.toString();
+			await fs.writeFile(choosenPath.fsPath, value);
+			if (await vscode.window.showInformationMessage(
+				constants.POWERSHELL_SCRIPT_SAVED,
+				constants.OPEN, constants.CANCEL) === constants.OPEN) {
+				await vscode.env.openExternal(choosenPath);
+			}
+		}
+	});
+
+	const scriptBox = view.modelBuilder.inputBox()
+		.withProps({
+			value: modifiedScriptContent.toString(),
+			readOnly: true,
+			multiline: true,
+			height: 400,
+			inputType: 'text',
+			display: 'inline-block',
+			CSSStyles:
+			{
+				'font': '12px "Monaco", "Menlo", "Consolas", "Droid Sans Mono", "Inconsolata", "Courier New", monospace',
+				'margin': '0',
+				'padding': '8px',
+				'white-space': 'pre',
+				'background-color': '#eeeeee',
+				'overflow-x': 'hidden',
+				'word-break': 'break-all'
+			},
+		})
+		.component();
+
+	container.addItems([def, saveScriptButton, scriptBox]);
+
+	return container;
+}
+
+// inject the auth keys
+export async function injectKeysIntoShirScriptContent(authKey1: string, authKey2: string,
+	scriptContent: string): Promise<string> {
+	if (!scriptContent)
+		return ""; // If the script is null or empty, return empty string
+
+	// Replace placeholders for authentication keys in the script
+	if (authKey1) {
+		scriptContent = scriptContent.replace(/\$AuthKey1 = \$null/, `$AuthKey1 = "${authKey1}"`);
+	}
+	if (authKey2) {
+		scriptContent = scriptContent.replace(/\$AuthKey2 = \$null/, `$AuthKey2 = "${authKey2}"`);
+	}
+
+	return scriptContent; // Return the script with injected authentication keys
+}
+
+
+
+// creates manual IR config container
+export async function createManualIRconfigContentContainer(view: azdata.ModelView, migrationStateModel: MigrationStateModel):
+	Promise<azdata.FlexContainer> {
+	const container = view.modelBuilder.flexContainer().withLayout({
+		flexFlow: 'column',
+	}).component();
+
+	const instructions = createRegistrationInstructions(view, false);
+	await instructions.updateCssStyles({
+		...styles.BODY_CSS,
+	})
+
+	let migrationServiceAuthKeyTable: azdata.DeclarativeTableComponent;
+	migrationServiceAuthKeyTable = createAuthenticationKeyTable(view, '50px', '100%');
+
+	const service = migrationStateModel._sqlMigrationService;
+	if (service) {
+		const account = migrationStateModel._azureAccount;
+		const subscription = migrationStateModel._sqlMigrationServiceSubscription;
+		const resourceGroup = service.properties.resourceGroup;
+		const location = service.location;
+		const serviceName = service.name;
+		if (service?.properties?.integrationRuntimeState) {
+			service.properties.integrationRuntimeState = undefined;
+		}
+
+		const migrationService = await getSqlMigrationService(
+			account,
+			subscription,
+			resourceGroup,
+			location,
+			serviceName);
+
+		await refreshAuthenticationKeyTable(view,
+			migrationServiceAuthKeyTable,
+			account,
+			subscription,
+			resourceGroup,
+			location,
+			migrationService);
+
+	}
+
+	container.addItems([instructions, migrationServiceAuthKeyTable]);
+
+	return container;
+}
+
+export async function getSourceLogins(migrationStateModel: MigrationStateModel) {
+	var sourceLogins: LoginTableInfo[] = [];
+
+	// execute a query against the source to get the logins
+	sourceLogins.push(...await collectSourceLogins(
+		await getSourceConnectionId(),
+		migrationStateModel.isWindowsAuthMigrationSupported));
+
+	// validate Login Eligibility result contains system logins in Exception map from which system login names can be extracted.
+	// These system logins are not to be displayed in the source logins list
+	var validateLoginEligibilityResult: contracts.StartLoginMigrationPreValidationResult | undefined = await migrationStateModel.migrationService.validateLoginEligibility(
+		await getSourceConnectionString(),
+		"",
+		sourceLogins.map(row => row.loginName),
+		""
+	);
+
+	var sourceSystemLoginsName: string[] = [];
+	var sourceSystemLogins: LoginTableInfo[] = [];
+
+	if (validateLoginEligibilityResult !== undefined) {
+		sourceSystemLoginsName = Object.keys(validateLoginEligibilityResult.exceptionMap).map(loginName => loginName.toLocaleLowerCase());
+
+		// separate out system logins from non system logins
+		sourceSystemLogins = sourceLogins.filter(login => sourceSystemLoginsName.includes(login.loginName.toLocaleLowerCase()));
+		sourceLogins = sourceLogins.filter(login => !sourceSystemLoginsName.includes(login.loginName.toLocaleLowerCase()));
+	} else {
+		logError(TelemetryViews.Utils, 'utils.getSourceLogins', new Error(constants.VALIDATE_LOGIN_ELIGIBILITY_FAILED));
+	}
+
+	migrationStateModel._loginMigrationModel.collectedSourceLogins = true;
+	migrationStateModel._loginMigrationModel.loginsOnSource = sourceLogins;
+	migrationStateModel._loginMigrationModel.systemLoginsOnSource = sourceSystemLogins;
 }
 
 export async function getAzureSqlDatabaseServers(account?: Account, subscription?: azureResource.AzureResourceSubscription): Promise<azure.AzureSqlDatabaseServer[]> {
@@ -950,7 +1291,7 @@ export async function isAdmin(): Promise<boolean> {
 		if (isWindows()) {
 			isAdmin = (await import('native-is-elevated'))();
 		} else {
-			isAdmin = process.getuid() === 0;
+			isAdmin = process.getuid?.() === 0;
 		}
 	} catch (e) {
 		//Ignore error and return false;
@@ -958,3 +1299,431 @@ export async function isAdmin(): Promise<boolean> {
 
 	return isAdmin;
 }
+
+export function createAuthenticationKeyTable(view: ModelView, columnWidth: string, stretchWidth: string): DeclarativeTableComponent {
+	const WIZARD_INPUT_COMPONENT_WIDTH = '600px';
+
+	const authKeyTable = view.modelBuilder.declarativeTable()
+		.withProps({
+			ariaLabel: constants.DATABASE_MIGRATION_SERVICE_AUTHENTICATION_KEYS,
+			columns: [
+				{
+					displayName: constants.NAME,
+					valueType: DeclarativeDataType.string,
+					width: columnWidth,
+					isReadOnly: true,
+					rowCssStyles: { ...styles.BODY_CSS },
+					headerCssStyles: { ...styles.BODY_CSS, 'font-weight': '600' }
+				},
+				{
+					displayName: constants.AUTH_KEY_COLUMN_HEADER,
+					valueType: DeclarativeDataType.string,
+					width: stretchWidth,
+					isReadOnly: true,
+					rowCssStyles: { ...styles.BODY_CSS },
+					headerCssStyles: { ...styles.BODY_CSS, 'font-weight': '600' }
+				},
+				{
+					displayName: '',
+					valueType: DeclarativeDataType.component,
+					width: columnWidth,
+					isReadOnly: true,
+					rowCssStyles: { ...styles.BODY_CSS },
+					headerCssStyles: { ...styles.BODY_CSS }
+				}
+			],
+			CSSStyles: { 'margin-top': '5px', 'width': WIZARD_INPUT_COMPONENT_WIDTH }
+		}).component();
+	return authKeyTable;
+}
+
+export async function refreshAuthenticationKeyTable(view: ModelView, table: DeclarativeTableComponent, account: Account, subscription: azureResource.AzureResourceSubscription, resourceGroup: string, location: string, service: SqlMigrationService): Promise<void> {
+	var _disposables: vscode.Disposable[] = [];
+
+	const copyKey1Button = view.modelBuilder.button().withProps({
+		title: constants.COPY_KEY1,
+		iconPath: IconPathHelper.copy,
+		ariaLabel: constants.COPY_KEY1,
+	}).component();
+
+	_disposables.push(copyKey1Button.onDidClick(async (e) => {
+		await vscode.env.clipboard.writeText(<string>table.dataValues![0][1].value);
+		void vscode.window.showInformationMessage(constants.SERVICE_KEY1_COPIED_HELP);
+	}));
+
+	const copyKey2Button = view.modelBuilder.button().withProps({
+		title: constants.COPY_KEY2,
+		iconPath: IconPathHelper.copy,
+		ariaLabel: constants.COPY_KEY2,
+	}).component();
+
+	_disposables.push(copyKey2Button.onDidClick(async (e) => {
+		await vscode.env.clipboard.writeText(<string>table.dataValues![1][1].value);
+		void vscode.window.showInformationMessage(constants.SERVICE_KEY2_COPIED_HELP);
+	}));
+
+	const refreshKey1Button = view.modelBuilder.button().withProps({
+		title: constants.REFRESH_KEY1,
+		iconPath: IconPathHelper.refresh,
+		ariaLabel: constants.REFRESH_KEY1,
+	}).component();
+
+	_disposables.push(refreshKey1Button.onDidClick(async (e) => {
+		const keys = await regenerateSqlMigrationServiceAuthKey(
+			account,
+			subscription,
+			resourceGroup,
+			location,
+			service.name,
+			'authKey1');
+
+		const dataValues = table.dataValues!;
+		dataValues![0][1].value = keys.authKey1;
+		await table.setDataValues([]);
+		await table.setDataValues(dataValues);
+		await vscode.window.showInformationMessage(constants.AUTH_KEY_REFRESHED(constants.SERVICE_KEY1_LABEL));
+	}));
+
+	const refreshKey2Button = view.modelBuilder.button().withProps({
+		title: constants.REFRESH_KEY2,
+		iconPath: IconPathHelper.refresh,
+		ariaLabel: constants.REFRESH_KEY2,
+	}).component();
+
+	_disposables.push(refreshKey2Button.onDidClick(async (e) => {
+		const keys = await regenerateSqlMigrationServiceAuthKey(
+			account,
+			subscription,
+			resourceGroup,
+			location,
+			service.name,
+			'authKey2');
+
+		const dataValues = table.dataValues!;
+		dataValues![1][1].value = keys.authKey2;
+		await table.setDataValues([]);
+		await table.setDataValues(dataValues);
+		await vscode.window.showInformationMessage(constants.AUTH_KEY_REFRESHED(constants.SERVICE_KEY2_LABEL));
+	}));
+
+	const keys = await getSqlMigrationServiceAuthKeys(
+		account,
+		subscription,
+		resourceGroup,
+		location,
+		service.name);
+
+
+	await table.updateProperties({
+		dataValues: [
+			[
+				{
+					value: constants.SERVICE_KEY1_LABEL
+				},
+				{
+					value: keys.authKey1
+				},
+				{
+					value: view.modelBuilder.flexContainer().withItems([copyKey1Button, refreshKey1Button]).component()
+				}
+			],
+			[
+				{
+					value: constants.SERVICE_KEY2_LABEL
+				},
+				{
+					value: keys.authKey2
+				},
+				{
+					value: view.modelBuilder.flexContainer().withItems([copyKey2Button, refreshKey2Button]).component()
+				}
+			]
+		]
+	});
+}
+
+//Function that creates stage status table.
+export function createIntegrationRuntimeTable(view: ModelView): DeclarativeTableComponent {
+	const rowCssStyle: CssStyles = {
+		'border': 'none',
+		'text-align': 'left',
+		'box-shadow': 'inset 0px -1px 0px #F3F2F1',
+		'font-size': '13px',
+		'line-height': '18px',
+		'padding': '7px 0px',
+		'margin': '0px',
+	};
+
+	const headerCssStyles: CssStyles = {
+		'border': 'none',
+		'text-align': 'left',
+		'box-shadow': 'inset 0px -1px 0px #F3F2F1',
+		'font-weight': 'bold',
+		'padding-left': '0px',
+		'padding-right': '0px',
+		'font-size': '13px',
+		'line-height': '18px'
+	};
+	const _integrationRuntimeTable: DeclarativeTableComponent = view.modelBuilder.declarativeTable().withProps({
+		columns: [
+			{
+				displayName: constants.NODE_NAME,
+				valueType: DeclarativeDataType.string,
+				width: '200px',
+				isReadOnly: true,
+				rowCssStyles: rowCssStyle,
+				headerCssStyles: headerCssStyles
+			},
+			{
+				displayName: constants.STATUS,
+				valueType: DeclarativeDataType.string,
+				width: '120px',
+				isReadOnly: true,
+				rowCssStyles: rowCssStyle,
+				headerCssStyles: headerCssStyles
+			},
+			{
+				displayName: constants.IP_ADDRESS,
+				valueType: DeclarativeDataType.string,
+				width: '120px',
+				isReadOnly: true,
+				rowCssStyles: rowCssStyle,
+				headerCssStyles: headerCssStyles
+			},
+			{
+				displayName: constants.IR_VERSION,
+				valueType: DeclarativeDataType.string,
+				width: '120px',
+				isReadOnly: true,
+				rowCssStyles: rowCssStyle,
+				headerCssStyles: headerCssStyles
+			}
+		],
+		data: [],
+		width: '440px',
+		CSSStyles: {
+			'margin-left': '41px',
+			'margin-top': '16px'
+		}
+	}).component();
+
+	return _integrationRuntimeTable;
+}
+
+export function createRegistrationInstructions(view: ModelView, testConnectionButton: boolean): FlexContainer {
+	const setupIRHeadingText = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_CONTAINER_HEADING,
+		CSSStyles: {
+			...styles.LABEL_CSS
+		}
+	}).component();
+
+	const setupIRdescription1 = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_CONTAINER_DESCRIPTION1,
+		CSSStyles: {
+			...styles.BODY_CSS
+		}
+	}).component();
+
+	const setupIRdescription2 = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_CONTAINER_DESCRIPTION2,
+		CSSStyles: {
+			...styles.BODY_CSS
+		}
+	}).component();
+
+	const irSetupStep1Text = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_STEP1,
+		CSSStyles: {
+			...styles.BODY_CSS
+		},
+		links: [
+			{
+				text: constants.SERVICE_STEP1_LINK,
+				url: 'https://aka.ms/sql-migration-shir-download'
+			}
+		]
+	}).component();
+
+	const irSetupStep2Text = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_STEP2,
+		CSSStyles: {
+			...styles.BODY_CSS
+		}
+	}).component();
+
+	const irSetupStep3Text = view.modelBuilder.text().withProps({
+		value: constants.SERVICE_STEP3(testConnectionButton),
+		CSSStyles: {
+			'margin-top': '10px',
+			'margin-bottom': '10px',
+			...styles.BODY_CSS
+		}
+	}).component();
+
+	return view.modelBuilder.flexContainer().withItems(
+		[
+			setupIRHeadingText,
+			setupIRdescription1,
+			setupIRdescription2,
+			irSetupStep1Text,
+			irSetupStep2Text,
+			irSetupStep3Text,
+		]
+	).withLayout({
+		flexFlow: 'column'
+	}).component();
+}
+
+export async function clearDropDown(dropDown: DropDownComponent): Promise<void> {
+	await dropDown.updateProperty('value', undefined);
+	await dropDown.updateProperty('values', []);
+}
+
+export function suggestReportFile(date: number): string {
+	const fileName = `ConfigureIR_${generateDefaultFileName(new Date(date))}.ps1`;
+	return path.join(os.homedir(), fileName);
+}
+
+function generateDefaultFileName(resultDate: Date): string {
+	return `${resultDate.toISOString().replace(/-/g, '').replace('T', '').replace(/:/g, '').split('.')[0]}`;
+}
+
+export async function getRecommendedConfiguration(targetType: MigrationTargetType, model: MigrationStateModel): Promise<string[]> {
+
+	if (!hasRecommendations(model)) {
+		return [];
+	}
+	let recommendation;
+	switch (targetType) {
+		case MigrationTargetType.SQLVM:
+			// elastic model currently doesn't support SQL VM, so show the baseline model results regardless of user preference
+			recommendation = model._skuRecommendationResults.recommendations?.sqlVmRecommendationResults[0];
+
+			// result returned but no SKU recommended
+			if (!recommendation?.targetSku) {
+				return [constants.SKU_RECOMMENDATION_NO_RECOMMENDATION];
+			}
+			else {
+				const vmConfiguration = constants.VM_CONFIGURATION(
+					recommendation.targetSku.virtualMachineSize!.sizeName,
+					recommendation.targetSku.virtualMachineSize!.vCPUsAvailable);
+
+				return [vmConfiguration];
+			}
+		case MigrationTargetType.SQLDB:
+			const recommendations = model._skuEnableElastic
+				? model._skuRecommendationResults.recommendations!.elasticSqlDbRecommendationResults
+				: model._skuRecommendationResults.recommendations!.sqlDbRecommendationResults;
+			const successfulRecommendationsCount = recommendations.filter(r => r.targetSku !== null)?.length ?? 0;
+			return [constants.RECOMMENDATIONS_AVAILABLE(successfulRecommendationsCount)];
+		case MigrationTargetType.SQLMI:
+			if (model._skuEnableElastic) {
+				recommendation = model._skuRecommendationResults.recommendations?.elasticSqlMiRecommendationResults[0];
+			} else {
+				recommendation = model._skuRecommendationResults.recommendations?.sqlMiRecommendationResults[0];
+			}
+
+			// result returned but no SKU recommended
+			if (!recommendation?.targetSku) {
+				return [constants.SKU_RECOMMENDATION_NO_RECOMMENDATION];
+			}
+			else {
+				const serviceTier = recommendation.targetSku.category?.sqlServiceTier === contracts.AzureSqlPaaSServiceTier.GeneralPurpose
+					? constants.GENERAL_PURPOSE :
+					recommendation.targetSku.category?.sqlServiceTier === contracts.AzureSqlPaaSServiceTier.NextGenGeneralPurpose ?
+						constants.NEXTGEN_GENERAL_PURPOSE
+						: constants.BUSINESS_CRITICAL;
+				const hardwareType = recommendation.targetSku.category?.hardwareType === contracts.AzureSqlPaaSHardwareType.Gen5
+					? constants.GEN5
+					: recommendation.targetSku.category?.hardwareType === contracts.AzureSqlPaaSHardwareType.PremiumSeries
+						? constants.PREMIUM_SERIES
+						: constants.PREMIUM_SERIES_MEMORY_OPTIMIZED;
+
+				return [constants.MI_CONFIGURATION_PREVIEW(
+					hardwareType,
+					serviceTier,
+					recommendation.targetSku.computeSize!,
+					recommendation.targetSku.storageMaxSizeInMb! / 1024,
+					Number(recommendation.targetSku.maxStorageIops))];
+			}
+	}
+}
+
+// Return true if Recommendations are ready and does not  have errors.
+export function hasRecommendations(model: MigrationStateModel): boolean {
+	return model._skuRecommendationResults?.recommendations
+		&& !model._skuRecommendationResults?.recommendationError
+		? true
+		: false;
+}
+
+export async function clearDropDownWithLoading(dropDown: DropDownComponent): Promise<void> {
+	dropDown.loading = true;
+	await dropDown.updateProperty('value', undefined);
+	await dropDown.updateProperty('values', []);
+}
+
+export async function promptUserForFile(filters: { [name: string]: string[] }): Promise<string> {
+	const options: vscode.OpenDialogOptions = {
+		defaultUri: vscode.Uri.file(getUserHome()!),
+		canSelectFiles: true,
+		canSelectFolders: false,
+		canSelectMany: false,
+		filters: filters,
+	};
+
+	const fileUris = await vscode.window.showOpenDialog(options);
+	if (fileUris && fileUris.length > 0 && fileUris[0]) {
+		return fileUris[0].fsPath;
+	}
+
+	return '';
+}
+
+export function generateTemplatePath(model: MigrationStateModel, targetType: MigrationTargetType, batchNumber: number): string {
+	let date = new Date().toISOString().split('T')[0];
+	let time = new Date().toLocaleTimeString('it-IT');
+	let fileName;
+
+	// source instance same would be same across all recommendations MI/DB/VM.
+	let instanceName = model._skuRecommendationResults.recommendations?.sqlMiRecommendationResults[0].sqlInstanceName;
+
+	if (model._armTemplateResult.templates?.length! > 1 && targetType === MigrationTargetType.SQLDB) {
+		fileName = `ARMTemplate-${targetType}-${instanceName}-${date}-${time}-batch${batchNumber}.json`;
+	}
+	else {
+		fileName = `ARMTemplate-${targetType}-${instanceName}-${date}-${time}.json`;
+	}
+
+	// replacing invalid characters for a file name.
+	fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
+	return fileName;
+}
+
+export async function refreshIntegrationRuntimeTable(_view: ModelView, _integrationRuntimeTable: DeclarativeTableComponent,
+	migrationServiceMonitoringStatus: azure.IntegrationRuntimeMonitoringData): Promise<void> {
+	if (migrationServiceMonitoringStatus.nodes.length === 0) {
+		const data: DeclarativeTableCellValue[][] = [
+			[
+				{ value: " " },
+				{ value: constants.NO_NODE_FOUND },
+				{ value: " " },
+				{ value: " " }
+			]
+		];
+		await _integrationRuntimeTable.setDataValues(data);
+	}
+	else {
+		const data = migrationServiceMonitoringStatus.nodes.map(eachNode => {
+			return [
+				{ value: eachNode.nodeName },
+				{ value: eachNode.status },
+				{ value: eachNode.ipAddress === '' ? '--' : eachNode.ipAddress },
+				{ value: eachNode.version }
+			]
+		});
+		await _integrationRuntimeTable.setDataValues(data);
+	}
+}
+

@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as DOM from 'vs/base/browser/dom';
 import { ICellViewModel } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
-import { CellPart } from 'vs/workbench/contrib/notebook/browser/view/cellPart';
+import { CellContentPart } from 'vs/workbench/contrib/notebook/browser/view/cellPart';
 
-export class CellDecorations extends CellPart {
+export class CellDecorations extends CellContentPart {
 	constructor(
 		readonly rootContainer: HTMLElement,
 		readonly decorationContainer: HTMLElement,
@@ -15,7 +15,7 @@ export class CellDecorations extends CellPart {
 		super();
 	}
 
-	protected override didRenderCell(element: ICellViewModel): void {
+	override didRenderCell(element: ICellViewModel): void {
 		const removedClassNames: string[] = [];
 		this.rootContainer.classList.forEach(className => {
 			if (/^nb\-.*$/.test(className)) {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IConfig, Events, LogLevel } from '@microsoft/ads-service-downloader';
@@ -10,10 +10,10 @@ import * as vscode from 'vscode';
 import * as azdata from 'azdata';
 import * as path from 'path';
 import * as azurecore from 'azurecore';
-import { getAzureAuthenticationLibraryConfig, getCommonLaunchArgsAndCleanupOldLogFiles, getConfigTracingLevel, getEnableSqlAuthenticationProviderConfig, getOrDownloadServer, getParallelMessageProcessingConfig, logDebug, TracingLevel } from './utils';
+import { getCommonLaunchArgsAndCleanupOldLogFiles, getConfigTracingLevel, getEnableConnectionPoolingConfig, getEnableSqlAuthenticationProviderConfig, getOrDownloadServer, getParallelMessageProcessingConfig, getParallelMessageProcessingLimitConfig, logDebug, TracingLevel } from './utils';
 import { TelemetryReporter, LanguageClientErrorHandler } from './telemetry';
 import { SqlOpsDataClient, ClientOptions } from 'dataprotocol-client';
-import { TelemetryFeature, AgentServicesFeature, SerializationFeature, AccountFeature, SqlAssessmentServicesFeature, ProfilerFeature, TableDesignerFeature, ExecutionPlanServiceFeature } from './features';
+import { TelemetryFeature, AgentServicesFeature, SerializationFeature, AccountFeature, SqlAssessmentServicesFeature, ProfilerFeature, TableDesignerFeature, ExecutionPlanServiceFeature/*, ServerContextualizationServiceFeature*/ } from './features'; // LEWISSANCHEZ TODO: Put back ServerContextualizationServiceFeature once ready.
 import { CredentialStore } from './credentialstore/credentialstore';
 import { AzureResourceProvider } from './resourceProvider/resourceProvider';
 import { SchemaCompareService } from './schemaCompare/schemaCompareService';
@@ -31,6 +31,8 @@ import { AzureBlobService } from './azureBlob/azureBlobService';
 import { ErrorDiagnosticsProvider } from './errorDiagnostics/errorDiagnosticsProvider';
 import { SqlProjectsService } from './sqlProjects/sqlProjectsService';
 import { ObjectManagementService } from './objectManagement/objectManagementService';
+import { QueryStoreService } from './queryStore/queryStoreService';
+import { ConnectionService } from './connection/connectionService';
 
 const localize = nls.loadMessageBundle();
 const outputChannel = vscode.window.createOutputChannel(Constants.serviceName);
@@ -59,8 +61,9 @@ export class SqlToolsServer {
 			const serverPath = await this.download(context);
 			this.installDirectory = path.dirname(serverPath);
 			const installationComplete = Date.now();
-			let serverOptions = generateServerOptions(context.extensionContext.logPath, serverPath);
+			let serverOptions = generateServerOptions(context.extensionContext.logUri.fsPath, serverPath);
 			let clientOptions = getClientOptions(context);
+			// IMPORTANT: 'mssql' must match the prefix name of configuration: 'mssql.trace.server'.
 			this.client = new SqlOpsDataClient('mssql', Constants.serviceName, serverOptions, clientOptions);
 			const processStart = Date.now();
 			const clientReadyPromise = this.client.onReady().then(() => {
@@ -99,7 +102,7 @@ export class SqlToolsServer {
 	 * @param client SqlOpsDataClient instance
 	 */
 	private async handleEncryptionKeyEventNotification(client: SqlOpsDataClient) {
-		if (getAzureAuthenticationLibraryConfig() === 'MSAL' && getEnableSqlAuthenticationProviderConfig()) {
+		if (getEnableSqlAuthenticationProviderConfig()) {
 			let azureCoreApi = await this.getAzureCoreAPI();
 			let onDidEncryptionKeysChanged = azureCoreApi.onEncryptionKeysUpdated;
 			// Register event listener from Azure Core extension and
@@ -132,7 +135,7 @@ export class SqlToolsServer {
 	private async download(context: AppContext): Promise<string> {
 		const configDir = context.extensionContext.extensionPath;
 		const rawConfig = await fs.readFile(path.join(configDir, 'config.json'));
-		this.config = JSON.parse(rawConfig.toString());
+		this.config = JSON.parse(rawConfig.toString()) as IConfig;
 		this.config.installDirectory = path.join(configDir, this.config.installDirectory);
 		this.config.proxy = vscode.workspace.getConfiguration('http').get<string>('proxy', '');
 		this.config.strictSSL = vscode.workspace.getConfiguration('http').get('proxyStrictSSL', true);
@@ -141,7 +144,7 @@ export class SqlToolsServer {
 
 	private activateFeatures(context: AppContext): Promise<void> {
 		const credsStore = new CredentialStore(context, this.config);
-		const resourceProvider = new AzureResourceProvider(context.extensionContext.logPath, this.config);
+		const resourceProvider = new AzureResourceProvider(context.extensionContext.logUri.fsPath, this.config);
 		this.disposables.push(credsStore);
 		this.disposables.push(resourceProvider);
 		context.registerService(Constants.AzureBlobService, new AzureBlobService(this.client));
@@ -161,11 +164,17 @@ function generateServerOptions(logPath: string, executablePath: string): ServerO
 	const enableAsyncMessageProcessing = getParallelMessageProcessingConfig();
 	if (enableAsyncMessageProcessing) {
 		launchArgs.push('--parallel-message-processing');
+		const pmpLimit = getParallelMessageProcessingLimitConfig();
+		launchArgs.push('--parallel-message-processing-limit');
+		launchArgs.push(String(pmpLimit));
 	}
 	const enableSqlAuthenticationProvider = getEnableSqlAuthenticationProviderConfig();
-	const azureAuthLibrary = getAzureAuthenticationLibraryConfig();
-	if (azureAuthLibrary === 'MSAL' && enableSqlAuthenticationProvider === true) {
+	if (enableSqlAuthenticationProvider === true) {
 		launchArgs.push('--enable-sql-authentication-provider');
+	}
+	const enableConnectionPooling = getEnableConnectionPoolingConfig()
+	if (enableConnectionPooling) {
+		launchArgs.push('--enable-connection-pooling');
 	}
 	return { command: executablePath, args: launchArgs, transport: TransportKind.stdio };
 }
@@ -219,7 +228,8 @@ function getClientOptions(context: AppContext): ClientOptions {
 		synchronize: {
 			configurationSection: [
 				Constants.extensionConfigSectionName,
-				Constants.telemetryConfigSectionName
+				Constants.telemetryConfigSectionName,
+				Constants.queryEditorConfigSectionName,
 			]
 		},
 		providerId: Constants.providerId,
@@ -232,6 +242,7 @@ function getClientOptions(context: AppContext): ClientOptions {
 			AgentServicesFeature,
 			SerializationFeature,
 			SqlAssessmentServicesFeature,
+			ConnectionService.asFeature(context),
 			SchemaCompareService.asFeature(context),
 			LanguageExtensionService.asFeature(context),
 			DacFxService.asFeature(context),
@@ -243,8 +254,10 @@ function getClientOptions(context: AppContext): ClientOptions {
 			SqlCredentialService.asFeature(context),
 			TableDesignerFeature,
 			ExecutionPlanServiceFeature,
+			// ServerContextualizationServiceFeature, // LEWISSANCHEZ TODO: Put this provider back once STS changes are complete
 			ErrorDiagnosticsProvider.asFeature(context),
-			ObjectManagementService.asFeature(context)
+			ObjectManagementService.asFeature(context),
+			QueryStoreService.asFeature(context)
 		],
 		outputChannel: outputChannel,
 		// Automatically reveal the output channel only in dev mode, so that the users are not impacted and issues can still be caught during development.

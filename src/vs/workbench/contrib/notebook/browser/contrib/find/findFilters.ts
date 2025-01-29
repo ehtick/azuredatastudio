@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable } from 'vs/base/common/lifecycle';
@@ -68,6 +68,12 @@ export class NotebookFindFilters extends Disposable {
 		}
 	}
 
+	private readonly _initialMarkupInput: boolean;
+	private readonly _initialMarkupPreview: boolean;
+	private readonly _initialCodeInput: boolean;
+	private readonly _initialCodeOutput: boolean;
+
+
 	constructor(
 		markupInput: boolean,
 		markupPreview: boolean,
@@ -80,6 +86,20 @@ export class NotebookFindFilters extends Disposable {
 		this._markupPreview = markupPreview;
 		this._codeInput = codeInput;
 		this._codeOutput = codeOutput;
+
+		this._initialMarkupInput = markupInput;
+		this._initialMarkupPreview = markupPreview;
+		this._initialCodeInput = codeInput;
+		this._initialCodeOutput = codeOutput;
+	}
+
+	isModified(): boolean {
+		return (
+			this._markupInput !== this._initialMarkupInput
+			|| this._markupPreview !== this._initialMarkupPreview
+			|| this._codeInput !== this._initialCodeInput
+			|| this._codeOutput !== this._initialCodeOutput
+		);
 	}
 
 	update(v: NotebookFindFilters) {

@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ClipboardData, IClipboardService } from 'vs/platform/clipboard/common/clipboardService';	// {{SQL CARBON EDIT}}
 import { URI } from 'vs/base/common/uri';
 import { isMacintosh } from 'vs/base/common/platform';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { INativeHostService } from 'vs/platform/native/electron-sandbox/native';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { INativeHostService } from 'vs/platform/native/common/native';
 import { VSBuffer } from 'vs/base/common/buffer';
 
 export class NativeClipboardService implements IClipboardService {
@@ -83,4 +83,4 @@ export class NativeClipboardService implements IClipboardService {
 	}
 }
 
-registerSingleton(IClipboardService, NativeClipboardService, true);
+registerSingleton(IClipboardService, NativeClipboardService, InstantiationType.Delayed);

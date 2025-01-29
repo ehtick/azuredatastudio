@@ -1,12 +1,14 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 export const ILanguageDetectionService = createDecorator<ILanguageDetectionService>('ILanguageDetectionService');
+
+export const LanguageDetectionLanguageEventSource = 'languageDetection';
 
 export interface ILanguageDetectionService {
 	readonly _serviceBrand: undefined;

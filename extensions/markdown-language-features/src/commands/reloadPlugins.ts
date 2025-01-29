@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Command } from '../commandManager';
@@ -11,13 +11,13 @@ export class ReloadPlugins implements Command {
 	public readonly id = 'markdown.api.reloadPlugins';
 
 	public constructor(
-		private readonly webviewManager: MarkdownPreviewManager,
-		private readonly engine: MarkdownItEngine,
+		private readonly _webviewManager: MarkdownPreviewManager,
+		private readonly _engine: MarkdownItEngine,
 	) { }
 
 	public execute(): void {
-		this.engine.reloadPlugins();
-		this.engine.cleanCache();
-		this.webviewManager.refresh();
+		this._engine.reloadPlugins();
+		this._engine.cleanCache();
+		this._webviewManager.refresh();
 	}
 }

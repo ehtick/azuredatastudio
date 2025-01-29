@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -19,12 +19,12 @@ suite('HighlightedLabel', () => {
 
 	test('no decorations', function () {
 		label.set('hello');
-		assert.strictEqual(label.element.innerHTML, '<span>hello</span>');
+		assert.strictEqual(label.element.innerHTML, 'hello');
 	});
 
 	test('escape html', function () {
 		label.set('hel<lo');
-		assert.strictEqual(label.element.innerHTML, '<span>hel&lt;lo</span>');
+		assert.strictEqual(label.element.innerHTML, 'hel&lt;lo');
 	});
 
 	test('everything highlighted', function () {
@@ -34,17 +34,17 @@ suite('HighlightedLabel', () => {
 
 	test('beginning highlighted', function () {
 		label.set('hellothere', [{ start: 0, end: 5 }]);
-		assert.strictEqual(label.element.innerHTML, '<span class="highlight">hello</span><span>there</span>');
+		assert.strictEqual(label.element.innerHTML, '<span class="highlight">hello</span>there');
 	});
 
 	test('ending highlighted', function () {
 		label.set('goodbye', [{ start: 4, end: 7 }]);
-		assert.strictEqual(label.element.innerHTML, '<span>good</span><span class="highlight">bye</span>');
+		assert.strictEqual(label.element.innerHTML, 'good<span class="highlight">bye</span>');
 	});
 
 	test('middle highlighted', function () {
 		label.set('foobarfoo', [{ start: 3, end: 6 }]);
-		assert.strictEqual(label.element.innerHTML, '<span>foo</span><span class="highlight">bar</span><span>foo</span>');
+		assert.strictEqual(label.element.innerHTML, 'foo<span class="highlight">bar</span>foo');
 	});
 
 	test('escapeNewLines', () => {

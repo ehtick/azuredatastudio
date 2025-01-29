@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as platform from 'vs/base/common/platform';
-import { IExperimentationFilterProvider } from 'tas-client-umd';
+import type { IExperimentationFilterProvider } from 'tas-client-umd';
 
 export const ASSIGNMENT_STORAGE_KEY = 'VSCode.ABExp.FeatureData';
 export const ASSIGNMENT_REFETCH_INTERVAL = 0; // no polling
@@ -15,10 +15,9 @@ export interface IAssignmentService {
 }
 
 export enum TargetPopulation {
-	Team = 'team',
-	Internal = 'internal',
 	Insiders = 'insider',
 	Public = 'public',
+	Exploration = 'exploration'
 }
 
 /*

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -10,7 +10,7 @@ import { IConfigurationService, IConfigurationChangeEvent } from 'vs/platform/co
 import { IFilesConfiguration } from 'vs/platform/files/common/files';
 import { IWorkspaceContextService, IWorkspaceFolder, IWorkspaceFoldersChangeEvent } from 'vs/platform/workspace/common/workspace';
 import { ResourceMap } from 'vs/base/common/map';
-import { INotificationService, Severity, NeverShowAgainScope } from 'vs/platform/notification/common/notification';
+import { INotificationService, Severity, NeverShowAgainScope, NotificationPriority } from 'vs/platform/notification/common/notification';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { isAbsolute } from 'vs/base/common/path';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
@@ -97,7 +97,7 @@ export class WorkspaceWatcher extends Disposable {
 				}],
 				{
 					sticky: true,
-					silent: true // reduce potential spam since we don't really know how often this fires
+					priority: NotificationPriority.SILENT // reduce potential spam since we don't really know how often this fires
 				}
 			);
 		}

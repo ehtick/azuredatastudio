@@ -9,7 +9,7 @@ steps:
 
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: "2.x"
+      versionSpec: "3.x"
       addToPath: true
 
   - task: 1ESLighthouseEng.PipelineArtifactCaching.RestoreCacheV1.RestoreCache@1
@@ -41,10 +41,6 @@ steps:
   # - powershell: | {{SQL CARBON EDIT}} remove editor check
   #     yarn monaco-compile-check
   #   displayName: Run Monaco Editor Checks
-
-  - script: |
-      yarn valid-layers-check
-    displayName: Run Valid Layers Checks
 
   - powershell: |
       yarn compile

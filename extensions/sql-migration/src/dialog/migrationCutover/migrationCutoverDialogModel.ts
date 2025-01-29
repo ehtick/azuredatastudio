@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { DatabaseMigration, startMigrationCutover, stopMigration, BackupFileInfo, getResourceGroupFromId, getMigrationDetails, getMigrationTargetName } from '../../api/azure';
@@ -62,7 +62,7 @@ export class MigrationCutoverDialogModel {
 		return undefined!;
 	}
 
-	public async cancelMigration(): Promise<void> {
+	public async cancelMigration(cancellationReason: string): Promise<void> {
 		try {
 			this.CancelMigrationError = undefined;
 			if (this.migration) {
@@ -78,6 +78,7 @@ export class MigrationCutoverDialogModel {
 						...this.getTelemetryProps(this.serviceContext, this.migration),
 						'migrationMode': getMigrationMode(this.migration),
 						'cutoverStartTime': cutoverStartTime,
+						'cancellationReason': cancellationReason
 					},
 					{}
 				);

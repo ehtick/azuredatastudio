@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
@@ -149,6 +149,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.connectionName,
@@ -161,6 +163,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.serverName,
@@ -173,6 +177,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.databaseName,
@@ -185,6 +191,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.userName,
@@ -197,6 +205,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.authType,
@@ -209,6 +219,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.password,
@@ -221,6 +233,8 @@ suite('SQL Object Explorer Service tests', () => {
 					groupName: undefined,
 					categoryValues: undefined,
 					defaultValue: undefined,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: false,
 					isRequired: false,
 					showOnConnectionDialog: true,
@@ -288,9 +302,7 @@ suite('SQL Object Explorer Service tests', () => {
 			connectionManagementService.object,
 			new NullAdsTelemetryService(),
 			capabilitiesService,
-			logService,
-			configurationService.object,
-			notificationService.object);
+			logService);
 
 		objectExplorerService.registerProvider(mssqlProviderName, sqlOEProvider.object);
 		sqlOEProvider.setup(x => x.createNewSession(TypeMoq.It.is<azdata.ConnectionInfo>(x => x.options['serverName'] === connection.serverName))).returns(() => new Promise<any>((resolve) => {
@@ -454,7 +466,7 @@ suite('SQL Object Explorer Service tests', () => {
 	});
 
 	test('getSelectedProfileAndDatabase returns the profile if it is selected', () => {
-		const serverTreeView = TypeMoq.Mock.ofInstance({ getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
+		const serverTreeView = TypeMoq.Mock.ofInstance({ tree: TypeMoq.It.isAny(), getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
 		serverTreeView.setup(x => x.getSelection()).returns(() => [connection]);
 		objectExplorerService.registerServerTreeView(serverTreeView.object);
 
@@ -464,7 +476,7 @@ suite('SQL Object Explorer Service tests', () => {
 	});
 
 	test('getSelectedProfileAndDatabase returns the profile but no database if children of a server are selected', () => {
-		const serverTreeView = TypeMoq.Mock.ofInstance({ getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
+		const serverTreeView = TypeMoq.Mock.ofInstance({ tree: TypeMoq.It.isAny(), getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
 		const databaseNode = new TreeNode(NodeType.Folder, '', 'Folder1', false, 'testServerName/Folder1', 'testServerName', '', '', undefined, undefined, undefined, undefined);
 		databaseNode.connection = connection;
 		serverTreeView.setup(x => x.getSelection()).returns(() => [databaseNode]);
@@ -476,7 +488,7 @@ suite('SQL Object Explorer Service tests', () => {
 	});
 
 	test('getSelectedProfileAndDatabase returns the profile and database if children of a database node are selected', () => {
-		const serverTreeView = TypeMoq.Mock.ofInstance({ getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
+		const serverTreeView = TypeMoq.Mock.ofInstance({ tree: TypeMoq.It.isAny(), getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
 		const databaseMetadata = {
 			metadataType: 0,
 			metadataTypeName: 'Database',
@@ -500,7 +512,7 @@ suite('SQL Object Explorer Service tests', () => {
 	});
 
 	test('getSelectedProfileAndDatabase returns undefined when there is no selection', () => {
-		const serverTreeView = TypeMoq.Mock.ofInstance({ getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
+		const serverTreeView = TypeMoq.Mock.ofInstance({ tree: TypeMoq.It.isAny(), getSelection: () => undefined, onSelectionOrFocusChange: Event.None } as IServerTreeView);
 		serverTreeView.setup(x => x.getSelection()).returns(() => []);
 		objectExplorerService.registerServerTreeView(serverTreeView.object);
 

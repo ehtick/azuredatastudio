@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { parse as jsonParse, getNodeType } from 'vs/base/common/json';
@@ -12,11 +12,11 @@ import { URI } from 'vs/base/common/uri';
 import { IFileService } from 'vs/platform/files/common/files';
 import { ExtensionIdentifier, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { IdleValue } from 'vs/base/common/async';
-import { IExtensionResourceLoaderService } from 'vs/workbench/services/extensionResourceLoader/common/extensionResourceLoader';
+import { IExtensionResourceLoaderService } from 'vs/platform/extensionResourceLoader/common/extensionResourceLoader';
 import { relativePath } from 'vs/base/common/resources';
 import { isObject } from 'vs/base/common/types';
-import { Iterable } from 'vs/base/common/iterator';
 import { tail } from 'vs/base/common/arrays';
+import { Iterable } from 'vs/base/common/iterator';
 
 class SnippetBodyInsights {
 
@@ -304,7 +304,7 @@ export class SnippetFile {
 			}
 		}
 
-		for (const _prefix of Array.isArray(prefix) ? prefix : Iterable.single(prefix)) {
+		for (const _prefix of Iterable.wrap(prefix)) {
 			bucket.push(new Snippet(
 				Boolean(isFileTemplate),
 				scopes,

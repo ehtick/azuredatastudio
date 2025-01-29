@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { TableDesignerComponentInput } from 'sql/workbench/services/tableDesigner/browser/tableDesignerComponentInput';
 import { Action } from 'vs/base/common/actions';
 import { Codicon } from 'vs/base/common/codicons';
 import { DisposableStore } from 'vs/base/common/lifecycle';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { localize } from 'vs/nls';
 
 const PublishChangesLabel = localize('tableDesigner.publishTableChanges', "Publish Changes...");
@@ -43,10 +44,10 @@ export class SaveTableChangesAction extends Action {
 	private updateLabelAndIcon(): void {
 		if (this._input?.tableDesignerView?.useAdvancedSaveMode) {
 			this.label = PublishChangesLabel;
-			this.class = Codicon.repoPush.classNames;
+			this.class = ThemeIcon.asClassName(Codicon.repoPush);
 		} else {
 			this.label = SaveChangesLabel;
-			this.class = Codicon.save.classNames;
+			this.class = ThemeIcon.asClassName(Codicon.save);
 		}
 	}
 

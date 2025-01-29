@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { DesignerTextEditor } from 'sql/workbench/browser/designer/interfaces';
@@ -71,7 +71,7 @@ export class DesignerScriptEditor extends AbstractTextCodeEditor<editorCommon.IC
 		});
 	}
 
-	public override createEditorControl(parent: HTMLElement, configuration: IEditorOptions): editorCommon.IEditor {
+	protected override createEditorControl(parent: HTMLElement, configuration: IEditorOptions): editorCommon.IEditor {
 		this.editorControl = this.instantiationService.createInstance(DesignerCodeEditor, parent, configuration, {});
 
 		return this.editorControl;

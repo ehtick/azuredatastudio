@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -48,7 +48,7 @@ export async function scriptSelect(connectionProfile: IConnectionProfile, metada
 		let paramDetails = getScriptingParamDetails(connectionService, connectionResult, metadata)!;
 		const result = await scriptingService.script(connectionResult, metadata, ScriptOperation.Select, paramDetails);
 		if (result && result.script) {
-			const owner = await queryEditorService.newSqlEditor({ initalContent: result.script }, connectionProfile?.providerName);
+			const owner = await queryEditorService.newSqlEditor({ initialContent: result.script }, connectionProfile?.providerName);
 			// Connect our editor to the input connection
 			let options: IConnectionCompletionOptions = {
 				params: { connectionType: ConnectionType.editor, runQueryOnCompletion: RunQueryOnConnectionMode.executeQuery, input: owner },
@@ -133,7 +133,7 @@ export async function script(connectionProfile: IConnectionProfile, metadata: az
 
 			if (script) {
 				let description = (metadata.schema && metadata.schema !== '') ? `${metadata.schema}.${metadata.name}` : metadata.name;
-				const owner = await queryEditorService.newSqlEditor({ initalContent: script, description }, connectionProfile.providerName);
+				const owner = await queryEditorService.newSqlEditor({ initialContent: script, description }, connectionProfile.providerName);
 				// Connect our editor to the input connection
 				let options: IConnectionCompletionOptions = {
 					params: { connectionType: ConnectionType.editor, runQueryOnCompletion: RunQueryOnConnectionMode.none, input: owner },
@@ -180,5 +180,5 @@ function getScriptingParamDetails(connectionService: IConnectionManagementServic
 
 function getServerInfo(connectionService: IConnectionManagementService, ownerUri: string): azdata.ServerInfo | undefined {
 	let connection: ConnectionManagementInfo = connectionService.getConnectionInfo(ownerUri);
-	return connection.serverInfo;
+	return connection?.serverInfo;
 }

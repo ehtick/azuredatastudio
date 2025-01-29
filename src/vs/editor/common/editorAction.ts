@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IEditorAction } from 'vs/editor/common/editorCommon';
@@ -13,7 +13,7 @@ export class InternalEditorAction implements IEditorAction {
 	public readonly alias: string;
 
 	private readonly _precondition: ContextKeyExpression | undefined;
-	private readonly _run: () => Promise<void>;
+	private readonly _run: (args: unknown) => Promise<void>;
 	private readonly _contextKeyService: IContextKeyService;
 
 	constructor(
@@ -36,11 +36,11 @@ export class InternalEditorAction implements IEditorAction {
 		return this._contextKeyService.contextMatchesRules(this._precondition);
 	}
 
-	public run(): Promise<void> {
+	public run(args: unknown): Promise<void> {
 		if (!this.isSupported()) {
 			return Promise.resolve(undefined);
 		}
 
-		return this._run();
+		return this._run(args);
 	}
 }

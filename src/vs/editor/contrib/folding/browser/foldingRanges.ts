@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 export interface ILineRange {
@@ -13,6 +13,12 @@ export const enum FoldSource {
 	userDefined = 1,
 	recovered = 2
 }
+
+export const foldSourceAbbr = {
+	[FoldSource.provider]: ' ',
+	[FoldSource.userDefined]: 'u',
+	[FoldSource.recovered]: 'r',
+};
 
 export interface FoldRange {
 	startLineNumber: number;
@@ -230,16 +236,11 @@ export class FoldingRegions {
 		return -1;
 	}
 
-	private readonly sourceAbbr = {
-		[FoldSource.provider]: ' ',
-		[FoldSource.userDefined]: 'u',
-		[FoldSource.recovered]: 'r',
-	};
 
 	public toString() {
 		const res: string[] = [];
 		for (let i = 0; i < this.length; i++) {
-			res[i] = `[${this.sourceAbbr[this.getSource(i)]}${this.isCollapsed(i) ? '+' : '-'}] ${this.getStartLineNumber(i)}/${this.getEndLineNumber(i)}`;
+			res[i] = `[${foldSourceAbbr[this.getSource(i)]}${this.isCollapsed(i) ? '+' : '-'}] ${this.getStartLineNumber(i)}/${this.getEndLineNumber(i)}`;
 		}
 		return res.join(', ');
 	}

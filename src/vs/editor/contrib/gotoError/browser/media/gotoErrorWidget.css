@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 /* marker zone */
@@ -31,7 +31,6 @@
 	white-space: pre;
 	user-select: text;
 	-webkit-user-select: text;
-	-ms-user-select: text;
 	padding: 8px 12px 0 20px;
 }
 

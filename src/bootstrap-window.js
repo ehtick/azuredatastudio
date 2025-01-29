@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 /// <reference path="typings/require.d.ts" />
@@ -43,15 +43,6 @@
 	 * }} [options]
 	 */
 	async function load(modulePaths, resultCallback, options) {
-		const isDev = !!safeProcess.env['VSCODE_DEV'];
-
-		// Error handler (node.js enabled renderers only)
-		let showDevtoolsOnError = isDev;
-		if (!safeProcess.sandboxed) {
-			safeProcess.on('uncaughtException', function (/** @type {string | Error} */ error) {
-				onUnexpectedError(error, showDevtoolsOnError);
-			});
-		}
 
 		// Await window configuration from preload
 		const timeout = setTimeout(() => { console.error(`[resolve window config] Could not resolve window configuration within 10 seconds, but will continue to wait...`); }, 10000);
@@ -68,17 +59,15 @@
 
 		// Developer settings
 		const {
-			forceDisableShowDevtoolsOnError,
 			forceEnableDeveloperKeybindings,
 			disallowReloadKeybinding,
 			removeDeveloperKeybindingsAfterLoad
 		} = typeof options?.configureDeveloperSettings === 'function' ? options.configureDeveloperSettings(configuration) : {
-			forceDisableShowDevtoolsOnError: false,
 			forceEnableDeveloperKeybindings: false,
 			disallowReloadKeybinding: false,
 			removeDeveloperKeybindingsAfterLoad: false
 		};
-		showDevtoolsOnError = isDev && !forceDisableShowDevtoolsOnError;
+		const isDev = !!safeProcess.env['VSCODE_DEV'];
 		const enableDeveloperKeybindings = isDev || forceEnableDeveloperKeybindings;
 		let developerDeveloperKeybindingsDisposable;
 		if (enableDeveloperKeybindings) {
@@ -101,14 +90,6 @@
 		}
 
 		window.document.documentElement.setAttribute('lang', locale);
-
-		// Define `fs` as `original-fs` to disable ASAR support
-		// in fs-operations  (node.js enabled renderers only)
-		if (!safeProcess.sandboxed) {
-			require.define('fs', [], function () {
-				return require.__$__nodeRequire('original-fs');
-			});
-		}
 
 		window['MonacoEnvironment'] = {};
 
@@ -135,8 +116,12 @@
 		loaderConfig.paths = {
 			'vscode-textmate': `${baseNodeModulesPath}/vscode-textmate/release/main.js`,
 			'vscode-oniguruma': `${baseNodeModulesPath}/vscode-oniguruma/release/main.js`,
+			'vsda': `${baseNodeModulesPath}/vsda/index.js`,
 			'xterm': `${baseNodeModulesPath}/xterm/lib/xterm.js`,
+			'xterm-addon-canvas': `${baseNodeModulesPath}/xterm-addon-canvas/lib/xterm-addon-canvas.js`,
+			'xterm-addon-image': `${baseNodeModulesPath}/xterm-addon-image/lib/xterm-addon-image.js`,
 			'xterm-addon-search': `${baseNodeModulesPath}/xterm-addon-search/lib/xterm-addon-search.js`,
+			'xterm-addon-serialize': `${baseNodeModulesPath}/xterm-addon-serialize/lib/xterm-addon-serialize.js`,
 			'xterm-addon-unicode11': `${baseNodeModulesPath}/xterm-addon-unicode11/lib/xterm-addon-unicode11.js`,
 			'xterm-addon-webgl': `${baseNodeModulesPath}/xterm-addon-webgl/lib/xterm-addon-webgl.js`,
 			'iconv-lite-umd': `${baseNodeModulesPath}/iconv-lite-umd/lib/iconv-lite-umd.js`,
@@ -182,11 +167,11 @@
 		}
 
 		// Actually require the main module as specified
-		require(modulePaths, async result => {
+		require(modulePaths, async firstModule => {
 			try {
 
 				// Callback only after process environment is resolved
-				const callbackResult = resultCallback(result, configuration);
+				const callbackResult = resultCallback(firstModule, configuration);
 				if (callbackResult instanceof Promise) {
 					await callbackResult;
 

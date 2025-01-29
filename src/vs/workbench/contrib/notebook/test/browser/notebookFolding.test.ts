@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -45,6 +45,34 @@ suite('Notebook Folding', () => {
 				assert.strictEqual(foldingController.regions.findRange(5), 1);
 				assert.strictEqual(foldingController.regions.findRange(6), 2);
 				assert.strictEqual(foldingController.regions.findRange(7), 2);
+			}
+		);
+	});
+
+	test('Folding not based on code cells', async function () {
+		await withTestNotebook(
+			[
+				['# header 1', 'markdown', CellKind.Markup, [], {}],
+				['body', 'markdown', CellKind.Markup, [], {}],
+				['# comment 1', 'python', CellKind.Code, [], {}],
+				['body 2', 'markdown', CellKind.Markup, [], {}],
+				['body 3\n```\n## comment 2\n```', 'markdown', CellKind.Markup, [], {}],
+				['body 4', 'markdown', CellKind.Markup, [], {}],
+				['## header 2.1', 'markdown', CellKind.Markup, [], {}],
+				['var e = 7;', 'python', CellKind.Code, [], {}],
+			],
+			(editor, viewModel) => {
+				const foldingController = new FoldingModel();
+				foldingController.attachViewModel(viewModel);
+
+				assert.strictEqual(foldingController.regions.findRange(1), 0);
+				assert.strictEqual(foldingController.regions.findRange(2), 0);
+				assert.strictEqual(foldingController.regions.findRange(3), 0);
+				assert.strictEqual(foldingController.regions.findRange(4), 0);
+				assert.strictEqual(foldingController.regions.findRange(5), 0);
+				assert.strictEqual(foldingController.regions.findRange(6), 0);
+				assert.strictEqual(foldingController.regions.findRange(7), 1);
+				assert.strictEqual(foldingController.regions.findRange(8), 1);
 			}
 		);
 	});

@@ -1,9 +1,9 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExtensionContext, Uri } from 'vscode';
+import { ExtensionContext, Uri, l10n } from 'vscode';
 import { BaseLanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 import { startClient, LanguageClientConstructor, SchemaRequestService } from '../jsonClient';
 import { LanguageClient } from 'vscode-languageclient/browser';
@@ -21,6 +21,8 @@ export async function activate(context: ExtensionContext) {
 	const serverMain = Uri.joinPath(context.extensionUri, 'server/dist/browser/jsonServerMain.js');
 	try {
 		const worker = new Worker(serverMain.toString());
+		worker.postMessage({ i10lLocation: l10n.uri?.toString(false) ?? '' });
+
 		const newLanguageClient: LanguageClientConstructor = (id: string, name: string, clientOptions: LanguageClientOptions) => {
 			return new LanguageClient(id, name, clientOptions, worker);
 		};

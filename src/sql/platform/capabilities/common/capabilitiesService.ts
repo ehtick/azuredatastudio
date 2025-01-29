@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -31,6 +31,7 @@ export const ConnectionProviderAndExtensionMap = new Map<string, string>([
 	['KUSTO', 'microsoft.kusto'],
 	['LOGANALYTICS', 'microsoft.azuremonitor'],
 	['COSMOSDB_MONGO', 'microsoft.azure-cosmosdb-ads-extension'],
+	['COSMOSDB_NOSQL', 'microsoft.azure-cosmosdb-ads-extension'],
 	['MySQL', 'microsoft.azuredatastudio-mysql']
 ]);
 
@@ -114,6 +115,18 @@ export interface ConnectionProviderProperties {
 	 * Connection string options for the connection provider
 	 */
 	connectionStringOptions?: ConnectionStringOptions;
+
+	/**
+	 * Indicates whether the provider support copy results to clipboard. Default value is false.
+	 * If true, the copy results to clipboard will be delegated to the provider to avoid passing large amount of data using the RPC channel.
+	 * Otherwise ADS will handle the copy request on the UI side.
+	 */
+	supportCopyResultsToClipboard?: boolean;
+
+	/**
+	 * The name to display in the UI for the id value used to identify connections in the server. Defaults to PID if not specified.
+	 */
+	serverConnectionIdName?: string;
 }
 
 export interface ProviderFeatures {

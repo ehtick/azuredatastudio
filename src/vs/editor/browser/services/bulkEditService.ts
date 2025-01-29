@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
@@ -108,6 +108,7 @@ export interface IBulkEditOptions {
 
 export interface IBulkEditResult {
 	ariaSummary: string;
+	isApplied: boolean;
 }
 
 export type IBulkEditPreviewHandler = (edits: ResourceEdit[], options?: IBulkEditOptions) => Promise<ResourceEdit[]>;
@@ -119,5 +120,5 @@ export interface IBulkEditService {
 
 	setPreviewHandler(handler: IBulkEditPreviewHandler): IDisposable;
 
-	apply(edit: ResourceEdit[], options?: IBulkEditOptions): Promise<IBulkEditResult>;
+	apply(edit: ResourceEdit[] | WorkspaceEdit, options?: IBulkEditOptions): Promise<IBulkEditResult>;
 }

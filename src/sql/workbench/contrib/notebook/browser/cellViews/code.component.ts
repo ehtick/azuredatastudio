@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./code';
 
@@ -406,8 +406,9 @@ export class CodeComponent extends CellView implements OnInit, OnChanges {
 
 	private updateLanguageMode(): void {
 		if (this._editorModel && this._editor) {
-			let modeValue = this._languageService.createById(this.cellModel.language);
-			this._modelService.setMode(this._editorModel, modeValue);
+			// let modeValue = this._languageService.createById(this.cellModel.language);
+			// {{SQL CARBON TODO}} - do we still need this
+			// this._modelService.setMode(this._editorModel, modeValue);
 		}
 	}
 

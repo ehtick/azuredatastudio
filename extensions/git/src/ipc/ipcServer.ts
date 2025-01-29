@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable } from 'vscode';
@@ -17,7 +17,7 @@ function getIPCHandlePath(id: string): string {
 		return `\\\\.\\pipe\\vscode-git-${id}-sock`;
 	}
 
-	if (process.env['XDG_RUNTIME_DIR']) {
+	if (process.platform !== 'darwin' && process.env['XDG_RUNTIME_DIR']) {
 		return path.join(process.env['XDG_RUNTIME_DIR'] as string, `vscode-git-${id}.sock`);
 	}
 

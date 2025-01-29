@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { escapeRegExpCharacters } from 'vs/base/common/strings';
 import { ResolvedLanguageConfiguration } from 'vs/editor/common/languages/languageConfigurationRegistry';
@@ -33,7 +33,7 @@ export class BracketTokens {
 		for (const closingBracket of configuration.bracketsNew.closingBrackets) {
 			const length = toLength(0, closingBracket.bracketText.length);
 			let bracketIds = SmallImmutableSet.getEmpty();
-			const closingBrackets = closingBracket.getClosedBrackets();
+			const closingBrackets = closingBracket.getOpeningBrackets();
 			for (const bracket of closingBrackets) {
 				bracketIds = bracketIds.add(getId(bracket), identityKeyProvider);
 			}

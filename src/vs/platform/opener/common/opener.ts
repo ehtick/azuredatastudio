@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
+import { IDisposable } from 'vs/base/common/lifecycle';
 import { equalsIgnoreCase, startsWithIgnoreCase } from 'vs/base/common/strings';
 import { URI } from 'vs/base/common/uri';
 import { IEditorOptions, ITextEditorSelection } from 'vs/platform/editor/common/editor';
@@ -33,8 +33,10 @@ export type OpenInternalOptions = {
 
 	/**
 	 * Allow command links to be handled.
+	 *
+	 * If this is an array, then only the commands included in the array can be run.
 	 */
-	readonly allowCommands?: boolean;
+	readonly allowCommands?: boolean | readonly string[];
 };
 
 export type OpenExternalOptions = {
@@ -114,17 +116,6 @@ export interface IOpenerService {
 	 */
 	resolveExternalUri(resource: URI, options?: ResolveExternalUriOptions): Promise<IResolvedExternalUri>;
 }
-
-export const NullOpenerService = Object.freeze({
-	_serviceBrand: undefined,
-	registerOpener() { return Disposable.None; },
-	registerValidator() { return Disposable.None; },
-	registerExternalUriResolver() { return Disposable.None; },
-	setDefaultExternalOpener() { },
-	registerExternalOpener() { return Disposable.None; },
-	async open() { return false; },
-	async resolveExternalUri(uri: URI) { return { resolved: uri, dispose() { } }; },
-} as IOpenerService);
 
 export function matchesScheme(target: URI | string, scheme: string): boolean {
 	if (URI.isUri(target)) {

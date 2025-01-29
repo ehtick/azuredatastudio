@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { VSBuffer, VSBufferReadable, VSBufferReadableStream } from 'vs/base/common/buffer';
 import { URI } from 'vs/base/common/uri';
 import { IFileStatWithMetadata, IWriteFileOptions } from 'vs/platform/files/common/files';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { IElevatedFileService } from 'vs/workbench/services/files/common/elevatedFileService';
 
 export class BrowserElevatedFileService implements IElevatedFileService {
@@ -25,4 +25,4 @@ export class BrowserElevatedFileService implements IElevatedFileService {
 	}
 }
 
-registerSingleton(IElevatedFileService, BrowserElevatedFileService);
+registerSingleton(IElevatedFileService, BrowserElevatedFileService, InstantiationType.Delayed);

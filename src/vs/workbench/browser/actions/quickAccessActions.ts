@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -13,6 +13,7 @@ import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { inQuickPickContext, defaultQuickAccessContext, getQuickNavigateHandler } from 'vs/workbench/browser/quickaccess';
 import { ILocalizedString } from 'vs/platform/action/common/action';
+import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
 
 //#region Quick access management commands and keys
 
@@ -139,7 +140,21 @@ registerAction2(class QuickAccessAction extends Action2 {
 				secondary: globalQuickAccessKeybinding.secondary,
 				mac: globalQuickAccessKeybinding.mac
 			},
-			f1: true,
+			f1: true
+		});
+	}
+
+	run(accessor: ServicesAccessor, prefix: undefined): void {
+		const quickInputService = accessor.get(IQuickInputService);
+		quickInputService.quickAccess.show(typeof prefix === 'string' ? prefix : undefined, { preserveValue: typeof prefix === 'string' /* preserve as is if provided */ });
+	}
+});
+
+registerAction2(class QuickAccessAction extends Action2 {
+	constructor() {
+		super({
+			id: 'workbench.action.quickOpenWithModes',
+			title: localize('quickOpenWithModes', "Quick Open"),
 			menu: {
 				id: MenuId.CommandCenter,
 				order: 100
@@ -147,9 +162,15 @@ registerAction2(class QuickAccessAction extends Action2 {
 		});
 	}
 
-	run(accessor: ServicesAccessor, prefix: undefined): void {
+	run(accessor: ServicesAccessor): void {
 		const quickInputService = accessor.get(IQuickInputService);
-		quickInputService.quickAccess.show(typeof prefix === 'string' ? prefix : undefined, { preserveValue: typeof prefix === 'string' /* preserve as is if provided */ });
+		quickInputService.quickAccess.show(undefined, {
+			preserveValue: true,
+			providerOptions: {
+				includeHelp: true,
+				from: 'commandCenter',
+			} as AnythingQuickAccessProviderRunOptions
+		});
 	}
 });
 

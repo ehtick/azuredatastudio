@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/taskbar';
@@ -52,7 +52,7 @@ export class Taskbar {
 					orientation: options.orientation,
 					ariaLabel: options.ariaLabel,
 					actionViewItemProvider: (action: IAction): IActionViewItem | undefined => {
-						return options.actionViewItemProvider ? options.actionViewItemProvider(action) : undefined;
+						return options.actionViewItemProvider ? options.actionViewItemProvider(action, {}) : undefined;
 					}
 				}
 			);
@@ -63,7 +63,7 @@ export class Taskbar {
 					orientation: options.orientation,
 					ariaLabel: options.ariaLabel,
 					actionViewItemProvider: (action: IAction): IActionViewItem | undefined => {
-						return options.actionViewItemProvider ? options.actionViewItemProvider(action) : undefined;
+						return options.actionViewItemProvider ? options.actionViewItemProvider(action, {}) : undefined;
 					}
 				}
 			);

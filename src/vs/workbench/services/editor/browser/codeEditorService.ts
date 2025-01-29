@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ICodeEditor, isCodeEditor, isDiffEditor, isCompositeEditor, getCodeEditor } from 'vs/editor/browser/editorBrowser';
@@ -11,7 +11,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchEditorConfiguration } from 'vs/workbench/common/editor';
 import { ACTIVE_GROUP, IEditorService, SIDE_GROUP } from 'vs/workbench/services/editor/common/editorService';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { isEqual } from 'vs/base/common/resources';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { applyTextEditorOptions } from 'vs/workbench/common/editor/editorOptions';
@@ -25,8 +25,8 @@ export class CodeEditorService extends AbstractCodeEditorService {
 	) {
 		super(themeService);
 
-		this.registerCodeEditorOpenHandler(this.doOpenCodeEditor.bind(this));
-		this.registerCodeEditorOpenHandler(this.doOpenCodeEditorFromDiff.bind(this));
+		this._register(this.registerCodeEditorOpenHandler(this.doOpenCodeEditor.bind(this)));
+		this._register(this.registerCodeEditorOpenHandler(this.doOpenCodeEditorFromDiff.bind(this)));
 	}
 
 	getActiveCodeEditor(): ICodeEditor | null {
@@ -113,4 +113,4 @@ export class CodeEditorService extends AbstractCodeEditorService {
 	}
 }
 
-registerSingleton(ICodeEditorService, CodeEditorService, true);
+registerSingleton(ICodeEditorService, CodeEditorService, InstantiationType.Delayed);

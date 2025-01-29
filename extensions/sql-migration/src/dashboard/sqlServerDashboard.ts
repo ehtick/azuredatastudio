@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -12,23 +12,26 @@ import { canCancelMigration, canCutoverMigration, canDeleteMigration, canRestart
 import { IconPathHelper } from '../constants/iconPathHelper';
 import { MigrationNotebookInfo, NotebookPathHelper } from '../constants/notebookPathHelper';
 import * as loc from '../constants/strings';
-import { SavedAssessmentDialog } from '../dialog/assessmentResults/savedAssessmentDialog';
+import { SavedAssessmentDialog } from '../dialog/assessment/savedAssessmentDialog';
 import { ConfirmCutoverDialog } from '../dialog/migrationCutover/confirmCutoverDialog';
 import { MigrationCutoverDialogModel } from '../dialog/migrationCutover/migrationCutoverDialogModel';
 import { RestartMigrationDialog } from '../dialog/restartMigration/restartMigrationDialog';
 import { SqlMigrationServiceDetailsDialog } from '../dialog/sqlMigrationService/sqlMigrationServiceDetailsDialog';
 import { MigrationLocalStorage } from '../models/migrationLocalStorage';
-import { MigrationStateModel, SavedInfo } from '../models/stateMachine';
-import { logError, TelemetryViews } from '../telemetry';
+import { MigrationStateModel, Page, SavedInfo } from '../models/stateMachine';
+import { logError, TelemetryAction, TelemetryViews } from '../telemetry';
 import { WizardController } from '../wizard/wizardController';
 import { DashboardStatusBar, ErrorEvent } from './DashboardStatusBar';
-import { DashboardTab } from './dashboardTab';
+import { DashboardTab, DashboardTabId } from './dashboardTab';
 import { MigrationsTab, MigrationsTabId } from './migrationsTab';
 import { AdsMigrationStatus, MigrationDetailsEvent, ServiceContextChangeEvent } from './tabBase';
 import { migrationServiceProvider } from '../service/provider';
 import { ApiType, SqlMigrationService } from '../service/features';
 import { getSourceConnectionId, getSourceConnectionProfile } from '../api/sqlUtils';
 import { openRetryMigrationDialog } from '../dialog/retryMigration/retryMigrationDialog';
+import { ImportAssessmentDialog } from '../dialog/assessment/importAssessmentDialog';
+import { CancelFeedbackDialog } from '../dialog/help/cancelFeedbackDialog';
+
 
 export interface MenuCommandArgs {
 	connectionId: string,
@@ -107,6 +110,7 @@ export class DashboardWidget {
 			};
 
 			const dashboardTab = await new DashboardTab().create(
+				this._context,
 				view,
 				async (filter: AdsMigrationStatus) => await openMigrationFcn(filter),
 				this._onServiceContextChanged,
@@ -137,8 +141,10 @@ export class DashboardWidget {
 			disposables.push(
 				tabs.onTabChanged(async tabId => {
 					await this.clearError(await getSourceConnectionId());
-					if (tabId === MigrationsTabId && !migrationsTabInitialized) {
-						migrationsTabInitialized = true;
+					if (tabId === MigrationsTabId) {
+						await this._migrationsTab.refresh();
+					} else if (tabId === DashboardTabId) {
+						await dashboardTab.refresh();
 						await this._migrationsTab.refresh();
 					}
 				}));
@@ -284,22 +290,17 @@ export class DashboardWidget {
 						await this.clearError(args.connectionId);
 						const migration = await this._getMigrationById(args.migrationId, args.migrationOperationId);
 						if (migration && canCancelMigration(migration)) {
-							void vscode.window
-								.showInformationMessage(loc.CANCEL_MIGRATION_CONFIRMATION, loc.YES, loc.NO)
-								.then(async (v) => {
-									if (v === loc.YES) {
-										const cutoverDialogModel = new MigrationCutoverDialogModel(
-											await MigrationLocalStorage.getMigrationServiceContext(),
-											migration!);
-										await cutoverDialogModel.fetchStatus();
-										await cutoverDialogModel.cancelMigration();
-
-										if (cutoverDialogModel.CancelMigrationError) {
-											void vscode.window.showErrorMessage(loc.MIGRATION_CANNOT_CANCEL);
-											logError(TelemetryViews.MigrationsTab, MenuCommands.CancelMigration, cutoverDialogModel.CancelMigrationError);
-										}
-									}
-								});
+							const cancelFeedbackDialog = new CancelFeedbackDialog();
+							const cancelReasonsList: string[] = [
+								loc.WIZARD_CANCEL_REASON_CONTINUE_WITH_MIGRATION_LATER,
+								loc.WIZARD_CANCEL_REASON_MIGRATION_TAKING_LONGER
+							];
+							cancelFeedbackDialog.updateCancelReasonsList(cancelReasonsList); // Fix: Use the element access expression with an argument
+							await cancelFeedbackDialog.openDialog(async (isCancelled: boolean, cancellationReason: string) => {
+								if (isCancelled) {
+									await this.cancelMigrationAndLogTelemetry(migration, cancellationReason);
+								}
+							});
 						} else {
 							await vscode.window.showInformationMessage(loc.MIGRATION_CANNOT_CANCEL);
 						}
@@ -361,7 +362,7 @@ export class DashboardWidget {
 					const migration = await this._getMigrationById(args.migrationId, args.migrationOperationId);
 					if (service && migration && canRetryMigration(migration)) {
 						const errorMessage = getMigrationErrors(migration);
-						await openRetryMigrationDialog(
+						openRetryMigrationDialog(
 							errorMessage,
 							async () => {
 								try {
@@ -479,6 +480,19 @@ export class DashboardWidget {
 				}));
 	}
 
+	private async cancelMigrationAndLogTelemetry(migration: DatabaseMigration, cancellationReason: string): Promise<void> {
+		const cutoverDialogModel = new MigrationCutoverDialogModel(
+			await MigrationLocalStorage.getMigrationServiceContext(),
+			migration!);
+		await cutoverDialogModel.fetchStatus();
+		await cutoverDialogModel.cancelMigration(cancellationReason);
+
+		if (cutoverDialogModel.CancelMigrationError) {
+			void vscode.window.showErrorMessage(loc.MIGRATION_CANNOT_CANCEL);
+			logError(TelemetryViews.MigrationsTab, MenuCommands.CancelMigration, cutoverDialogModel.CancelMigrationError);
+		}
+	}
+
 	private async clearError(connectionId: string): Promise<void> {
 		this._errorEvent.fire({
 			connectionId: connectionId,
@@ -531,20 +545,44 @@ export class DashboardWidget {
 			if (migrationService) {
 				this.stateModel = new MigrationStateModel(this._context, migrationService);
 				this._context.subscriptions.push(this.stateModel);
+
+				const wizardController = new WizardController(
+					this._context,
+					this.stateModel,
+					this._onServiceContextChanged);
+
 				const savedInfo = this.checkSavedInfo(serverName);
 				if (savedInfo) {
 					this.stateModel.savedInfo = savedInfo;
 					this.stateModel.serverName = serverName;
-					const savedAssessmentDialog = new SavedAssessmentDialog(
-						this._context,
-						this.stateModel,
-						this._onServiceContextChanged);
-					await savedAssessmentDialog.openDialog();
+
+					const importSavedInfo = this.checkSavedInfo(loc.importAssessmentKey);
+					if (importSavedInfo && importSavedInfo.closedPage === Page.ImportAssessment) {
+						try {
+							await this.clearSavedInfo(loc.importAssessmentKey);
+							if (importSavedInfo.serverAssessment !== null) {
+								this.stateModel._assessmentResults = importSavedInfo.serverAssessment;
+								this.stateModel.savedInfo = importSavedInfo;
+								await this.stateModel.loadSavedInfo();
+
+								serverName = importSavedInfo.serverAssessment?.issues[0]?.serverName ??
+									importSavedInfo.serverAssessment?.databaseAssessments[0]?.issues[0]?.serverName;
+								this.stateModel.serverName = serverName;
+							}
+
+							const importAssessmentDialog = new ImportAssessmentDialog('ownerUri', this.stateModel, serverName);
+							await importAssessmentDialog.openDialog();
+						} catch (err) {
+							logError(TelemetryViews.MigrationsTab, TelemetryAction.ImportAssessmentFailed, err);
+						}
+					} else {
+						const savedAssessmentDialog = new SavedAssessmentDialog(
+							this._context,
+							this.stateModel,
+							this._onServiceContextChanged);
+						await savedAssessmentDialog.openDialog();
+					}
 				} else {
-					const wizardController = new WizardController(
-						this._context,
-						this.stateModel,
-						this._onServiceContextChanged);
 					await wizardController.openWizard();
 				}
 			}
@@ -578,6 +616,10 @@ export class DashboardWidget {
 
 	private checkSavedInfo(serverName: string): SavedInfo | undefined {
 		return this._context.globalState.get<SavedInfo>(`${this.stateModel.mementoString}.${serverName}`);
+	}
+
+	private async clearSavedInfo(serverName: string) {
+		await this._context.globalState.update(`${this.stateModel.mementoString}.${serverName}`, {});
 	}
 
 	public async launchNewSupportRequest(): Promise<void> {

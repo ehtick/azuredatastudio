@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IConnectionProfile } from 'sql/platform/connection/common/interfaces';
 import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
 import { ConnectionProfileGroup } from 'sql/platform/connection/common/connectionProfileGroup';
-import * as sqlExtHostTypes from 'sql/workbench/api/common/sqlExtHostTypes'
+import * as sqlExtHostTypes from 'sql/workbench/api/common/sqlExtHostTypes';
+import { applicationName } from 'sql/platform/connection/common/constants';
 
 // CONSTANTS //////////////////////////////////////////////////////////////////////////////////////
 const msInH = 3.6e6;
@@ -169,4 +170,16 @@ export function convertToRpcConnectionProfile(profile: IConnectionProfile | unde
 	}
 
 	return connection;
+}
+
+export function adjustForMssqlAppName(currentAppName: string, suffix?: string): string {
+	let appName = suffix ? applicationName + '-' + suffix : applicationName;
+	let finalSuffix = '-' + appName;
+	return (currentAppName && currentAppName !== appName && !currentAppName.endsWith(finalSuffix))
+		? currentAppName + finalSuffix
+		: currentAppName ?? appName;
+}
+
+export function delay(time: number): Promise<void> {
+	return new Promise(resolve => setTimeout(resolve, time));
 }

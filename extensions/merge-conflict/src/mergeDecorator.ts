@@ -1,11 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import * as interfaces from './interfaces';
-import { loadMessageBundle } from 'vscode-nls';
-const localize = loadMessageBundle();
+
 
 export default class MergeDecorator implements vscode.Disposable {
 
@@ -88,7 +87,7 @@ export default class MergeDecorator implements vscode.Disposable {
 				outlineWidth: '1pt',
 				outlineColor: new vscode.ThemeColor('merge.border'),
 				after: {
-					contentText: ' ' + localize('currentChange', '(Current Change)'),
+					contentText: ' ' + vscode.l10n.t("(Current Change)"),
 					color: new vscode.ThemeColor('descriptionForeground')
 				}
 			});
@@ -118,7 +117,7 @@ export default class MergeDecorator implements vscode.Disposable {
 				outlineColor: new vscode.ThemeColor('merge.border'),
 				isWholeLine: this.decorationUsesWholeLine,
 				after: {
-					contentText: ' ' + localize('incomingChange', '(Incoming Change)'),
+					contentText: ' ' + vscode.l10n.t("(Incoming Change)"),
 					color: new vscode.ThemeColor('descriptionForeground')
 				}
 			});

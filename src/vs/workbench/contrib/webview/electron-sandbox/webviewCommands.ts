@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
 import { Action2 } from 'vs/platform/actions/common/actions';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { INativeHostService } from 'vs/platform/native/electron-sandbox/native';
-import { CATEGORIES } from 'vs/workbench/common/actions';
+import { INativeHostService } from 'vs/platform/native/common/native';
+import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 
 export class OpenWebviewDeveloperToolsAction extends Action2 {
 
@@ -15,7 +15,7 @@ export class OpenWebviewDeveloperToolsAction extends Action2 {
 		super({
 			id: 'workbench.action.webview.openDeveloperTools',
 			title: { value: nls.localize('openToolsLabel', "Open Webview Developer Tools"), original: 'Open Webview Developer Tools' },
-			category: CATEGORIES.Developer,
+			category: Categories.Developer,
 			f1: true
 		});
 	}

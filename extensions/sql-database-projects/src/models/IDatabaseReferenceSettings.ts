@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { SystemDatabase } from 'mssql';
 import { Uri } from 'vscode';
+import { SystemDatabase, SystemDbReferenceType } from '../common/typeHelper';
 
 export interface IDatabaseReferenceSettings {
 	databaseVariableLiteralValue?: string;
@@ -13,6 +13,7 @@ export interface IDatabaseReferenceSettings {
 
 export interface ISystemDatabaseReferenceSettings extends IDatabaseReferenceSettings {
 	systemDb: SystemDatabase;
+	systemDbReferenceType: SystemDbReferenceType;
 }
 
 export interface IUserDatabaseReferenceSettings extends IDatabaseReferenceSettings {

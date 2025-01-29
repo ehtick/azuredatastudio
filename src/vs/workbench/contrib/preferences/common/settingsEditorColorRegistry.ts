@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Color, RGBA } from 'vs/base/common/color';
@@ -10,6 +10,7 @@ import { PANEL_BORDER } from 'vs/workbench/common/theme';
 
 // General setting colors
 export const settingsHeaderForeground = registerColor('settings.headerForeground', { light: '#444444', dark: '#e7e7e7', hcDark: '#ffffff', hcLight: '#292929' }, localize('headerForeground', "The foreground color for a section header or active title."));
+export const settingsHeaderHoverForeground = registerColor('settings.settingsHeaderHoverForeground', { light: transparent(settingsHeaderForeground, 0.7), dark: transparent(settingsHeaderForeground, 0.7), hcDark: transparent(settingsHeaderForeground, 0.7), hcLight: transparent(settingsHeaderForeground, 0.7) }, localize('settingsHeaderHoverForeground', "The foreground color for a section header or hovered title."));
 export const modifiedItemIndicator = registerColor('settings.modifiedItemIndicator', {
 	light: new Color(new RGBA(102, 175, 224)),
 	dark: new Color(new RGBA(12, 125, 157)),
@@ -55,8 +56,8 @@ export const rowHoverBackground = registerColor('settings.rowHoverBackground', {
 }, localize('settings.rowHoverBackground', "The background color of a settings row when hovered."));
 
 export const focusedRowBorder = registerColor('settings.focusedRowBorder', {
-	dark: Color.white.transparent(0.12),
-	light: Color.black.transparent(0.12),
+	dark: focusBorder,
+	light: focusBorder,
 	hcDark: focusBorder,
 	hcLight: focusBorder
 }, localize('settings.focusedRowBorder', "The color of the row's top and bottom border when the row is focused."));

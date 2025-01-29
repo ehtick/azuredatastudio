@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vscode-nls';
@@ -15,8 +15,6 @@ export const notebookCommandNew = 'notebook.command.new';
 // JUPYTER CONFIG //////////////////////////////////////////////////////////
 export const pythonVersion = '3.8.10';
 export const pythonPathConfigKey = 'pythonPath';
-export const existingPythonConfigKey = 'useExistingPython';
-export const dontPromptPythonUpdate = 'dontPromptPythonUpdate';
 export const jupyterServerShutdownTimeoutConfigKey = 'jupyterServerShutdownTimeout';
 export const notebookConfigKey = 'notebook';
 export const trustedBooksConfigKey = 'trustedBooks';
@@ -48,7 +46,6 @@ export const powershellDisplayName = 'PowerShell';
 export const allKernelsName = 'All Kernels';
 
 export const BOOKS_VIEWID = 'bookTreeView';
-export const PROVIDED_BOOKS_VIEWID = 'providedBooksView';
 export const PINNED_BOOKS_VIEWID = 'pinnedBooksView';
 
 export const visitedNotebooksMementoKey = 'notebooks.visited';
@@ -75,10 +72,6 @@ export enum NavigationProviders {
 
 export const unsavedBooksContextKey = 'unsavedBooks';
 export const showPinnedBooksContextKey = 'showPinnedbooks';
-
-export const pythonWindowsInstallUrl = 'https://go.microsoft.com/fwlink/?linkid=2163338';
-export const pythonMacInstallUrl = 'https://go.microsoft.com/fwlink/?linkid=2163337';
-export const pythonLinuxInstallUrl = 'https://go.microsoft.com/fwlink/?linkid=2163336';
 
 // The version of the notebook file format that we support
 export const NBFORMAT = 4;

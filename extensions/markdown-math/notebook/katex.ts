@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import type * as markdownIt from 'markdown-it';
 import type { RendererContext } from 'vscode-notebook-renderer';
@@ -35,10 +35,13 @@ export async function activate(ctx: RendererContext<void>) {
 		.katex-error {
 			color: var(--vscode-editorError-foreground);
 		}
+		.katex-block {
+			counter-reset: katexEqnNo mmlEqnNo;
+		}
 	`;
 	document.head.append(style);
 
-	const katex = require('@iktakahiro/markdown-it-katex');
+	const katex = require('@vscode/markdown-it-katex');
 	const macros = {};
 	markdownItRenderer.extendMarkdownIt((md: markdownIt.MarkdownIt) => {
 		return md.use(katex, {

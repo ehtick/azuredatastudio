@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from 'vs/base/common/lifecycle';
@@ -32,7 +32,8 @@ export enum ComponentEventType {
 export enum ModelViewAction {
 	SelectTab = 'selectTab',
 	AppendData = 'appendData',
-	Filter = 'filter'
+	Filter = 'filter',
+	SetActiveCell = 'setActiveCell'
 }
 
 /**
@@ -149,5 +150,7 @@ export enum ModelComponentTypes {
 	Separator,
 	PropertiesContainer,
 	InfoBox,
-	Slider
+	Slider,
+	ExecutionPlan,
+	Chart
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as request from 'request';
 import * as fs from 'fs-extra';
@@ -83,7 +83,7 @@ export class GitHubRemoteBook extends RemoteBook {
 			}
 			await fs.promises.unlink(remoteBookFullPath.fsPath);
 			this.outputChannel.appendLine(loc.msgRemoteBookDownloadComplete);
-			void vscode.commands.executeCommand('notebook.command.openNotebookFolder', this.localPath.fsPath, undefined, true);
+			void vscode.commands.executeCommand('notebook.command.openNotebookFolder', undefined, this.localPath.fsPath, undefined, true);
 		}
 		catch (err) {
 			this.outputChannel.appendLine(loc.msgRemoteBookUnpackingError);

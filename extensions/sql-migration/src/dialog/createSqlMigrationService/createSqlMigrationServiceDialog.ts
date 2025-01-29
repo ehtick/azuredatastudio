@@ -1,22 +1,24 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
 import * as vscode from 'vscode';
-import { createSqlMigrationService, getResourceName, getSqlMigrationService, getSqlMigrationServiceAuthKeys, getSqlMigrationServiceMonitoringData, SqlMigrationService } from '../../api/azure';
+import { promises as fs } from 'fs';
+import { createSqlMigrationService, getResourceName, getSqlMigrationService, getSqlMigrationServiceMonitoringData, SqlMigrationService } from '../../api/azure';
 import { MigrationStateModel } from '../../models/stateMachine';
 import { logError, TelemetryViews } from '../../telemetry';
 import * as constants from '../../constants/strings';
 import * as os from 'os';
 import { azureResource } from 'azurecore';
-import { IconPathHelper } from '../../constants/iconPathHelper';
 import { CreateResourceGroupDialog } from '../createResourceGroup/createResourceGroupDialog';
-import { createAuthenticationKeyTable } from '../../wizard/integrationRuntimePage';
 import * as EventEmitter from 'events';
 import * as utils from '../../api/utils';
 import * as styles from '../../constants/styles';
+import path = require('path');
+import { IconPathHelper } from '../../constants/iconPathHelper';
+import { createManualIRconfigContentContainer, createPowershellscriptContentContainer, injectKeysIntoShirScriptContent, invokeScript, retrieveAuthKeys } from '../../api/utils';
 
 export class CreateSqlMigrationServiceDialog {
 
@@ -30,14 +32,9 @@ export class CreateSqlMigrationServiceDialog {
 	private _createResourceGroupLink!: azdata.HyperlinkComponent;
 
 	private _statusLoadingComponent!: azdata.LoadingComponent;
-	private _refreshLoadingComponent!: azdata.LoadingComponent;
-	private migrationServiceAuthKeyTable!: azdata.DeclarativeTableComponent;
 	private _connectionStatus!: azdata.InfoBoxComponent;
-	private _copyKey1Button!: azdata.ButtonComponent;
-	private _copyKey2Button!: azdata.ButtonComponent;
-	private _refreshKey1Button!: azdata.ButtonComponent;
-	private _refreshKey2Button!: azdata.ButtonComponent;
 	private _setupContainer!: azdata.FlexContainer;
+	private _creationStatusContainer!: azdata.FlexContainer;
 	private _resourceGroupPreset!: string;
 
 	private _dialogObject!: azdata.window.Dialog;
@@ -46,13 +43,18 @@ export class CreateSqlMigrationServiceDialog {
 	private _createdMigrationService!: SqlMigrationService;
 	private _resourceGroups!: azureResource.AzureResourceResourceGroup[];
 	private _selectedResourceGroup!: azureResource.AzureResourceResourceGroup;
-	private _testConnectionButton!: azdata.window.Button;
 
 	private _doneButtonEvent: EventEmitter = new EventEmitter();
 	private _isBlobContainerUsed: boolean = false;
+	private _executeScriptButton!: azdata.window.Button;
 
 	private irNodes: string[] = [];
 	private _disposables: vscode.Disposable[] = [];
+
+	private modifiedScriptPath = "";
+	private isPowershellScriptExpanded = true;
+	private islocalPowershellScriptExpanded = true;
+	private isConfigureIRmanuallyExpanded = true;
 
 	public async createNewDms(migrationStateModel: MigrationStateModel, resourceGroupPreset: string): Promise<CreateSqlMigrationServiceDialogResult> {
 		this._model = migrationStateModel;
@@ -61,89 +63,42 @@ export class CreateSqlMigrationServiceDialog {
 		this._dialogObject.okButton.position = 'left';
 		this._dialogObject.cancelButton.position = 'left';
 
-		let tab = azdata.window.createTab('');
+		// execute button
+		this._executeScriptButton = azdata.window.createButton(
+			constants.EXECUTE_SCRIPT,
+			'left');
+
+		this._disposables.push(
+			this._executeScriptButton.onClick(async (value) => {
+
+				// on click of execute button, execute teh script
+				await invokeScript(this.modifiedScriptPath);
+				await vscode.window.showInformationMessage(constants.EXECUTING_POWERSHELLSCRIPT);
+			}));
+
+		this._executeScriptButton.enabled = false;
+
+		this._dialogObject.customButtons = [this._executeScriptButton];
+
+		const tab = azdata.window.createTab('');
 		this._dialogObject.registerCloseValidator(async () => {
 			return true;
 		});
+
 		tab.registerContent(async (view: azdata.ModelView) => {
 			this._view = view;
 
+
+			// Create button
 			this._formSubmitButton = view.modelBuilder.button().withProps({
 				label: constants.CREATE,
 				width: '80px'
 			}).component();
 
-			this._disposables.push(this._formSubmitButton.onDidClick(async (e) => {
-				this._dialogObject.message = {
-					text: ''
-				};
-				this._statusLoadingComponent.loading = true;
-				this.migrationServiceResourceGroupDropdown.loading = false;
-				this.setFormEnabledState(false);
-
-
-				const subscription = this._model._targetSubscription;
-				const resourceGroup = this._selectedResourceGroup;
-				const location = this._model._targetServerInstance.location;
-				const serviceName = this.migrationServiceNameText.value;
-
-				const formValidationErrors = this.validateCreateServiceForm(subscription, resourceGroup.name, location, serviceName);
-
-				if (formValidationErrors.length > 0) {
-					this.setDialogMessage(formValidationErrors);
-					this._statusLoadingComponent.loading = false;
-					this.setFormEnabledState(true);
-					return;
-				}
-
-				try {
-					utils.clearDialogMessage(this._dialogObject);
-					this._selectedResourceGroup = resourceGroup;
-					this._createdMigrationService = await createSqlMigrationService(
-						this._model._azureAccount,
-						subscription,
-						resourceGroup.name,
-						location,
-						serviceName!,
-						this._model._sessionId);
-
-					if (this._createdMigrationService.error) {
-						this.setDialogMessage(`${this._createdMigrationService.error.code} : ${this._createdMigrationService.error.message}`);
-						this._statusLoadingComponent.loading = false;
-						this.setFormEnabledState(true);
-						return;
-					}
-
-					if (this._isBlobContainerUsed && !this._model.isSqlDbTarget) {
-						this._dialogObject.okButton.enabled = true;
-						this._statusLoadingComponent.loading = false;
-						this._setupContainer.display = 'none';
-						this._dialogObject.message = {
-							text: constants.DATA_MIGRATION_SERVICE_CREATED_SUCCESSFULLY,
-							level: azdata.window.MessageLevel.Information
-						};
-					} else {
-						await this.refreshStatus();
-						await this.refreshAuthTable();
-						this._setupContainer.display = 'inline';
-						this._testConnectionButton.hidden = false;
-						this._statusLoadingComponent.loading = false;
-					}
-				} catch (e) {
-					console.log(e);
-					this.setDialogMessage(e.message);
-					this._statusLoadingComponent.loading = false;
-					this.setFormEnabledState(true);
-					return;
-				}
-			}));
-
 			this._statusLoadingComponent = view.modelBuilder.loadingComponent().withProps({
 				loadingText: constants.LOADING_MIGRATION_SERVICES,
 				loading: false
 			}).component();
-
-			const creationStatusContainer = this.createServiceStatus();
 
 			const formBuilder = view.modelBuilder.formContainer().withFormItems(
 				[
@@ -156,14 +111,90 @@ export class CreateSqlMigrationServiceDialog {
 					{
 						component: this._statusLoadingComponent
 					},
-					{
-						component: creationStatusContainer
-					}
 				],
 				{
 					horizontal: false
 				}
 			);
+
+			this._connectionStatus = this._view.modelBuilder.infoBox().withProps({
+				text: '',
+				style: 'error',
+				CSSStyles: {
+					...styles.BODY_CSS
+				}
+			}).component();
+
+			this._connectionStatus.CSSStyles = {
+				'width': '350px'
+			};
+
+			this._disposables.push(
+				this._formSubmitButton.onDidClick(async (e) => {
+					utils.clearDialogMessage(this._dialogObject);
+
+					this._statusLoadingComponent.loading = true;
+					this.migrationServiceResourceGroupDropdown.loading = false;
+					this.setFormEnabledState(false);
+
+					const subscription = this._model._sqlMigrationServiceSubscription;
+					const resourceGroup = this._selectedResourceGroup;
+					const location = this._model._location.name;
+					const serviceName = this.migrationServiceNameText.value;
+
+					const formValidationErrors = this.validateCreateServiceForm(subscription, resourceGroup.name, location, serviceName);
+
+					try {
+						if (formValidationErrors.length > 0) {
+							this.setDialogMessage(formValidationErrors);
+							this.setFormEnabledState(true);
+							return;
+						}
+
+						utils.clearDialogMessage(this._dialogObject);
+						this._createdMigrationService = await createSqlMigrationService(
+							this._model._azureAccount,
+							subscription,
+							resourceGroup.name,
+							location,
+							serviceName!,
+							this._model._sessionId);
+
+						if (this._createdMigrationService.error) {
+							this.setDialogMessage(`${this._createdMigrationService.error.code} : ${this._createdMigrationService.error.message}`);
+							this.setFormEnabledState(true);
+							return;
+						}
+
+						if (this._isBlobContainerUsed && !this._model.isSqlDbTarget) {
+							this._dialogObject.okButton.enabled = true;
+							this._setupContainer.display = 'none';
+							this._dialogObject.message = {
+								text: constants.DATA_MIGRATION_SERVICE_CREATED_SUCCESSFULLY,
+								level: azdata.window.MessageLevel.Information
+							};
+						} else {
+							await this.refreshStatus();
+							// construct the IR after new DMS is created
+							// with latest values.
+							this._creationStatusContainer = await this.constructIRConfig(view);
+							formBuilder.addFormItem(
+								{
+									component: this._creationStatusContainer
+								}
+							);
+							this._setupContainer.display = 'inline';
+							// enable done button after the SHIR details is shown
+							this._dialogObject.okButton.enabled = true;
+						}
+					} catch (e) {
+						console.log(e);
+						this.setDialogMessage(e.message);
+						this.setFormEnabledState(true);
+					} finally {
+						this._statusLoadingComponent.loading = false;
+					}
+				}));
 
 			const form = formBuilder.withLayout({ width: '100%' }).component();
 
@@ -176,25 +207,6 @@ export class CreateSqlMigrationServiceDialog {
 				await this.populateSubscriptions();
 			});
 		});
-
-		this._testConnectionButton = azdata.window.createButton(constants.TEST_CONNECTION);
-		this._testConnectionButton.hidden = true;
-		this._disposables.push(this._testConnectionButton.onClick(async (e) => {
-			this._refreshLoadingComponent.loading = true;
-			await this._connectionStatus.updateCssStyles({
-				'display': 'none'
-			});
-			try {
-				await this.refreshStatus();
-			} catch (e) {
-				void vscode.window.showErrorMessage(e);
-			}
-			await this._connectionStatus.updateCssStyles({
-				'display': 'inline'
-			});
-			this._refreshLoadingComponent.loading = false;
-		}));
-		this._dialogObject.customButtons = [this._testConnectionButton];
 
 		this._dialogObject.content = [tab];
 		this._dialogObject.okButton.enabled = false;
@@ -218,9 +230,128 @@ export class CreateSqlMigrationServiceDialog {
 		});
 	}
 
+	private async constructIRConfig(view: azdata.ModelView) {
+
+		const configcontainer = await this.configContainer(view);
+
+		this._setupContainer = this._view.modelBuilder.flexContainer()
+			.withItems([this._connectionStatus, configcontainer])
+			.component();
+
+		this._setupContainer.display = 'none';
+		return this._setupContainer;
+	}
+
+
+	// creates teh content to configure IR
+	private async configContainer(view: azdata.ModelView): Promise<azdata.FlexContainer> {
+
+		const container = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).withProps({
+			CSSStyles: {
+				'width': '500px',
+				'height': '746px',
+				'flex-shrink': '0'
+			}
+		}).component();
+
+		const setupIRdescription1 = view.modelBuilder.text().withProps({
+			value: constants.IR_CONTAINER_DESCRIPTION,
+			CSSStyles: {
+				...styles.BODY_CSS
+			}
+		}).component();
+
+		// a note to user with instrcutions on prereq and recommendation
+		const noteContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).component();
+
+		const recommendedIRnote: azdata.LinkArea = {
+			text: constants.RECOMMENDED_LINK,
+			url: 'https://learn.microsoft.com/en-us/azure/dms/migration-using-azure-data-studio?tabs=azure-sql-mi#recommendations-for-using-a-self-hosted-integration-runtime-for-database-migrations'
+		}
+
+		const noteForIR = view.modelBuilder.infoBox().withProps({
+			text: constants.IMPORTANT + "\n" + "\n" +
+				constants.POWERSHELL_PREREQ + "\n" +
+				"{0}" + "\n",
+			style: 'information',
+			links: [recommendedIRnote],
+			CSSStyles: {
+				...styles.BODY_CSS
+			}
+		}).component();
+		noteContainer.addItems([noteForIR]);
+
+		// add the radio buttons
+		const setupLocalIR = view.modelBuilder.radioButton().withProps({
+			name: constants.SETUP_LOCAL_IR_DESCRIPTION,
+			label: constants.SETUP_LOCAL_IR_DESCRIPTION,
+			checked: false,
+			CSSStyles: {
+				'gap': '8px'
+			}
+		}).component();
+
+		const setupRemoteIR = view.modelBuilder.radioButton().withProps({
+			name: constants.SETUP_REMOTE_IR_DESCRIPTION,
+			label: constants.SETUP_REMOTE_IR_DESCRIPTION,
+			checked: true
+		}).component();
+
+		const remoteIRContainer = await this.createRemoteIRContainer(view);
+
+		remoteIRContainer.CSSStyles = {
+			'padding': '10px'
+		};
+
+		const localIRContainer = await this.createLocalIRContainer(view);
+
+		// remote is selected by default and remote container is added
+		const irTypeRadioButtonsModel = view.modelBuilder.flexContainer()
+			.withLayout({ flexFlow: 'column' })
+			.withItems([setupLocalIR, setupRemoteIR, remoteIRContainer])
+			.withProps({
+				ariaRole: 'radiogroup',
+				ariaLabel: constants.IR_CONFIG_TYPE,
+			})
+			.component();
+
+		container.addItems([setupIRdescription1,
+			noteContainer,
+			irTypeRadioButtonsModel
+		]);
+
+		setupLocalIR.onDidChangeCheckedState(async (e) => {
+			// if local is selected, uncheck remote
+			if (setupLocalIR.checked) {
+				setupRemoteIR.checked = false;
+				this._executeScriptButton.enabled = true;
+				irTypeRadioButtonsModel.removeItem(remoteIRContainer);
+				irTypeRadioButtonsModel.removeItem(setupRemoteIR);
+				irTypeRadioButtonsModel.addItem(localIRContainer);
+				irTypeRadioButtonsModel.addItem(setupRemoteIR);
+			}
+		});
+
+		setupRemoteIR.onDidChangeCheckedState(async (e) => {
+			// if remote is selected, uncheck local
+			if (setupRemoteIR.checked) {
+				setupLocalIR.checked = false;
+				this._executeScriptButton.enabled = false;
+				irTypeRadioButtonsModel.addItem(remoteIRContainer);
+				irTypeRadioButtonsModel.removeItem(localIRContainer);
+			}
+		});
+
+		return container;
+	}
+
 	private async migrationServiceDropdownContainer(): Promise<azdata.FlexContainer> {
 		const dialogDescription = this._view.modelBuilder.text().withProps({
-			value: constants.MIGRATION_SERVICE_DIALOG_DESCRIPTION,
+			value: constants.MIGRATION_SERVICE_DIALOG_DESCRIPTION(!this._model.isSqlDbTarget),
 			CSSStyles: {
 				...styles.BODY_CSS
 			}
@@ -289,7 +420,11 @@ export class CreateSqlMigrationServiceDialog {
 		}).component();
 
 		this._disposables.push(this._createResourceGroupLink.onDidClick(async e => {
-			const createResourceGroupDialog = new CreateResourceGroupDialog(this._model._azureAccount, this._model._targetSubscription, this._model._targetServerInstance.location);
+			const createResourceGroupDialog = new CreateResourceGroupDialog(
+				this._model._azureAccount,
+				this._model._sqlMigrationServiceSubscription,
+				this._model._location.name);
+
 			const createdResourceGroup = await createResourceGroupDialog.initialize();
 			if (createdResourceGroup) {
 				this._resourceGroups.push(createdResourceGroup);
@@ -309,6 +444,7 @@ export class CreateSqlMigrationServiceDialog {
 		}));
 
 		this.migrationServiceNameText = this._view.modelBuilder.inputBox().withProps({
+			ariaLabel: constants.NAME,
 			CSSStyles: {
 				'margin-top': '-1em'
 			}
@@ -324,7 +460,7 @@ export class CreateSqlMigrationServiceDialog {
 
 		this.migrationServiceLocation = this._view.modelBuilder.text().withProps({
 			enabled: false,
-			value: await this._model.getLocationDisplayName(this._model._targetServerInstance.location),
+			value: this._model._location.displayName,
 			CSSStyles: {
 				'margin': '-1em 0 0'
 			}
@@ -386,7 +522,7 @@ export class CreateSqlMigrationServiceDialog {
 
 	private async populateSubscriptions(): Promise<void> {
 		this.migrationServiceResourceGroupDropdown.loading = true;
-		this.migrationServiceSubscription.value = this._model._targetSubscription.name;
+		this.migrationServiceSubscription.value = this._model._sqlMigrationServiceSubscription.name;
 		await this.populateResourceGroups();
 	}
 
@@ -395,7 +531,7 @@ export class CreateSqlMigrationServiceDialog {
 		try {
 			this._resourceGroups = await utils.getAllResourceGroups(
 				this._model._azureAccount,
-				this._model._targetSubscription);
+				this._model._sqlMigrationServiceSubscription);
 			this.migrationServiceResourceGroupDropdown.values = utils.getResourceDropdownValues(
 				this._resourceGroups,
 				constants.RESOURCE_GROUP_NOT_FOUND);
@@ -411,109 +547,11 @@ export class CreateSqlMigrationServiceDialog {
 		}
 	}
 
-	private createServiceStatus(): azdata.FlexContainer {
-
-		const setupIRHeadingText = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_CONTAINER_HEADING,
-			CSSStyles: {
-				...styles.LABEL_CSS
-			}
-		}).component();
-
-		const setupIRdescription1 = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_CONTAINER_DESCRIPTION1,
-			CSSStyles: {
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		const setupIRdescription2 = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_CONTAINER_DESCRIPTION2,
-			CSSStyles: {
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		const irSetupStep1Text = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_STEP1,
-			CSSStyles: {
-				...styles.BODY_CSS
-			},
-			links: [
-				{
-					text: constants.SERVICE_STEP1_LINK,
-					url: 'https://www.microsoft.com/download/details.aspx?id=39717'
-				}
-			]
-		}).component();
-
-		const irSetupStep2Text = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_STEP2,
-			CSSStyles: {
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		const irSetupStep3Text = this._view.modelBuilder.text().withProps({
-			value: constants.SERVICE_STEP3,
-			CSSStyles: {
-				'margin-top': '10px',
-				'margin-bottom': '10px',
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		this._connectionStatus = this._view.modelBuilder.infoBox().withProps({
-			text: '',
-			style: 'error',
-			CSSStyles: {
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		this._connectionStatus.CSSStyles = {
-			'width': '350px'
-		};
-
-		this._refreshLoadingComponent = this._view.modelBuilder.loadingComponent().withProps({
-			loading: false,
-			CSSStyles: {
-				...styles.BODY_CSS
-			}
-		}).component();
-
-		this.migrationServiceAuthKeyTable = createAuthenticationKeyTable(this._view);
-
-		this._setupContainer = this._view.modelBuilder.flexContainer().withItems(
-			[
-				setupIRHeadingText,
-				setupIRdescription1,
-				setupIRdescription2,
-				irSetupStep1Text,
-				irSetupStep2Text,
-				this.migrationServiceAuthKeyTable,
-				irSetupStep3Text,
-				this._connectionStatus,
-				this._refreshLoadingComponent
-			], {
-			CSSStyles: {
-				'margin-bottom': '5px'
-			}
-		}
-		).withLayout({
-			flexFlow: 'column'
-		}).component();
-
-		this._setupContainer.display = 'none';
-		this._testConnectionButton.hidden = true;
-		return this._setupContainer;
-	}
-
 	private async refreshStatus(): Promise<void> {
-		const subscription = this._model._targetSubscription;
+		const subscription = this._model._sqlMigrationServiceSubscription;
 		const resourceGroupId = (this.migrationServiceResourceGroupDropdown.value as azdata.CategoryValue).name;
 		const resourceGroup = getResourceName(resourceGroupId);
-		const location = this._model._targetServerInstance.location;
+		const location = this._model._location.name;
 
 		const maxRetries = 5;
 		let migrationServiceStatus!: SqlMigrationService;
@@ -549,111 +587,27 @@ export class CreateSqlMigrationServiceDialog {
 		});
 		if (migrationServiceStatus) {
 			const state = migrationServiceStatus.properties.integrationRuntimeState;
+			this._model._sqlMigrationService = migrationServiceStatus;
 
 			if (state === 'Online') {
 				await this._connectionStatus.updateProperties(<azdata.InfoBoxComponentProperties>{
-					text: constants.SERVICE_READY(this._createdMigrationService!.name, this.irNodes.join(', ')),
+					text: constants.SERVICE_READY(this._createdMigrationService!.name, this.irNodes.join(', '), false),
 					style: 'success',
 					CSSStyles: {
 						...styles.BODY_CSS
 					}
 				});
-				this._dialogObject.okButton.enabled = true;
 			} else {
-				this._connectionStatus.text = constants.SERVICE_NOT_READY(this._createdMigrationService!.name);
+				this._connectionStatus.text = constants.SERVICE_NOT_READY(this._createdMigrationService!.name, false);
 				await this._connectionStatus.updateProperties(<azdata.InfoBoxComponentProperties>{
-					text: constants.SERVICE_NOT_READY(this._createdMigrationService!.name),
+					text: constants.SERVICE_NOT_READY(this._createdMigrationService!.name, false),
 					style: 'warning',
 					CSSStyles: {
 						...styles.BODY_CSS
 					}
 				});
-				this._dialogObject.okButton.enabled = false;
 			}
 		}
-
-	}
-	private async refreshAuthTable(): Promise<void> {
-		const subscription = this._model._targetSubscription;
-		const resourceGroupId = (this.migrationServiceResourceGroupDropdown.value as azdata.CategoryValue).name;
-		const resourceGroup = getResourceName(resourceGroupId);
-		const location = this._model._targetServerInstance.location;
-		const keys = await getSqlMigrationServiceAuthKeys(
-			this._model._azureAccount,
-			subscription,
-			resourceGroup,
-			location,
-			this._createdMigrationService!.name);
-
-		this._copyKey1Button = this._view.modelBuilder.button().withProps({
-			title: constants.COPY_KEY1,
-			iconPath: IconPathHelper.copy,
-			ariaLabel: constants.COPY_KEY1,
-		}).component();
-
-		this._disposables.push(this._copyKey1Button.onDidClick(async (e) => {
-			await vscode.env.clipboard.writeText(<string>this.migrationServiceAuthKeyTable.dataValues![0][1].value);
-			void vscode.window.showInformationMessage(constants.SERVICE_KEY1_COPIED_HELP);
-		}));
-
-		this._copyKey2Button = this._view.modelBuilder.button().withProps({
-			title: constants.COPY_KEY2,
-			iconPath: IconPathHelper.copy,
-			ariaLabel: constants.COPY_KEY2,
-		}).component();
-
-		this._disposables.push(this._copyKey2Button.onDidClick(async (e) => {
-			await vscode.env.clipboard.writeText(<string>this.migrationServiceAuthKeyTable.dataValues![1][1].value);
-			void vscode.window.showInformationMessage(constants.SERVICE_KEY2_COPIED_HELP);
-		}));
-
-		this._refreshKey1Button = this._view.modelBuilder.button().withProps({
-			title: constants.REFRESH_KEY1,
-			iconPath: IconPathHelper.refresh,
-			ariaLabel: constants.REFRESH_KEY1,
-		}).component();
-
-		this._disposables.push(this._refreshKey1Button.onDidClick((e) => {
-			//TODO: add refresh logic
-		}));
-
-		this._refreshKey2Button = this._view.modelBuilder.button().withProps({
-			title: constants.REFRESH_KEY2,
-			iconPath: IconPathHelper.refresh,
-			ariaLabel: constants.REFRESH_KEY2,
-		}).component();
-
-		this._disposables.push(this._refreshKey2Button.onDidClick((e) => {
-			//TODO: add refresh logic
-		}));
-
-		await this.migrationServiceAuthKeyTable.updateProperties({
-			dataValues: [
-				[
-					{
-						value: constants.SERVICE_KEY1_LABEL
-					},
-					{
-						value: keys.authKey1
-					},
-					{
-						value: this._view.modelBuilder.flexContainer().withItems([this._copyKey1Button, this._refreshKey1Button]).component()
-					}
-				],
-				[
-					{
-						value: constants.SERVICE_KEY2_LABEL
-					},
-					{
-						value: keys.authKey2
-					},
-					{
-						value: this._view.modelBuilder.flexContainer().withItems([this._copyKey2Button, this._refreshKey2Button]).component()
-					}
-				]
-			]
-		});
-
 	}
 
 	private setDialogMessage(message: string, level: azdata.window.MessageLevel = azdata.window.MessageLevel.Error): void {
@@ -662,6 +616,238 @@ export class CreateSqlMigrationServiceDialog {
 			level: level
 		};
 	}
+
+
+	private async createLocalIRContainer(view: azdata.ModelView): Promise<azdata.FlexContainer> {
+		const container = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).component();
+
+		// a note to user with instrcutions on execution of script
+		const localIRdescription = view.modelBuilder.text().withProps({
+			value: constants.LOCAL_IR_SETUP_NOTE,
+		}).component();
+
+		// get the SHIR script
+		const scriptPath = path.join(__dirname, '../scripts/SHIR-auto-configuration.ps1');
+
+		const scriptContent = await fs.readFile(scriptPath);
+
+		// inject auth keys in the script
+		const authKeys = await retrieveAuthKeys(this._model);
+		const modifiedScriptContent = await injectKeysIntoShirScriptContent
+			(authKeys.authKey1, authKeys.authKey2, scriptContent.toString());
+
+		// write it back to different file
+		this.modifiedScriptPath = path.join(__dirname, '../scripts/SHIR-auto-configuration-with-auth-keys.ps1');
+		await fs.writeFile(this.modifiedScriptPath, modifiedScriptContent);
+
+		const powershellScriptExpander = view.modelBuilder.button().withProps(
+			{
+				iconPath: IconPathHelper.expandButtonOpen,
+				ariaLabel: constants.PS_SCRIPT_EXPANDED,
+			}
+		).component();
+
+		// create title containers
+		const powershellscriptTitleContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'row',
+		}).component();
+
+		const powershellScriptTitle = view.modelBuilder.text().withProps({
+			value: constants.POWERSHELL_SCRIPT,
+			height: 18,
+			CSSStyles: {
+				'font-size': '13px',
+				'height': '18px',
+				'line-height': '18px',
+				'margin': '0px',
+				'font-weight': '600',
+				'padding': '0px 8px'
+
+			},
+		}).component();
+
+		// add title and openclose to this container
+		powershellscriptTitleContainer.addItem(powershellScriptExpander,
+			{ flex: 'none' });
+		powershellscriptTitleContainer.addItems([powershellScriptTitle]);
+
+		// script box
+		const scriptBox = view.modelBuilder.inputBox()
+			.withProps({
+				value: modifiedScriptContent.toString(),
+				readOnly: true,
+				multiline: true,
+				height: 400,
+				inputType: 'text',
+				display: 'inline-block',
+				CSSStyles:
+				{
+					'font': '12px "Monaco", "Menlo", "Consolas", "Droid Sans Mono", "Inconsolata", "Courier New", monospace',
+					'margin': '0',
+					'padding': '8px',
+					'white-space': 'pre',
+					'background-color': '#eeeeee',
+					'overflow-x': 'hidden',
+					'word-break': 'break-all'
+				},
+			})
+			.component();
+
+
+		container.addItems([localIRdescription, powershellscriptTitleContainer, scriptBox]);
+
+		// configure the behaviour of expanders
+		powershellScriptExpander.onDidClick(() => {
+			if (this.islocalPowershellScriptExpanded === false) {
+				powershellScriptExpander.iconPath = IconPathHelper.expandButtonOpen;
+				powershellScriptExpander.ariaLabel = constants.PS_SCRIPT_EXPANDED;
+				this.islocalPowershellScriptExpanded = true;
+				container.addItem(scriptBox);
+			}
+			else {
+				powershellScriptExpander.iconPath = IconPathHelper.expandButtonClosed;
+				powershellScriptExpander.ariaLabel = constants.PS_SCRIPT_COLLAPSED;
+				this.islocalPowershellScriptExpanded = false;
+				container.removeItem(scriptBox);
+			}
+		});
+
+		return container;
+	}
+
+
+	private async createRemoteIRContainer(view: azdata.ModelView): Promise<azdata.FlexContainer> {
+		const container = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).withProps({
+			CSSStyles: {
+				padding: '0px 0px 0px 0px'
+			}
+		}).component();
+
+		// create big containers for each case
+		const powershellscriptContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).component();
+
+		const manualIRconfigContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'column',
+		}).component();
+
+		// create title containers
+		const powershellscriptTitleContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'row',
+		}).component();
+
+		const configureIRManuallyTitleContainer = view.modelBuilder.flexContainer().withLayout({
+			flexFlow: 'row',
+		}).component();
+
+		const powershellScriptTitle = view.modelBuilder.text().withProps({
+			value: constants.CONFIGURE_POWERSHELL_SCRIPT,
+			height: 18,
+			CSSStyles: {
+				'font-size': '13px',
+				'height': '18px',
+				'line-height': '18px',
+				'margin': '0px',
+				'font-weight': '600',
+				'padding': '0px 8px',
+			},
+		}).component();
+
+		const manualIRTitle = view.modelBuilder.text().withProps({
+			value: constants.CONFIGURE_MANUALLY,
+			height: 18,
+			CSSStyles: {
+				'font-size': '13px',
+				'height': '18px',
+				'line-height': '18px',
+				'margin': '0px',
+				'font-weight': '600',
+				'padding': '0px 8px',
+			},
+		}).component();
+
+		const powershellScriptExpander = view.modelBuilder.button().withProps(
+			{
+				iconPath: IconPathHelper.expandButtonOpen,
+				ariaLabel: constants.PS_SCRIPT_EXPANDED,
+			}
+		).component();
+
+		const manualIRconfigurationExpander = view.modelBuilder.button().withProps(
+			{
+				iconPath: IconPathHelper.expandButtonClosed,
+				ariaLabel: constants.MANUAL_IR_COLLAPSED
+			}
+		).component();
+
+		// add title and openclose to this container
+		powershellscriptTitleContainer.addItem(powershellScriptExpander,
+			{ flex: 'none' });
+		powershellscriptTitleContainer.addItems([powershellScriptTitle]);
+
+		configureIRManuallyTitleContainer.addItem(manualIRconfigurationExpander,
+			{ flex: 'none' });
+		configureIRManuallyTitleContainer.addItems([manualIRTitle]);
+
+		// construct content
+		const powershellscriptContentContainer = await createPowershellscriptContentContainer(view, this._model);
+
+		const manualIRconfigContentContainer = await createManualIRconfigContentContainer(view, this._model);
+		manualIRconfigContentContainer.CSSStyles = {
+			'padding': '10px',
+		};
+
+		// add its items
+		powershellscriptContainer.addItems([powershellscriptTitleContainer,
+			powershellscriptContentContainer]);
+
+		manualIRconfigContainer.addItems([configureIRManuallyTitleContainer])
+
+
+		// configure the behaviour of expanders
+		powershellScriptExpander.onDidClick(() => {
+			if (this.isPowershellScriptExpanded === false) {
+				powershellScriptExpander.iconPath = IconPathHelper.expandButtonOpen;
+				powershellScriptExpander.ariaLabel = constants.PS_SCRIPT_EXPANDED;
+				this.isPowershellScriptExpanded = true;
+				powershellscriptContainer.addItem(powershellscriptContentContainer);
+			}
+			else {
+				powershellScriptExpander.iconPath = IconPathHelper.expandButtonClosed;
+				powershellScriptExpander.ariaLabel = constants.PS_SCRIPT_COLLAPSED;
+				this.isPowershellScriptExpanded = false;
+				powershellscriptContainer.removeItem(powershellscriptContentContainer);
+			}
+		});
+
+		manualIRconfigurationExpander.onDidClick(() => {
+			if (this.isConfigureIRmanuallyExpanded === false) {
+				manualIRconfigurationExpander.iconPath = IconPathHelper.expandButtonOpen;
+				manualIRconfigurationExpander.ariaLabel = constants.MANUAL_IR_EXPANDED;
+				this.isConfigureIRmanuallyExpanded = true;
+				manualIRconfigContainer.addItem(manualIRconfigContentContainer);
+			}
+			else {
+				manualIRconfigurationExpander.iconPath = IconPathHelper.expandButtonClosed;
+				manualIRconfigurationExpander.ariaLabel = constants.MANUAL_IR_COLLAPSED;
+				this.isConfigureIRmanuallyExpanded = false;
+				manualIRconfigContainer.removeItem(manualIRconfigContentContainer);
+			}
+		});
+
+		// add items to container
+		container.addItems([
+			powershellscriptContainer,
+			manualIRconfigContainer
+		])
+		return container;
+	}
+
 
 	private setFormEnabledState(enable: boolean): void {
 		this._formSubmitButton.enabled = enable;

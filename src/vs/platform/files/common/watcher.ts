@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from 'vs/base/common/event';
@@ -25,11 +25,6 @@ interface IWatchRequest {
 
 	/**
 	 * A set of glob patterns or paths to exclude from watching.
-	 *
-	 * Paths or basic glob patterns that are relative will be
-	 * resolved to an absolute path using the currently opened
-	 * workspace. Complex glob patterns must match on absolute
-	 * paths via leading or trailing `**`.
 	 */
 	excludes: string[];
 
@@ -37,11 +32,6 @@ interface IWatchRequest {
 	 * An optional set of glob patterns or paths to include for
 	 * watching. If not provided, all paths are considered for
 	 * events.
-	 *
-	 * Paths or basic glob patterns that are relative will be
-	 * resolved to an absolute path using the currently opened
-	 * workspace. Complex glob patterns must match on absolute
-	 * paths via leading or trailing `**`.
 	 */
 	includes?: Array<string | IRelativePattern>;
 }
@@ -226,6 +216,10 @@ export abstract class AbstractWatcherClient extends Disposable {
 
 	private error(message: string) {
 		this.onLogMessage({ type: 'error', message: `[File Watcher (${this.options.type})] ${message}` });
+	}
+
+	protected trace(message: string) {
+		this.onLogMessage({ type: 'trace', message: `[File Watcher (${this.options.type})] ${message}` });
 	}
 
 	override dispose(): void {

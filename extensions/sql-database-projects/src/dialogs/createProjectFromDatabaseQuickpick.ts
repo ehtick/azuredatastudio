@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as constants from '../common/constants';
-import { exists, getVscodeMssqlApi, isValidBasenameErrorMessage, sanitizeStringForFilename } from '../common/utils';
+import { exists, getVscodeMssqlApi, isValidBasenameErrorMessage, sanitizeStringForFilename, getErrorMessage } from '../common/utils';
 import { IConnectionInfo } from 'vscode-mssql';
 import { defaultProjectNameFromDb, defaultProjectSaveLocation } from '../tools/newProjectTool';
 import { ImportDataModel } from '../models/api/import';
@@ -17,8 +17,9 @@ import { getSDKStyleProjectInfo } from './quickpickHelper';
 /**
  * Create flow for a New Project using only VS Code-native APIs such as QuickPick
  * @param connectionInfo Optional connection info to use instead of prompting the user for a connection
+ * @param createProjectFromDatabaseCallback Optional callback function to create the project from the user inputs
  */
-export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?: IConnectionInfo): Promise<ImportDataModel | undefined> {
+export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?: IConnectionInfo, createProjectFromDatabaseCallback?: (model: ImportDataModel, connectionInfo?: string | IConnectionInfo, serverName?: string) => Promise<void>): Promise<void> {
 	const vscodeMssqlApi = await getVscodeMssqlApi();
 
 	// 1. Select connection
@@ -30,21 +31,28 @@ export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?:
 	}
 	let connectionUri: string = '';
 	let dbs: string[] | undefined = undefined;
+
+	let isValidProfile = connectionProfile?.server !== undefined; // undefined when createProjectFromDatabase is launched without context (via command palette)
+
 	while (!dbs) {
 		// Get the list of databases now to validate that the connection is valid and re-prompt them if it isn't
-		try {
-			connectionUri = await vscodeMssqlApi.connect(connectionProfile);
-			dbs = (await vscodeMssqlApi.listDatabases(connectionUri))
-				.filter(db => !constants.systemDbs.includes(db)); // Filter out system dbs
-		} catch (err) {
-			// The mssql extension handles showing the error to the user. Prompt the user
-			// for a new connection and then go and try getting the DBs again
+		if (isValidProfile) {
+			try {
+				connectionUri = await vscodeMssqlApi.connect(connectionProfile);
+				dbs = (await vscodeMssqlApi.listDatabases(connectionUri))
+					.filter(db => !constants.systemDbs.includes(db)); // Filter out system dbs
+			} catch (err) {
+				// Prompt the user for a new connection and then go and try getting the DBs again
+				isValidProfile = false;
+				console.error(getErrorMessage(err));
+			}
+		} else {
 			connectionProfile = await vscodeMssqlApi.promptForConnection(true);
 			if (!connectionProfile) {
-				// User cancelled
-				return undefined;
+				return undefined; // cancelled by user
+			} else {
+				isValidProfile = true;
 			}
-
 		}
 	}
 
@@ -127,7 +135,7 @@ export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?:
 
 	// 5: Prompt for folder structure
 	const folderStructure = await vscode.window.showQuickPick(
-		[constants.file, constants.flat, constants.objectType, constants.schema, constants.schemaObjectType],
+		[constants.schemaObjectType, constants.file, constants.flat, constants.objectType, constants.schema],
 		{ title: constants.selectFolderStructure, ignoreFocusOut: true, });
 	if (!folderStructure) {
 		// User cancelled
@@ -155,7 +163,7 @@ export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?:
 		return;
 	}
 
-	return {
+	const model = {
 		connectionUri: connectionUri,
 		database: selectedDatabase,
 		projName: projectName,
@@ -164,5 +172,10 @@ export async function createNewProjectFromDatabaseWithQuickpick(connectionInfo?:
 		extractTarget: mapExtractTargetEnum(folderStructure),
 		sdkStyle: sdkStyle,
 		includePermissions: includePermissions
-	};
+	} as ImportDataModel;
+
+	// 8. Create the project using the callback
+	if (createProjectFromDatabaseCallback) {
+		await createProjectFromDatabaseCallback(model, connectionProfile, connectionProfile.server);
+	}
 }

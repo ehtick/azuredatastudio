@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -23,7 +23,7 @@ describe('Configure Python Wizard', function () {
 	beforeEach(() => {
 		let mockInstall = TypeMoq.Mock.ofType(JupyterServerInstallation);
 		mockInstall.setup(i => i.getInstalledPipPackages(TypeMoq.It.isAnyString())).returns(() => Promise.resolve([]));
-		mockInstall.setup(i => i.getRequiredPackagesForKernel(TypeMoq.It.isAnyString())).returns(() => [{ name: 'TestPkg', version: '1.0.0'}]);
+		mockInstall.setup(i => i.getRequiredPackagesForKernel(TypeMoq.It.isAnyString())).returns(() => [{ name: 'TestPkg', version: '1.0.0' }]);
 		testInstallation = mockInstall.object;
 
 		let mockDoneButton = new TestButton(new EventEmitter<void>());
@@ -83,7 +83,6 @@ describe('Configure Python Wizard', function () {
 			}])
 		);
 		let model = <ConfigurePythonModel>{
-			useExistingPython: true,
 			pythonPathLookup: mockPathLookup.object
 		};
 
@@ -97,7 +96,6 @@ describe('Configure Python Wizard', function () {
 		should(testWizard.wizard.nextButton.enabled).be.true();
 
 		should(await configurePathPage.onPageLeave()).be.true();
-		should(model.useExistingPython).be.true();
 		should(model.pythonLocation).be.equal(testPythonLocation);
 	});
 
@@ -105,8 +103,7 @@ describe('Configure Python Wizard', function () {
 		let model = <ConfigurePythonModel>{
 			kernelName: allKernelsName,
 			installation: testInstallation,
-			pythonLocation: '/not/a/real/path',
-			useExistingPython: true
+			pythonLocation: '/not/a/real/path'
 		};
 
 		let page = azdata.window.createWizardPage('Page 2');
@@ -129,8 +126,7 @@ describe('Configure Python Wizard', function () {
 		let model = <ConfigurePythonModel>{
 			kernelName: undefined,
 			installation: testInstallation,
-			pythonLocation: '/not/a/real/path',
-			useExistingPython: true
+			pythonLocation: '/not/a/real/path'
 		};
 
 		let page = azdata.window.createWizardPage('Page 2');

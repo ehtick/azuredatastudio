@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IConnectionManagementService } from 'sql/platform/connection/common/connectionManagement';
@@ -160,10 +160,16 @@ export class ConnectionController implements IConnectionComponentController {
 		this._connectionWidget.updateServerGroup(this.getAllServerGroups(providers));
 		this._model = connectionInfo;
 		this._model.providerName = this._providerName;
+		// MSSQL and MSSQL-CMS Provider don't treat appName as special type anymore.
 		let appNameOption = this._providerOptions.find(option => option.specialValueType === ConnectionOptionSpecialType.appName);
 		if (appNameOption) {
 			let appNameKey = appNameOption.name;
 			this._model.options[appNameKey] = Constants.applicationName;
+		} else {
+			appNameOption = this._providerOptions.find(option => option.name === Constants.mssqlApplicationNameOption);
+			if (appNameOption && (this._model.providerName === Constants.mssqlProviderName || this._model.providerName === Constants.mssqlCmsProviderName)) {
+				this._model.options[Constants.mssqlApplicationNameOption] = Utils.adjustForMssqlAppName(this._model.options[Constants.mssqlApplicationNameOption]);
+			}
 		}
 		this._connectionWidget.initDialog(this._model);
 	}

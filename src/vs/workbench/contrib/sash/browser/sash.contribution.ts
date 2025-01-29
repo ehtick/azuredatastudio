@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -10,8 +10,6 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { workbenchConfigurationNodeBase } from 'vs/workbench/common/configuration';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SashSettingsController } from 'vs/workbench/contrib/sash/browser/sash';
-import { registerThemingParticipant } from 'vs/platform/theme/common/themeService';
-import { sashHoverBorder } from 'vs/platform/theme/common/colorRegistry';
 import { isIOS } from 'vs/base/common/platform';
 
 // Sash size contribution
@@ -39,13 +37,3 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 			},
 		}
 	});
-
-registerThemingParticipant((theme, collector) => {
-	const sashHoverBorderColor = theme.getColor(sashHoverBorder);
-	collector.addRule(`
-		.monaco-sash.hover:before,
-		.monaco-sash.active:before {
-			background: ${sashHoverBorderColor};
-		}
-	`);
-});

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { nb } from 'azdata';
@@ -921,7 +921,7 @@ export class NotebookService extends Disposable implements INotebookService {
 
 	protected async removeContributedProvidersFromCache(identifier: IExtensionIdentifier, extensionService: IExtensionService): Promise<void> {
 		try {
-			const extensionDescriptions = await extensionService.getExtensions();
+			const extensionDescriptions = extensionService.extensions;
 			let extensionDescription = extensionDescriptions.find(c => c.identifier.value.toLowerCase() === identifier.id.toLowerCase());
 			if (extensionDescription && extensionDescription.contributes
 				&& extensionDescription.contributes[Extensions.NotebookProviderDescriptionContribution]

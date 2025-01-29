@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
@@ -14,9 +14,14 @@ import { ColorExtensionPoint } from 'vs/workbench/services/themes/common/colorEx
 import { IconExtensionPoint } from 'vs/workbench/services/themes/common/iconExtensionPoint';
 import { TokenClassificationExtensionPoints } from 'vs/workbench/services/themes/common/tokenClassificationExtensionPoint';
 import { LanguageConfigurationFileHandler } from 'vs/workbench/contrib/codeEditor/browser/languageConfigurationExtensionPoint';
+import { StatusBarItemsExtensionPoint } from 'vs/workbench/api/browser/statusBarExtensionPoint';
 
 // --- mainThread participants
+import './mainThreadLocalization';
 import './mainThreadBulkEdits';
+import './mainThreadChatProvider';
+import './mainThreadChatSlashCommands';
+import './mainThreadChatVariables';
 import './mainThreadCodeInsets';
 import './mainThreadCLICommands';
 import './mainThreadClipboard';
@@ -42,11 +47,14 @@ import './mainThreadLanguageFeatures';
 import './mainThreadLanguages';
 import './mainThreadLogService';
 import './mainThreadMessageService';
+import './mainThreadManagedSockets';
 import './mainThreadOutputService';
 import './mainThreadProgress';
+import './mainThreadQuickDiff';
 import './mainThreadQuickOpen';
 import './mainThreadRemoteConnectionData';
 import './mainThreadSaveParticipant';
+import './mainThreadEditSessionIdentityParticipant';
 import './mainThreadSCM';
 import './mainThreadSearch';
 import './mainThreadStatusBar';
@@ -66,7 +74,10 @@ import './mainThreadNotebook';
 import './mainThreadNotebookKernels';
 import './mainThreadNotebookDocumentsAndEditors';
 import './mainThreadNotebookRenderers';
+import './mainThreadNotebookSaveParticipant';
 import './mainThreadInteractive';
+import './mainThreadInlineChat';
+import './mainThreadChat';
 import './mainThreadTask';
 import './mainThreadLabelService';
 import './mainThreadTunnelService';
@@ -74,6 +85,11 @@ import './mainThreadAuthentication';
 import './mainThreadTimeline';
 import './mainThreadTesting';
 import './mainThreadSecretState';
+import './mainThreadShare';
+import './mainThreadProfilContentHandlers';
+import './mainThreadAiRelatedInformation';
+import './mainThreadAiEmbeddingVector';
+import './mainThreadIssueReporter';
 
 export class ExtensionPoints implements IWorkbenchContribution {
 
@@ -86,6 +102,7 @@ export class ExtensionPoints implements IWorkbenchContribution {
 		this.instantiationService.createInstance(IconExtensionPoint);
 		this.instantiationService.createInstance(TokenClassificationExtensionPoints);
 		this.instantiationService.createInstance(LanguageConfigurationFileHandler);
+		this.instantiationService.createInstance(StatusBarItemsExtensionPoint);
 	}
 }
 

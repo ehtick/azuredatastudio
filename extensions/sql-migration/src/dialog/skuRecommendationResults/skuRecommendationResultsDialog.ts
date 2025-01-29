@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -120,8 +120,10 @@ export class SkuRecommendationResultsDialog {
 					const serviceTier = recommendation.targetSku.category?.sqlServiceTier === contracts.AzureSqlPaaSServiceTier.GeneralPurpose
 						? constants.GENERAL_PURPOSE
 						: recommendation.targetSku.category?.sqlServiceTier === contracts.AzureSqlPaaSServiceTier.HyperScale
-							? constants.HYPERSCALE
-							: constants.BUSINESS_CRITICAL;
+							? constants.HYPERSCALE :
+							recommendation.targetSku.category?.sqlServiceTier === contracts.AzureSqlPaaSServiceTier.NextGenGeneralPurpose
+								? constants.NEXTGEN_GENERAL_PURPOSE
+								: constants.BUSINESS_CRITICAL;
 
 					const hardwareType = recommendation.targetSku.category?.hardwareType === contracts.AzureSqlPaaSHardwareType.Gen5
 						? constants.GEN5
@@ -302,12 +304,12 @@ export class SkuRecommendationResultsDialog {
 		const tempTableRow: azdata.DeclarativeTableCellValue[] = [
 			{ value: constants.SQL_TEMPDB },
 			{
-				value: recommendation.targetSku.tempDbDiskSizes!.length > 0
-					? constants.STORAGE_CONFIGURATION(recommendation.targetSku.logDiskSizes![0].size, recommendation.targetSku.logDiskSizes!.length)
+				value: recommendation.targetSku.tempDbDiskSizes!?.length > 0
+					? this.getStorageConfigurationText(recommendation.targetSku.logDiskSizes)
 					: constants.EPHEMERAL_TEMPDB
 			},
 			{
-				value: recommendation.targetSku.tempDbDiskSizes!.length > 0
+				value: recommendation.targetSku.tempDbDiskSizes!?.length > 0
 					? this.getCachingText(recommendation.targetSku.logDiskSizes![0].caching)
 					: constants.CACHING_NA
 			}
@@ -315,13 +317,17 @@ export class SkuRecommendationResultsDialog {
 
 		const dataDiskTableRow: azdata.DeclarativeTableCellValue[] = [
 			{ value: constants.SQL_DATA_FILES },
-			{ value: constants.STORAGE_CONFIGURATION(recommendation.targetSku.dataDiskSizes![0].size, recommendation.targetSku.dataDiskSizes!.length) },
+			{
+				value: this.getStorageConfigurationText(recommendation.targetSku.dataDiskSizes)
+			},
 			{ value: this.getCachingText(recommendation.targetSku.dataDiskSizes![0].caching) }
 		];
 
 		const logDiskTableRow: azdata.DeclarativeTableCellValue[] = [
 			{ value: constants.SQL_LOG_FILES },
-			{ value: constants.STORAGE_CONFIGURATION(recommendation.targetSku.logDiskSizes![0].size, recommendation.targetSku.logDiskSizes!.length) },
+			{
+				value: this.getStorageConfigurationText(recommendation.targetSku.logDiskSizes)
+			},
 			{ value: this.getCachingText(recommendation.targetSku.logDiskSizes![0].caching) }
 		];
 
@@ -363,6 +369,48 @@ export class SkuRecommendationResultsDialog {
 			case contracts.AzureManagedDiskCaching.ReadWrite:
 				return constants.CACHING_READ_WRITE;
 		}
+	}
+
+	// This method looks into Disk SKU list and returns storage configuration text.
+	private getStorageConfigurationText(disks: contracts.AzureManagedDiskSku[]): string {
+
+		const diskTypeCountMap: { [diskConfigurationText: string]: number } = {};
+		if (disks!?.length > 0) {
+			disks.forEach(disk => {
+				const diskConfigurationText = this.GetDiskConfigurationText(disk);
+				if (diskConfigurationText in diskTypeCountMap) {
+					// Check if the key exists in the map
+					diskTypeCountMap[diskConfigurationText]++;
+				} else {
+					// If the key doesn't exist, initialize it with a count of 1
+					diskTypeCountMap[diskConfigurationText] = 1;
+				}
+			});
+		}
+
+		let storageConfigurationText: string = '';
+		for (const diskConfigurationText in diskTypeCountMap) {
+			if (diskTypeCountMap.hasOwnProperty(diskConfigurationText)) {
+				const count: number = diskTypeCountMap[diskConfigurationText];
+				storageConfigurationText = storageConfigurationText.concat(constants.STORAGE_CONFIGURATION(count, diskConfigurationText));
+			}
+
+		}
+
+		return storageConfigurationText;
+	}
+
+	// This method returns single disk configuration text.
+	private GetDiskConfigurationText(disk: contracts.AzureManagedDiskSku): string {
+		return disk!?.type === contracts.AzureManagedDiskType.PremiumSSDV2 ?
+			constants.DISK_CONFIGURATION(this.getDiskTypeText(disk.type), disk.maxSizeInGib, disk.maxIOPS, disk.maxThroughputInMbps) :
+			disk.size;
+	}
+
+	// This method returns disk type text from enum value.
+	private getDiskTypeText(type: contracts.AzureManagedDiskType): string {
+		const diskTypeText = constants.DiskTypeLookup[type];
+		return diskTypeText !== undefined ? diskTypeText : constants.UNKNOWN_DISK_TYPE;
 	}
 
 	private createStoragePropertiesTable(_view: azdata.ModelView, databaseName?: string): azdata.FlexContainer {

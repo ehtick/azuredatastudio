@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -12,7 +12,7 @@ import { AppContext } from './common/appContext';
 import { IExtensionApi, IPackageManageProvider } from './types';
 import { CellType } from './contracts/content';
 import { NotebookUriHandler } from './protocol/notebookUriHandler';
-import { BuiltInCommands, unsavedBooksContextKey } from './common/constants';
+import { BuiltInCommands, CommandContext, unsavedBooksContextKey } from './common/constants';
 import { RemoteBookController } from './book/remoteBookController';
 import { RemoteBookDialog } from './dialog/remoteBookDialog';
 import { RemoteBookDialogModel } from './dialog/remoteBookDialogModel';
@@ -22,6 +22,7 @@ import { BookTreeItem } from './book/bookTreeItem';
 import Logger from './common/logger';
 import { sendNotebookActionEvent, NbTelemetryView, NbTelemetryAction } from './telemetry';
 import { TelemetryReporter } from './telemetry';
+import { JupyterServerInstallation } from './jupyter/jupyterServerInstallation';
 
 const localize = nls.loadMessageBundle();
 
@@ -39,21 +40,23 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 	if (vscode.env.uiKind === vscode.UIKind.Web) {
 		await config.update('allowRoot', true, vscode.ConfigurationTarget.Global);
 	}
+
+	// Check if python is already installed in order to enable the Manage Notebook Packages dialog
+	let pythonInstalled = JupyterServerInstallation.isPythonInstalled();
+	await vscode.commands.executeCommand(BuiltInCommands.SetContext, CommandContext.NotebookPythonInstalled, pythonInstalled);
+
 	/**
 	 *  									***** IMPORTANT *****
 	 * If changes are made to bookTreeView.openBook, please ensure backwards compatibility with its current state.
 	 * This is the command used in the extension generator to open a Jupyter Book.
 	 */
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openBook', (bookPath: string, openAsUntitled: boolean, urlToOpen?: string) => openAsUntitled ? providedBookTreeViewProvider.openBook(bookPath, urlToOpen, true) : bookTreeViewProvider.openBook(bookPath, urlToOpen, true)));
+	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openBook', (bookPath: string, openAsUntitled: boolean, urlToOpen?: string) => bookTreeViewProvider.openBook(bookPath, urlToOpen, true)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.addFileToView', (resource: string) => bookTreeViewProvider.openBook(resource, resource, true, true)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openNotebook', (resource: string) => bookTreeViewProvider.openNotebook(resource)));
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openUntitledNotebook', (resource: string) => providedBookTreeViewProvider.openNotebookAsUntitled(resource)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openMarkdown', (resource: string) => bookTreeViewProvider.openMarkdown(resource)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('bookTreeView.openExternalLink', (resource: string) => bookTreeViewProvider.openExternalLink(resource)));
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.saveBook', () => providedBookTreeViewProvider.saveJupyterBooks()));
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.trustBook', (item: BookTreeItem) => bookTreeViewProvider.trustBook(item)));
+	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.trustBook', async (item: BookTreeItem) => await bookTreeViewProvider.trustBook(item)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.searchBook', (item: BookTreeItem) => bookTreeViewProvider.searchJupyterBooks(item)));
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.searchProvidedBook', () => providedBookTreeViewProvider.searchJupyterBooks()));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.openBook', () => bookTreeViewProvider.openNewBook()));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.closeBook', (book: BookTreeItem) => bookTreeViewProvider.closeBook(book)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.closeNotebook', (notebook: BookTreeItem) => bookTreeViewProvider.closeBook(notebook)));
@@ -62,7 +65,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.addMarkdown', (book: BookTreeItem) => bookTreeViewProvider.createMarkdownFile(book)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.addSection', (book: BookTreeItem) => bookTreeViewProvider.createSection(book)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.createBook', () => bookTreeViewProvider.createBook()));
-	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.openNotebookFolder', (folderPath?: string, urlToOpen?: string, showPreview?: boolean) => bookTreeViewProvider.openNotebookFolder(folderPath, urlToOpen, showPreview)));
+	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.openNotebookFolder', (book: BookTreeItem, folderPath?: string, urlToOpen?: string, showPreview?: boolean) => bookTreeViewProvider.openNotebookFolder(folderPath, urlToOpen, showPreview)));
 	extensionContext.subscriptions.push(vscode.commands.registerCommand('notebook.command.pinNotebook', async (book: BookTreeItem) => {
 		await bookTreeViewProvider.pinNotebook(book);
 		await pinnedBookTreeViewProvider.addNotebookToPinnedView(book);
@@ -154,20 +157,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 		return undefined;
 	}
 
-
 	const bookTreeViewProvider = appContext.bookTreeViewProvider;
 	await bookTreeViewProvider.initialized;
-	const providedBookTreeViewProvider = appContext.providedBookTreeViewProvider;
-	await providedBookTreeViewProvider.initialized;
 	const pinnedBookTreeViewProvider = appContext.pinnedBookTreeViewProvider;
 	await pinnedBookTreeViewProvider.initialized;
 
 	extensionContext.subscriptions.push(azdata.nb.onDidChangeActiveNotebookEditor(e => {
-		if (e.document.uri.scheme === 'untitled') {
-			void providedBookTreeViewProvider.revealDocumentInTreeView(e.document.uri, false, false);
-		} else {
-			void bookTreeViewProvider.revealDocumentInTreeView(e.document.uri, false, false);
-		}
+		void bookTreeViewProvider.revealDocumentInTreeView(e.document.uri, false, false);
 	}));
 
 	extensionContext.subscriptions.push(azdata.nb.onDidOpenNotebookDocument(async e => {

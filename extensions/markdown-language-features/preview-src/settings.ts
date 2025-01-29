@@ -1,13 +1,14 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 export interface PreviewSettings {
 	readonly source: string;
 	readonly line?: number;
 	readonly fragment?: string;
-	readonly lineCount: number;
+	readonly selectedLine?: number;
+
 	readonly scrollPreviewWithEditor?: boolean;
 	readonly scrollEditorWithPreview: boolean;
 	readonly disableSecurityWarnings: boolean;

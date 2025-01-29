@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IExternalTerminalService } from 'vs/platform/externalTerminal/common/externalTerminal';
@@ -13,4 +13,4 @@ export interface IExternalTerminalMainService extends IExternalTerminalService {
 	readonly _serviceBrand: undefined;
 }
 
-registerMainProcessRemoteService(IExternalTerminalMainService, 'externalTerminal', { supportsDelayedInstantiation: true });
+registerMainProcessRemoteService(IExternalTerminalMainService, 'externalTerminal');

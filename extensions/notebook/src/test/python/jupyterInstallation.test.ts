@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -8,11 +8,10 @@ import * as should from 'should';
 import * as sinon from 'sinon';
 import * as TypeMoq from 'typemoq';
 import * as uuid from 'uuid';
-import * as fs from 'fs-extra';
-import * as request from 'request';
 import * as utils from '../../common/utils';
-import { requiredJupyterPkg, JupyterServerInstallation, requiredPowershellPkg, PythonInstallSettings, PythonPkgDetails } from '../../jupyter/jupyterServerInstallation';
-import { powershellDisplayName, python3DisplayName, winPlatform } from '../../common/constants';
+import { JupyterServerInstallation, PythonPkgDetails } from '../../jupyter/jupyterServerInstallation';
+import { allKernelsName, ipykernelDisplayName, powershellDisplayName, python3DisplayName } from '../../common/constants';
+import { requiredJupyterPackages } from '../../jupyter/requiredJupyterPackages';
 
 describe('Jupyter Server Installation', function () {
 	let outputChannelStub: TypeMoq.IMock<vscode.OutputChannel>;
@@ -224,53 +223,23 @@ describe('Jupyter Server Installation', function () {
 		should(packages.length).be.equal(0);
 	});
 
-	it('Get required packages test - Python 3 kernel', async function () {
-		let packages = installation.getRequiredPackagesForKernel(python3DisplayName);
-		should(packages).be.deepEqual([requiredJupyterPkg]);
+	const pythonKernels = [python3DisplayName, ipykernelDisplayName, powershellDisplayName];
+	pythonKernels.forEach(kernelName => {
+		it(`Get required packages test - ${kernelName} kernel`, async function () {
+			let packages = installation.getRequiredPackagesForKernel(kernelName);
+			let kernelInfo = requiredJupyterPackages.kernels.find(kernel => kernel.name === kernelName);
+			should(kernelInfo).not.be.undefined();
+			let expectedPackages = requiredJupyterPackages.sharedPackages.concat(kernelInfo.packages);
+			should(packages).be.deepEqual(expectedPackages);
+		});
 	});
 
-	it('Get required packages test - Powershell kernel', async function () {
-		let packages = installation.getRequiredPackagesForKernel(powershellDisplayName);
-		should(packages).be.deepEqual([requiredJupyterPkg, requiredPowershellPkg]);
-	});
-
-	it('Install python test - Run install while Python is already running', async function () {
-		// Should reject overwriting an existing python install if running on Windows and python is currently running.
-		if (process.platform === winPlatform) {
-			sinon.stub(utils, 'executeBufferedCommand').resolves('python.exe');
-
-			let installSettings: PythonInstallSettings = {
-				installPath: `${process.env['USERPROFILE']}\\ads-python`,
-				existingPython: false,
-				packages: []
-			};
-			await should(installation.startInstallProcess(false, installSettings)).be.rejected();
+	it('Get required packages test - All Kernels', async function () {
+		let packages = installation.getRequiredPackagesForKernel(allKernelsName);
+		let allPackages = requiredJupyterPackages.sharedPackages;
+		for (let kernel of requiredJupyterPackages.kernels) {
+			allPackages = allPackages.concat(kernel.packages);
 		}
-	});
-
-	it('Install python test - Run install with existing Python instance', async function () {
-		let installSettings: PythonInstallSettings = {
-			installPath: `${process.env['USERPROFILE']}\\ads-python`,
-			existingPython: true,
-			packages: installation.getRequiredPackagesForKernel(python3DisplayName)
-		};
-
-		sinon.stub(utils, 'exists').resolves(true);
-		sinon.stub(fs, 'pathExists').resolves(false);
-		sinon.stub(utils, 'executeBufferedCommand').resolves(`${installSettings.installPath}\\site-packages`);
-
-		// Both of these are called from upgradePythonPackages
-		sinon.stub(installation, 'getInstalledPipPackages').resolves([]);
-		let pipInstallStub = sinon.stub(installation, 'installPipPackages').resolves();
-
-		let httpRequestSpy = sinon.spy(request, 'get');
-
-		await should(installation.startInstallProcess(false, installSettings)).be.resolved();
-
-		should(httpRequestSpy.callCount).be.equal(0);
-		should(pipInstallStub.callCount).be.equal(1);
-
-		let packagesToInstall = pipInstallStub.firstCall.args[0] as PythonPkgDetails[];
-		should(packagesToInstall).be.deepEqual(installation.getRequiredPackagesForKernel(python3DisplayName));
+		should(packages).be.deepEqual(allPackages);
 	});
 });

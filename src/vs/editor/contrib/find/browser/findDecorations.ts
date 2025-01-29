@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from 'vs/base/common/lifecycle';
@@ -89,6 +89,14 @@ export class FindDecorations implements IDisposable {
 			return index + 1;
 		}
 		return 1;
+	}
+
+	public getDecorationRangeAt(index: number): Range | null {
+		const decorationId = index < this._decorations.length ? this._decorations[index] : null;
+		if (decorationId) {
+			return this._editor.getModel().getDecorationRange(decorationId);
+		}
+		return null;
 	}
 
 	public getCurrentMatchesPosition(desiredRange: Range): number {

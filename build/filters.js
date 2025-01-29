@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 /**
@@ -22,6 +22,7 @@ module.exports.all = [
 	'scripts/**/*',
 	'src/**/*',
 	'test/**/*',
+	'!cli/**/*',
 	'!out*/**',
 	'!test/**/out/**',
 	'!**/node_modules/**',
@@ -35,21 +36,23 @@ module.exports.unicodeFilter = [
 	'**',
 
 	'!**/ThirdPartyNotices.txt',
+	'!**/ThirdPartyNotices.cli.txt',
 	'!**/LICENSE.{txt,rtf}',
 	'!LICENSES.chromium.html',
 	'!**/LICENSE',
 
-	'!**/*.{dll,exe,png,bmp,jpg,scpt,cur,ttf,woff,eot,template,ico,icns,opus,targets,nupkg}',
+	'!**/*.{dll,exe,png,bmp,jpg,scpt,cur,ttf,woff,eot,template,ico,icns,opus,wasm,targets,nupkg}',
 	'!**/test/**',
 	'!**/*.test.ts',
 	'!**/*.{d.ts,json,md}',
+	'!**/*.mp3',
 
 	'!build/win32/**',
 	'!extensions/markdown-language-features/notebook-out/*.js',
 	'!extensions/markdown-math/notebook-out/**',
+	'!extensions/ipynb/notebook-out/**',
 	'!extensions/notebook-renderers/renderer-out/**',
 	'!extensions/php-language-features/src/features/phpGlobalFunctions.ts',
-	'!extensions/typescript-language-features/test-workspace/**',
 	'!extensions/vscode-api-tests/testWorkspace/**',
 	'!extensions/vscode-api-tests/testWorkspace2/**',
 	'!extensions/**/dist/**',
@@ -67,9 +70,11 @@ module.exports.indentationFilter = [
 	// except specific files
 	'!**/*.{dll,exe,png,bmp,jpg,scpt,cur,ttf,woff,eot,template,ico,icns,opus,targets,nupkg}',
 	'!**/ThirdPartyNotices.txt',
+	'!**/ThirdPartyNotices.cli.txt',
 	'!**/LICENSE.{txt,rtf}',
 	'!LICENSES.chromium.html',
 	'!**/LICENSE',
+	'!**/*.mp3',
 	'!src/vs/nls.js',
 	'!src/vs/nls.build.js',
 	'!src/vs/css.js',
@@ -83,13 +88,14 @@ module.exports.indentationFilter = [
 	'!test/unit/assert.js',
 	'!resources/linux/snap/electron-launch',
 	'!build/ext.js',
+	'!build/npm/gyp/patches/gyp_spectre_mitigation_support.patch',
 
 	// except specific folders
 	'!test/automation/out/**',
 	'!test/monaco/out/**',
 	'!test/smoke/out/**',
-	'!extensions/typescript-language-features/test-workspace/**',
 	'!extensions/markdown-math/notebook-out/**',
+	'!extensions/ipynb/notebook-out/**',
 	'!extensions/vscode-api-tests/testWorkspace/**',
 	'!extensions/vscode-api-tests/testWorkspace2/**',
 	'!build/monaco/**',
@@ -115,7 +121,7 @@ module.exports.indentationFilter = [
 	'!src/vs/*/**/*.d.ts',
 	'!src/typings/**/*.d.ts',
 	'!extensions/**/*.d.ts',
-	'!**/*.{svg,exe,png,bmp,jpg,scpt,bat,cmd,cur,ttf,woff,eot,md,ps1,template,yaml,yml,d.ts.recipe,ico,icns,plist,opus,admx,adml}',
+	'!**/*.{svg,exe,png,bmp,jpg,scpt,bat,cmd,cur,ttf,woff,eot,md,ps1,template,yaml,yml,d.ts.recipe,ico,icns,plist,opus,admx,adml,wasm}',
 	'!build/{lib,download,linux,darwin}/**/*.js',
 	'!build/**/*.sh',
 	'!build/azure-pipelines/**/*.js',
@@ -129,37 +135,34 @@ module.exports.indentationFilter = [
 	'!extensions/markdown-language-features/media/*.js',
 	'!extensions/markdown-language-features/notebook-out/*.js',
 	'!extensions/markdown-math/notebook-out/*.js',
+	'!extensions/ipynb/notebook-out/**',
 	'!extensions/notebook-renderers/renderer-out/*.js',
 	'!extensions/simple-browser/media/*.js',
 
 	// {{SQL CARBON EDIT}} Except for our stuff
-	'!**/*.gif',
-	'!build/actions/**/*.js',
-	'!**/*.{xlf,lcl,docx,sql,vsix,bacpac,ipynb,jpg}',
-	'!extensions/azuremonitor/sqltoolsservice/**',
-	'!extensions/kusto/sqltoolsservice/**',
-	'!extensions/mssql/sqltoolsservice/**',
-	'!extensions/import/flatfileimportservice/**',
+	'!**/*.{xlf,lcl,docx,sql,vsix,bacpac,ipynb,jpg,gif}',
+	'!build/**/*',
+	'!extensions/**/coverage/**',
 	'!extensions/admin-tool-ext-win/ssmsmin/**',
 	'!extensions/admin-tool-ext-win/license/**',
-	'!extensions/resource-deployment/notebooks/**',
-	'!extensions/mssql/notebooks/**',
-	'!extensions/azurehybridtoolkit/notebooks/**',
-	'!extensions/integration-tests/testData/**',
 	'!extensions/arc/src/controller/generated/**',
-	'!extensions/sql-database-projects/resources/templates/*.xml',
-	'!extensions/sql-database-projects/src/test/baselines/*.xml',
-	'!extensions/sql-database-projects/src/test/baselines/*.json',
-	'!extensions/sql-database-projects/src/test/baselines/*.sqlproj',
-	'!extensions/sql-database-projects/BuildDirectory/SystemDacpacs/**',
+	'!extensions/azuremonitor/sqltoolsservice/**',
 	'!extensions/datavirtualization/scaleoutdataservice/**',
-	'!resources/linux/snap/electron-launch',
+	'!extensions/import/flatfileimportservice/**',
+	'!extensions/integration-tests/testData/**',
+	'!extensions/kusto/sqltoolsservice/**',
+	'!extensions/mssql/sqltoolsservice/**',
+	'!extensions/resource-deployment/notebooks/**',
 	'!extensions/markdown-language-features/media/*.js',
+	'!extensions/mssql/notebooks/**',
 	'!extensions/simple-browser/media/*.js',
+	'!extensions/sql-database-projects/BuildDirectory/SystemDacpacs/**',
+	'!extensions/sql-database-projects/resources/templates/*.xml',
+	'!extensions/sql-database-projects/src/test/baselines/*.{xml,json,sqlproj}',
+	'!extensions/sql-migration/migrationService/**',
+	'!resources/linux/snap/electron-launch',
 	'!resources/xlf/LocProject.json',
-	'!build/**/*',
-	'!test/coverage/**',
-	'!extensions/**/coverage/**'
+	'!test/coverage/**'
 ];
 
 module.exports.copyrightFilter = [
@@ -173,16 +176,19 @@ module.exports.copyrightFilter = [
 	'!**/*.cmd',
 	'!**/*.ico',
 	'!**/*.opus',
+	'!**/*.mp3',
 	'!**/*.icns',
 	'!**/*.xml',
 	'!**/*.sh',
 	'!**/*.zsh',
+	'!**/*.fish',
 	'!**/*.txt',
 	'!**/*.xpm',
 	'!**/*.opts',
 	'!**/*.disabled',
 	'!**/*.code-workspace',
 	'!**/*.js.map',
+	'!**/*.wasm',
 	'!build/**/*.init',
 	'!build/linux/libcxx-fetcher.*',
 	'!resources/linux/snap/snapcraft.yaml',
@@ -191,12 +197,13 @@ module.exports.copyrightFilter = [
 	'!extensions/configuration-editing/build/inline-allOf.ts',
 	'!extensions/markdown-language-features/media/highlight.css',
 	'!extensions/markdown-math/notebook-out/**',
+	'!extensions/ipynb/notebook-out/**',
+	'!extensions/typescript-language-features/node-maintainer/**',
 	'!extensions/html-language-features/server/src/modes/typescript/*',
 	'!extensions/*/server/bin/*',
 	'!src/vs/editor/test/node/classification/typescript-test.ts',
 
 	// {{SQL CARBON EDIT}} Except for stuff in our code that doesn't use our copyright
-	'!extensions/azurehybridtoolkit/notebooks/**',
 	'!extensions/azuremonitor/src/prompts/**',
 	'!extensions/import/flatfileimportservice/**',
 	'!extensions/kusto/src/prompts/**',
@@ -268,4 +275,8 @@ module.exports.eslintFilter = [
 		.filter(line => !line.startsWith('#'))
 		.filter(line => !!line)
 		.map(line => `!${line}`)
+];
+
+module.exports.stylelintFilter = [
+	'src/**/*.css'
 ];

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from 'vs/base/common/uri';
@@ -77,7 +77,7 @@ export class MainThreadConfiguration implements MainThreadConfigurationShape {
 			: scopeToLanguage === false ? { resource: overrides.resource }
 				: overrides.overrideIdentifier && overriddenValue !== undefined ? overrides
 					: { resource: overrides.resource };
-		return this.configurationService.updateValue(key, value, overrides, configurationTarget, true);
+		return this.configurationService.updateValue(key, value, overrides, configurationTarget, { donotNotifyError: true });
 	}
 
 	private deriveConfigurationTarget(key: string, overrides: IConfigurationOverrides): ConfigurationTarget {

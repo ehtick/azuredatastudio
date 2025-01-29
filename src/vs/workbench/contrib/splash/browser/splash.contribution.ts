@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { Extensions, IWorkbenchContributionsRegistry } from 'vs/workbench/common/contributions';
 import { ISplashStorageService } from 'vs/workbench/contrib/splash/browser/splash';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { PartsSplash } from 'vs/workbench/contrib/splash/browser/partsSplash';
 import { IPartsSplash } from 'vs/platform/theme/common/themeService';
 
@@ -18,7 +18,7 @@ registerSingleton(ISplashStorageService, class SplashStorageService implements I
 		const raw = JSON.stringify(splash);
 		localStorage.setItem('monaco-parts-splash', raw);
 	}
-}, true);
+}, InstantiationType.Delayed);
 
 Registry.as<IWorkbenchContributionsRegistry>(Extensions.Workbench).registerWorkbenchContribution(
 	PartsSplash,

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ClientSecretCredential } from '@azure/identity';
@@ -25,9 +25,9 @@ function getEnv(name: string): string {
 async function main(): Promise<void> {
 	const [, , _version] = process.argv;
 	const quality = getEnv('VSCODE_QUALITY');
-	const commit = process.env['VSCODE_DISTRO_COMMIT']?.trim() || getEnv('BUILD_SOURCEVERSION');
+	const commit = getEnv('BUILD_SOURCEVERSION');
 	const queuedBy = getEnv('BUILD_QUEUEDBY');
-	const sourceBranch = process.env['VSCODE_DISTRO_REF']?.trim() || getEnv('BUILD_SOURCEBRANCH');
+	const sourceBranch = getEnv('BUILD_SOURCEBRANCH');
 	const version = _version + (quality === 'stable' ? '' : `-${quality}`);
 
 	console.log('Creating build...');
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
 		timestamp: (new Date()).getTime(),
 		version,
 		isReleased: false,
-		private: Boolean(process.env['VSCODE_DISTRO_REF']?.trim()),
+		private: process.env['VSCODE_PRIVATE_BUILD']?.toLowerCase() === 'true',
 		sourceBranch,
 		queuedBy,
 		assets: [],

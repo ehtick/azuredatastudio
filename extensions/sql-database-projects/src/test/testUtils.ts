@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
@@ -14,7 +14,7 @@ import { AssertionError } from 'assert';
 import { Project } from '../models/project';
 import { Uri } from 'vscode';
 import { exists, getSqlProjectsService } from '../common/utils';
-import { ProjectType } from 'mssql';
+import * as mssql from 'mssql';
 
 export async function shouldThrowSpecificError(block: Function, expectedMessage: string, details?: string) {
 	let succeeded = false;
@@ -33,7 +33,7 @@ export async function shouldThrowSpecificError(block: Function, expectedMessage:
 
 export async function createTestSqlProject(test: Mocha.Runnable | undefined): Promise<Project> {
 	const projPath = await getTestProjectPath(test);
-	await (await getSqlProjectsService()).createProject(projPath, ProjectType.SdkStyle);
+	await (await getSqlProjectsService() as mssql.ISqlProjectsService).createProject(projPath, mssql.ProjectType.SdkStyle);
 	return await Project.openProject(projPath);
 }
 
@@ -100,8 +100,10 @@ export async function createTestFile(test: Mocha.Runnable | undefined, contents:
  * 			-file5.sql
  * 		- file2.txt
  *
+ * @param test
  * @param createList Boolean specifying to create a list of the files and folders been created
  * @param list List of files and folders that are been created
+ * @param testFolderPath
  */
 export async function createDummyFileStructure(test: Mocha.Runnable | undefined, createList?: boolean, list?: Uri[], testFolderPath?: string): Promise<string> {
 	testFolderPath = testFolderPath ?? await generateTestFolderPath(test);
@@ -159,8 +161,10 @@ export async function createDummyFileStructure(test: Mocha.Runnable | undefined,
  * 		- Script.PreDeployment2.sql
  * 		- Script.PostDeployment1.sql
  *
+ * @param test
  * @param createList Boolean specifying to create a list of the files and folders been created
  * @param list List of files and folders that are been created
+ * @param testFolderPath
  */
 export async function createDummyFileStructureWithPrePostDeployScripts(test: Mocha.Runnable | undefined, createList?: boolean, list?: Uri[], testFolderPath?: string): Promise<string> {
 	testFolderPath = await createDummyFileStructure(test, createList, list, testFolderPath);

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
@@ -160,8 +160,8 @@ export class FoldingModel {
 				const foldRange = this._regions.toFoldRange(i);
 				const decRange = this._textModel.getDecorationRange(this._editorDecorationIds[i]);
 				if (decRange) {
-					if (isCollapsed && (isBlocked(decRange.startLineNumber, decRange.endLineNumber) || decRange.endLineNumber - decRange.startLineNumber !== foldRange.endLineNumber - foldRange.startLineNumber)) {
-						isCollapsed = false; // uncollapse is the range is blocked or there has been lines removed or added
+					if (isCollapsed && isBlocked(decRange.startLineNumber, decRange.endLineNumber)) {
+						isCollapsed = false; // uncollapse is the range is blocked
 					}
 					foldedRanges.push({
 						startLineNumber: decRange.startLineNumber,
@@ -183,8 +183,12 @@ export class FoldingModel {
 	public getMemento(): CollapseMemento | undefined {
 		const foldedOrManualRanges = this._currentFoldedOrManualRanges();
 		const result: ILineMemento[] = [];
+		const maxLineNumber = this._textModel.getLineCount();
 		for (let i = 0, limit = foldedOrManualRanges.length; i < limit; i++) {
 			const range = foldedOrManualRanges[i];
+			if (range.startLineNumber >= range.endLineNumber || range.startLineNumber < 1 || range.endLineNumber > maxLineNumber) {
+				continue;
+			}
 			const checksum = this._getLinesChecksum(range.startLineNumber + 1, range.endLineNumber);
 			result.push({
 				startLineNumber: range.startLineNumber,

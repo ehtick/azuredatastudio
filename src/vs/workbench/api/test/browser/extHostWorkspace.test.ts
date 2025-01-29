@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -24,6 +24,7 @@ import { isLinux, isWindows } from 'vs/base/common/platform';
 import { IExtHostFileSystemInfo } from 'vs/workbench/api/common/extHostFileSystemInfo';
 import { FileSystemProviderCapabilities } from 'vs/platform/files/common/files';
 import { nullExtensionDescription as extensionDescriptor } from 'vs/workbench/services/extensions/common/extensions';
+import { IURITransformerService } from 'vs/workbench/api/common/extHostUriTransformerService';
 
 function createExtHostWorkspace(mainContext: IMainContext, data: IWorkspaceData, logService: ILogService): ExtHostWorkspace {
 	const result = new ExtHostWorkspace(
@@ -31,6 +32,7 @@ function createExtHostWorkspace(mainContext: IMainContext, data: IWorkspaceData,
 		new class extends mock<IExtHostInitDataService>() { override workspace = data; },
 		new class extends mock<IExtHostFileSystemInfo>() { override getCapabilities() { return isLinux ? FileSystemProviderCapabilities.PathCaseSensitive : undefined; } },
 		logService,
+		new class extends mock<IURITransformerService>() { }
 	);
 	result.$initializeWorkspace(data, true);
 	return result;

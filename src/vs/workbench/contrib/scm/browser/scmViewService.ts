@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableStore } from 'vs/base/common/lifecycle';
@@ -143,7 +143,7 @@ export class SCMViewService implements ISCMViewService {
 				}
 
 				return { added, removed };
-			}, 0, undefined, undefined, this.disposables)
+			}, 0, undefined, undefined, undefined, this.disposables)
 	);
 
 	get focusedRepository(): ISCMRepository | undefined {

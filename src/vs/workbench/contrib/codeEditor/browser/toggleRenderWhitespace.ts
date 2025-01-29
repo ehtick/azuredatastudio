@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { CATEGORIES, } from 'vs/workbench/common/actions';
+import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 
 class ToggleRenderWhitespaceAction extends Action2 {
@@ -22,12 +22,12 @@ class ToggleRenderWhitespaceAction extends Action2 {
 				mnemonicTitle: localize({ key: 'miToggleRenderWhitespace', comment: ['&& denotes a mnemonic'] }, "&&Render Whitespace"),
 				original: 'Toggle Render Whitespace'
 			},
-			category: CATEGORIES.View,
+			category: Categories.View,
 			f1: true,
 			toggled: ContextKeyExpr.notEquals('config.editor.renderWhitespace', 'none'),
 			menu: {
-				id: MenuId.MenubarViewMenu,
-				group: '5_editor',
+				id: MenuId.MenubarAppearanceMenu,
+				group: '4_editor',
 				order: 4
 			}
 		});

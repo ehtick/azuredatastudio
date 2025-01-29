@@ -1,13 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
 
 // Contains vs strings that are non-native to vscode that need to be translated.
 
-export const issueReporterMainAzuredatastudio = localize('azuredatastudio', "Azure Data Studio");
 export const updateConfigContributionDefault = localize('default', "Enable automatic update checks. Azure Data Studio will check for updates automatically and periodically.");
 export const updateConfigContributionEnableWindowsBackgroundUpdates = localize('enableWindowsBackgroundUpdates', "Enable to download and install new Azure Data Studio Versions in the background on Windows");
 export const updateConfigContributionShowReleaseNotes = localize('showReleaseNotes', "Show Release Notes after an update. The Release Notes are opened in a new web browser window.");
@@ -69,6 +68,20 @@ export const terminalIntegratedEnvLinuxDescription = localize('terminal.integrat
 export const terminalIntegratedEnvWindowsDescription = localize('terminal.integrated.env.windows', "Object with environment variables that will be added to the Azure Data Studio process to be used by the terminal on Windows. Set to `null` to delete the environment variable.")
 export const terminalIntegratedInheritEnvDescription = localize('terminal.integrated.inheritEnv', "Whether new shells should inherit their environment from Azure Data Studio, which may source a login shell to ensure $PATH and other development variables are initialized. This has no effect on Windows.")
 
+//#region VS Code Issue Reporter
+export const issueReporterServiceAzuredatastudio = localize('azuredatastudio', "Azure Data Studio");
+export const issueReporterPageReviewGuidanceLabel = localize( // intentionally not escaped because of its embedded tags
+	{
+		key: 'reviewGuidanceLabel',
+		comment: [
+			'{Locked="<a href=\"https://github.com/microsoft/azuredatastudio/wiki/Submitting-Bugs-and-Suggestions\" target=\"_blank\">"}', // {{SQL CARBON EDIT}} - Update link to Azure Data Studio submitting bugs and suggestions wiki
+			'{Locked="</a>"}'
+		]
+	},
+	'Before you report an issue here please <a href="https://github.com/microsoft/azuredatastudio/wiki/Submitting-Bugs-and-Suggestions" target="_blank">review the guidance we provide</a>.' // {{SQL CARBON EDIT}} - Update link to Azure Data Studio submitting bugs and suggestions wiki
+);
+//#endregion
+
 //#region VS Code Notebook settings
 export const displayOrderDescription = localize('notebook.displayOrder.description', "Priority list for output mime types. (for VS Code Notebooks only)");
 export const cellToolbarLocationDescription = localize('notebook.cellToolbarLocation.description', "Where the cell toolbar should be shown, or whether it should be hidden. (for VS Code Notebooks only)");
@@ -95,4 +108,30 @@ export const experimentalCustomizationDescription = localize('notebook.editorOpt
 export const download = localize('azuredatastudio.download', 'Download');
 export const downloadTooltip = localize('azuredatastudio.downloadTooltip', "Download this extension from an external source");
 export const installTooltip = localize('azuredatastudio.installTooltip', "Install this extension");
+export function getThemeUpdatedNotification(label: string): string {
+	return localize({ key: 'azuredatastudio.themeUpdatedNotification', comment: ['{0} is the name of the new default theme'] }, "Azure Data Studio now ships with a new default theme '{0}'. If you prefer, you can switch back to the old theme or try one of the many other color themes available.", label);
+}
+export function getNewThemeNotification(label: string): string {
+	return localize({ key: 'newThemeNotification', comment: ['{0} is the name of the new default theme'] }, "Azure Data Studio now ships with a new default theme '{0}'. Do you want to give it a try?", label);
+}
+
+//#endregion
+
+//#region VS Code About Dialog
+
+export function aboutDetail(productVersion: string, commit: string, date: string, electronVersion: string, chromeVersion: string, nodeVersion: string, v8: string, osProps: string, vscodeVersion: string): string {
+	return localize({ key: 'aboutDetail', comment: ['Electron, Chromium, Node.js and V8 are product names that need no translation'] },
+		"Version: {0}\nCommit: {1}\nDate: {2}\nVS Code: {3}\nElectron: {4}\nChromium: {5}\nNode.js: {6}\nV8: {7}\nOS: {8}",
+		productVersion,
+		commit,
+		date,
+		vscodeVersion,
+		electronVersion,
+		chromeVersion,
+		nodeVersion,
+		v8,
+		osProps
+	);
+}
+
 //#endregion

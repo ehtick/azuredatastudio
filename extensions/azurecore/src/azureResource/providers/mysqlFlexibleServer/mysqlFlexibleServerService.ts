@@ -1,31 +1,23 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 
-import { ResourceServiceBase, GraphData } from '../resourceTreeDataProviderBase';
+import { ResourceServiceBase } from '../resourceTreeDataProviderBase';
 import { azureResource } from 'azurecore';
 import { mysqlFlexibleServerQuery } from '../queryStringConstants';
+import { DbServerGraphData } from '../../interfaces';
+import { MYSQL_FLEXIBLE_SERVER_PROVIDER_ID } from '../../../constants';
 
+export class MysqlFlexibleServerService extends ResourceServiceBase<DbServerGraphData> {
+	public override queryFilter: string = mysqlFlexibleServerQuery;
 
-interface DbServerGraphData extends GraphData {
-	properties: {
-		fullyQualifiedDomainName: string;
-		administratorLogin: string;
-	};
-}
-
-export class MysqlFlexibleServerService extends ResourceServiceBase<DbServerGraphData, azureResource.AzureResourceDatabaseServer> {
-
-	protected get query(): string {
-		return mysqlFlexibleServerQuery;
-	}
-
-	protected convertResource(resource: DbServerGraphData): azureResource.AzureResourceDatabaseServer {
+	public convertServerResource(resource: DbServerGraphData): azureResource.AzureResourceDatabaseServer | undefined {
 		return {
 			id: resource.id,
 			name: resource.name,
+			provider: MYSQL_FLEXIBLE_SERVER_PROVIDER_ID,
 			fullName: resource.properties.fullyQualifiedDomainName,
 			loginName: resource.properties.administratorLogin,
 			defaultDatabaseName: '',

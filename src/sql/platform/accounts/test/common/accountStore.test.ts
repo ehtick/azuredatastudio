@@ -1,13 +1,14 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
 import * as azdata from 'azdata';
 import AccountStore from 'sql/platform/accounts/common/accountStore';
 import { EventVerifierSingle } from 'sql/base/test/common/event';
-import { ConsoleLogger, LogService } from 'vs/platform/log/common/log';
+import { ConsoleLogger } from 'vs/platform/log/common/log';
+import { LogService } from 'vs/platform/log/common/logService';
 
 const consoleLogService = new LogService(new ConsoleLogger());
 suite('Account Store Tests', () => {

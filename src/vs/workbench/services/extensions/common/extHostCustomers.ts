@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from 'vs/base/common/lifecycle';
-import { IConstructorSignature, BrandedService } from 'vs/platform/instantiation/common/instantiation';
+import { BrandedService, IConstructorSignature } from 'vs/platform/instantiation/common/instantiation';
+import { ExtensionHostKind } from 'vs/workbench/services/extensions/common/extensionHostKind';
 import { IExtensionHostProxy } from 'vs/workbench/services/extensions/common/extensionHostProxy';
-import { ExtensionHostKind, IInternalExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { IInternalExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 import { IRPCProtocol, ProxyIdentifier } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 
 export interface IExtHostContext extends IRPCProtocol {

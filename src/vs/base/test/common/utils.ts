@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable, IDisposableTracker, setDisposableTracker } from 'vs/base/common/lifecycle';
@@ -10,7 +10,7 @@ import { URI } from 'vs/base/common/uri';
 
 export type ValueCallback<T = any> = (value: T | Promise<T>) => void;
 
-export function toResource(this: any, path: string) {
+export function toResource(this: any, path: string): URI {
 	if (isWindows) {
 		return URI.file(join('C:\\', btoa(this.test.fullTitle()), path));
 	}

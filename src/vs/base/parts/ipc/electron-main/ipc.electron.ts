@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { WebContents } from 'electron';
@@ -37,9 +37,7 @@ export class Server extends IPCServer {
 			const id = webContents.id;
 			const client = Server.Clients.get(id);
 
-			if (client) {
-				client.dispose();
-			}
+			client?.dispose();
 
 			const onDidClientReconnect = new Emitter<void>();
 			Server.Clients.set(id, toDisposable(() => onDidClientReconnect.fire()));

@@ -145,15 +145,15 @@
     "polly-js": "^1.6.3"
   },
   "devDependencies": {
-    "@microsoft/vscodetestcover": "^1.2.1",
+    "@microsoft/vscodetestcover": "^1.2.2",
     "@types/mocha": "^7.0.2",
     "@types/node": "^10.14.8",
     "@types/request": "^2.48.1",
-    "mocha": "^7.1.1",
+    "mocha": "^9.2.2",
     "should": "^13.2.1",
     "typemoq": "^2.1.0",
     "lodash": "^4.17.21",
-    "@microsoft/azdata-test": "^3.0.1"
+    "@microsoft/azdata-test": "^3.0.4"
   },
   "__metadata": {
     "id": "65",

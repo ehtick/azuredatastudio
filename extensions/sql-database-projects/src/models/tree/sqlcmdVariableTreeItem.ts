@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -21,7 +21,6 @@ export class SqlCmdVariablesTreeItem extends BaseProjectTreeItem {
 	 * @param projectNodeName Name of the project node. Used for creating the relative path of the SQLCMD Variables node to the project
 	 * @param sqlprojUri Full URI to the .sqlproj
 	 * @param sqlCmdVariables Collection of SQLCMD variables in the project
-	 * @param project
 	 */
 	constructor(projectNodeName: string, sqlprojUri: vscode.Uri, sqlCmdVariables: Map<string, string>) {
 		super(vscode.Uri.file(path.join(projectNodeName, constants.sqlcmdVariablesNodeName)), sqlprojUri);

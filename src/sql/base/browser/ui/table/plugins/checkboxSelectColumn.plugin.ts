@@ -1,13 +1,16 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { convertJQueryKeyDownEvent } from 'sql/base/browser/dom';
 import { ICheckboxStyles } from 'sql/base/browser/ui/checkbox/checkbox';
 import { mixin } from 'sql/base/common/objects';
+import { escape } from 'sql/base/common/strings';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { Emitter, Event as vsEvent } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
+import { Disposable } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/checkboxSelectColumn.plugin';
 import * as nls from 'vs/nls';
 
@@ -54,19 +57,19 @@ const defaultOptions: ICheckboxSelectColumnOptions = {
 	width: 30
 };
 
-export class CheckboxSelectColumn<T extends Slick.SlickData> implements Slick.Plugin<T> {
-
+export class CheckboxSelectColumn<T extends Slick.SlickData> extends Disposable implements Slick.Plugin<T> {
 	private _grid!: Slick.Grid<T>;
 	private _handler = new Slick.EventHandler();
 	private _options: ICheckboxSelectColumnOptions;
 	public index: number;
 	private _headerCheckbox: HTMLInputElement | undefined;
-	private _onChange = new Emitter<ICheckboxCellActionEventArgs>();
-	private _onCheckAllChange = new Emitter<ICheckAllActionEventArgs>();
+	private _onChange = this._register(new Emitter<ICheckboxCellActionEventArgs>());
+	private _onCheckAllChange = this._register(new Emitter<ICheckAllActionEventArgs>());
 	public readonly onChange: vsEvent<ICheckboxCellActionEventArgs> = this._onChange.event;
 	public readonly onCheckAllChange: vsEvent<ICheckAllActionEventArgs> = this._onCheckAllChange.event;
 
 	constructor(options?: ICheckboxSelectColumnOptions, columnIndex?: number) {
+		super();
 		this._options = mixin(options, defaultOptions, false);
 		this._options.headerCssClass = options.headerCssClass ? options.headerCssClass + ' ' + defaultOptions.headerCssClass : defaultOptions.headerCssClass;
 		this._options.cssClass = options.cssClass ? options.cssClass + ' ' + defaultOptions.cssClass : defaultOptions.cssClass;
@@ -92,7 +95,8 @@ export class CheckboxSelectColumn<T extends Slick.SlickData> implements Slick.Pl
 		const state = this.getCheckboxPropertyValue(row);
 		const checked = state.checked ? 'checked' : '';
 		const enable = state.enabled ? '' : 'disabled';
-		return `<input type="checkbox" style="pointer-events: none;" tabIndex="-1" ${checked} ${enable}/>`;
+		const escapedTitle = escape(columnDef.name ?? '');
+		return `<input type="checkbox" style="pointer-events: none;" aria-label="${escapedTitle}" tabIndex="-1" ${checked} ${enable}/>`;
 	}
 
 
@@ -100,8 +104,9 @@ export class CheckboxSelectColumn<T extends Slick.SlickData> implements Slick.Pl
 		this._grid = grid;
 		this._handler
 			.subscribe(this._grid.onClick, (e: Event, args: Slick.OnClickEventArgs<T>) => this.handleClick(e, args))
-			.subscribe(this._grid.onKeyDown, (e: DOMEvent, args: Slick.OnKeyDownEventArgs<T>) => this.handleKeyDown(e as KeyboardEvent, args))
-			.subscribe(this._grid.onHeaderCellRendered, (e: Event, args: Slick.OnHeaderCellRenderedEventArgs<T>) => this.handleHeaderCellRendered(e, args));
+			.subscribe(this._grid.onKeyDown, (e: DOMEvent, args: Slick.OnKeyDownEventArgs<T>) => this.handleKeyDown(convertJQueryKeyDownEvent(e), args))
+			.subscribe(this._grid.onHeaderCellRendered, (e: Event, args: Slick.OnHeaderCellRenderedEventArgs<T>) => this.handleHeaderCellRendered(e, args))
+			.subscribe(grid.onActiveCellChanged, (e: DOMEvent, args: Slick.OnActiveCellChangedEventArgs<T>) => { this.handleActiveCellChanged(args); });
 		if (this.isCheckAllHeaderCheckboxShown()) {
 			this._handler.subscribe(this._grid.onHeaderClick, (e: Event, args: Slick.OnHeaderClickEventArgs<T>) => this.handleHeaderClick(e, args));
 		}
@@ -117,16 +122,24 @@ export class CheckboxSelectColumn<T extends Slick.SlickData> implements Slick.Pl
 		e.preventDefault();
 	}
 
-	private handleKeyDown(e: KeyboardEvent, args: Slick.OnKeyDownEventArgs<T>): void {
-		const event = new StandardKeyboardEvent(e);
+	private handleKeyDown(e: StandardKeyboardEvent, args: Slick.OnKeyDownEventArgs<T>): void {
 		if (args.cell !== this.index) {
 			return;
 		}
-		if (event.equals(KeyCode.Enter) || event.equals(KeyCode.Space)) {
+		if (e.equals(KeyCode.Enter) || e.equals(KeyCode.Space)) {
 			this.toggleCellCheckbox(args.row);
 			e.stopPropagation();
-			e.stopImmediatePropagation();
 			e.preventDefault();
+			e.browserEvent.stopImmediatePropagation();
+		}
+	}
+
+	private handleActiveCellChanged(args: Slick.OnActiveCellChangedEventArgs<T>): void {
+		if (args.cell === this.index) {
+			const checkbox = this._grid.getActiveCellNode() as HTMLInputElement;
+			if (checkbox) {
+				checkbox.focus();
+			}
 		}
 	}
 

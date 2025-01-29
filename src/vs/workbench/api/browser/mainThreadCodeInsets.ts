@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableStore } from 'vs/base/common/lifecycle';
@@ -90,7 +90,7 @@ export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
 		const disposables = new DisposableStore();
 
 		const webview = this._webviewService.createWebviewElement({
-			id: 'mainThreadCodeInsets_' + handle,
+			title: undefined,
 			options: {
 				enableFindWidget: false,
 			},
@@ -123,7 +123,7 @@ export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
 
 	$setHtml(handle: number, value: string): void {
 		const inset = this.getInset(handle);
-		inset.webview.html = value;
+		inset.webview.setHtml(value);
 	}
 
 	$setOptions(handle: number, options: IWebviewContentOptions): void {

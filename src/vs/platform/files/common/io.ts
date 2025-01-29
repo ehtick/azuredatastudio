@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { VSBuffer } from 'vs/base/common/buffer';
@@ -125,14 +125,8 @@ function throwIfCancelled(token: CancellationToken): boolean {
 function throwIfTooLarge(totalBytesRead: number, options: ICreateReadStreamOptions): boolean {
 
 	// Return early if file is too large to load and we have configured limits
-	if (options?.limits) {
-		if (typeof options.limits.memory === 'number' && totalBytesRead > options.limits.memory) {
-			throw createFileSystemProviderError(localize('fileTooLargeForHeapError', "To open a file of this size, you need to restart and allow to use more memory"), FileSystemProviderErrorCode.FileExceedsMemoryLimit);
-		}
-
-		if (typeof options.limits.size === 'number' && totalBytesRead > options.limits.size) {
-			throw createFileSystemProviderError(localize('fileTooLargeError', "File is too large to open"), FileSystemProviderErrorCode.FileTooLarge);
-		}
+	if (typeof options?.limits?.size === 'number' && totalBytesRead > options.limits.size) {
+		throw createFileSystemProviderError(localize('fileTooLargeError', "File is too large to open"), FileSystemProviderErrorCode.FileTooLarge);
 	}
 
 	return true;

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { RequestType, NotificationType } from 'vscode-languageclient';
@@ -14,6 +14,7 @@ export interface SqlMigrationAssessmentParams {
 	connectionString: string;
 	databases: string[];
 	xEventsFilesFolderPath: string;
+	collectAdhocQueries: boolean;
 }
 
 export interface SqlMigrationImpactedObjectInfo {
@@ -23,6 +24,7 @@ export interface SqlMigrationImpactedObjectInfo {
 }
 
 export interface SqlMigrationAssessmentResultItem {
+	serverName: string;
 	rulesetVersion: string;
 	rulesetName: string;
 	ruleId: string;
@@ -104,6 +106,10 @@ export namespace GetSqlMigrationAssessmentItemsRequest {
 	export const type = new RequestType<SqlMigrationAssessmentParams, AssessmentResult, void, void>('migration/getassessments');
 }
 
+export namespace GetSqlMigrationGenerateArmTemplateRequest {
+	export const type = new RequestType<string, string[], void, void>('migration/getarmtemplate');
+}
+
 export interface SqlMigrationSkuRecommendationsParams {
 	dataFolder: string;
 	perfQueryIntervalInSec: number;
@@ -115,6 +121,8 @@ export interface SqlMigrationSkuRecommendationsParams {
 	endTime: string;
 	includePreviewSkus: boolean;
 	databaseAllowList: string[];
+	isPremiumSSDV2Enabled: boolean;
+	isNextGenGPEnabled: boolean;
 }
 
 export interface AzureSqlSkuCategory {
@@ -136,6 +144,10 @@ export interface AzureManagedDiskSku {
 	tier: AzureManagedDiskTier;
 	size: string;
 	caching: AzureManagedDiskCaching;
+	type: AzureManagedDiskType;
+	maxSizeInGib: number;
+	maxThroughputInMbps: number;
+	maxIOPS: number;
 }
 
 export interface AzureVirtualMachineSku {
@@ -162,6 +174,8 @@ export interface AzureSqlSku {
 export interface AzureSqlPaaSSku extends AzureSqlSku {
 	category: AzureSqlSkuPaaSCategory;
 	storageMaxSizeInMb: number;
+	maxStorageIops: Float32Array;
+	maxThroughputMBps: Float32Array;
 }
 
 export interface AzureSqlIaaSSku extends AzureSqlSku {
@@ -278,6 +292,15 @@ export const enum AzureManagedDiskTier {
 	Ultra = 2
 }
 
+// values from SQL NuGet
+export const enum AzureManagedDiskType {
+	StandardHDD = 1,   // Standard HDD
+	StandardSSD = 2,   // Standard SSD
+	PremiumSSD = 4,    // Premium SSD
+	UltraSSD = 8,      // Ultra SSD
+	PremiumSSDV2 = 16,    // Premium SSD V2
+}
+
 export const enum AzureManagedDiskCaching {
 	NotApplicable = 0,
 	None = 1,
@@ -293,6 +316,7 @@ export const enum AzureSqlPaaSServiceTier {
 	GeneralPurpose = 0,
 	BusinessCritical,
 	HyperScale,
+	NextGenGeneralPurpose
 }
 
 export const enum AzureSqlPaaSHardwareType {
@@ -388,6 +412,11 @@ export const enum VirtualMachineFamily {
 	standardNVSv4Family
 }
 
+export const enum TdeValidationStatus {
+	Failed = -1,
+	Succeeded = 1
+}
+
 export namespace GetSqlMigrationSkuRecommendationsRequest {
 	export const type = new RequestType<SqlMigrationSkuRecommendationsParams, SkuRecommendationResult, void, void>('migration/getskurecommendations');
 }
@@ -440,6 +469,13 @@ export interface StartLoginMigrationsParams {
 	aadDomainName: string;
 }
 
+export enum LoginMigrationPreValidationStep {
+	SysAdminValidation = 0,
+	AADDomainNameValidation = 1,
+	UserMappingValidation = 2,
+	LoginEligibilityValidation = 3,
+}
+
 export enum LoginMigrationStep {
 	StartValidations = 0,
 	MigrateLogins = 1,
@@ -448,6 +484,12 @@ export enum LoginMigrationStep {
 	EstablishServerRoleMapping = 4,
 	SetLoginPermissions = 5,
 	SetServerRolePermissions = 6,
+}
+
+export interface StartLoginMigrationPreValidationResult {
+	exceptionMap: { [login: string]: any };
+	completedStep: LoginMigrationPreValidationStep;
+	elapsedTime: string;
 }
 
 export interface StartLoginMigrationResult {
@@ -462,6 +504,26 @@ export namespace StartLoginMigrationRequest {
 
 export namespace ValidateLoginMigrationRequest {
 	export const type = new RequestType<StartLoginMigrationsParams, StartLoginMigrationResult, void, void>('migration/validateloginmigration');
+}
+
+export namespace ValidateSysAdminPermissionRequest {
+	export const type =
+		new RequestType<StartLoginMigrationsParams, StartLoginMigrationPreValidationResult, void, void>("migration/validatesysadminpermission");
+}
+
+export namespace ValidateUserMappingRequest {
+	export const type =
+		new RequestType<StartLoginMigrationsParams, StartLoginMigrationPreValidationResult, void, void>("migration/validateusermapping");
+}
+
+export namespace ValidateAADDomainNameRequest {
+	export const type =
+		new RequestType<StartLoginMigrationsParams, StartLoginMigrationPreValidationResult, void, void>("migration/validateaaddomainname");
+}
+
+export namespace ValidateLoginEligibilityRequest {
+	export const type =
+		new RequestType<StartLoginMigrationsParams, StartLoginMigrationPreValidationResult, void, void>("migration/validatelogineligibility");
 }
 
 export namespace MigrateLoginsRequest {
@@ -482,13 +544,18 @@ export namespace LoginMigrationNotification {
 
 export interface ISqlMigrationService {
 	providerId: string;
-	getAssessments(ownerUri: string, databases: string[], xEventsFilesFolderPath: string): Thenable<AssessmentResult | undefined>;
+	getAssessments(ownerUri: string, databases: string[], xEventsFilesFolderPath: string, collectAdhocQueries: boolean): Thenable<AssessmentResult | undefined>;
 	getSkuRecommendations(dataFolder: string, perfQueryIntervalInSec: number, targetPlatforms: string[], targetSqlInstance: string, targetPercentile: number, scalingFactor: number, startTime: string, endTime: string, includePreviewSkus: boolean, databaseAllowList: string[]): Promise<SkuRecommendationResult | undefined>;
 	startPerfDataCollection(ownerUri: string, dataFolder: string, perfQueryIntervalInSec: number, staticQueryIntervalInSec: number, numberOfIterations: number): Promise<StartPerfDataCollectionResult | undefined>;
 	stopPerfDataCollection(): Promise<StopPerfDataCollectionResult | undefined>;
 	refreshPerfDataCollection(lastRefreshedTime: Date): Promise<RefreshPerfDataCollectionResult | undefined>;
+	getArmTemplate(targetType: string): Promise<string[] | undefined>;
 	startLoginMigration(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationResult | undefined>;
 	validateLoginMigration(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationResult | undefined>;
+	validateSysAdminPermission(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationPreValidationResult | undefined>;
+	validateUserMapping(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationPreValidationResult | undefined>;
+	validateAADDomainName(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationPreValidationResult | undefined>;
+	validateLoginEligibility(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationPreValidationResult | undefined>;
 	migrateLogins(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationResult | undefined>;
 	establishUserMapping(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationResult | undefined>;
 	migrateServerRolesAndSetPermissions(sourceConnectionString: string, targetConnectionString: string, loginList: string[], aadDomainName: string): Promise<StartLoginMigrationResult | undefined>;
@@ -548,4 +615,26 @@ export interface TdeMigrateProgressParams {
 	success: boolean;
 	message: string;
 	statusCode: string;
+}
+
+export interface TdeValidationResult {
+	validationTitle: string;
+	validationDescription: string;
+	validationTroubleshootingTips: string;
+	validationErrorMessage: string;
+	validationStatus: TdeValidationStatus;
+	validationStatusString: string;
+}
+
+export interface TdeValidationParams {
+	sourceSqlConnectionString: string;
+	networkSharePath: string;
+}
+
+export namespace TdeValidationRequest {
+	export const type = new RequestType<TdeValidationParams, TdeValidationResult[], void, void>('migration/tdevalidation');
+}
+
+export namespace TdeValidationTitlesRequest {
+	export const type = new RequestType<{}, string[], void, void>('migration/tdevalidationtitles');
 }

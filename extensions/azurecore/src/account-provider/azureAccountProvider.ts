@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -14,13 +14,14 @@ import {
 } from 'azurecore';
 import { Deferred } from './interfaces';
 import { AuthenticationResult, PublicClientApplication } from '@azure/msal-node';
-import { SimpleTokenCache } from './utils/simpleTokenCache';
 import { Logger } from '../utils/Logger';
 import { MultiTenantTokenResponse, Token, AzureAuth } from './auths/azureAuth';
 import { AzureAuthCodeGrant } from './auths/azureAuthCodeGrant';
 import { AzureDeviceCode } from './auths/azureDeviceCode';
-import { filterAccounts } from '../azureResource/utils';
 import * as Constants from '../constants';
+import { MsalCachePluginProvider } from './utils/msalCachePlugin';
+import { TenantIgnoredError } from '../utils/TenantIgnoredError';
+import { multiple_matching_tokens_error } from '../constants';
 
 const localize = nls.loadMessageBundle();
 
@@ -32,11 +33,10 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 
 	constructor(
 		metadata: AzureAccountProviderMetadata,
-		tokenCache: SimpleTokenCache,
 		context: vscode.ExtensionContext,
 		clientApplication: PublicClientApplication,
+		private readonly msalCacheProvider: MsalCachePluginProvider,
 		uriEventHandler: vscode.EventEmitter<vscode.Uri>,
-		private readonly authLibrary: string,
 		private readonly forceDeviceCode: boolean = false
 	) {
 		this.clientApplication = clientApplication;
@@ -44,11 +44,11 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 		vscode.workspace.onDidChangeConfiguration((changeEvent) => {
 			const impactProvider = changeEvent.affectsConfiguration(Constants.AccountsAzureAuthSection);
 			if (impactProvider === true) {
-				this.handleAuthMapping(metadata, tokenCache, context, uriEventHandler);
+				this.handleAuthMapping(metadata, context, uriEventHandler);
 			}
 		});
 
-		this.handleAuthMapping(metadata, tokenCache, context, uriEventHandler);
+		this.handleAuthMapping(metadata, context, uriEventHandler);
 	}
 
 	dispose() {
@@ -56,13 +56,10 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 	}
 
 	clearTokenCache(): Thenable<void> {
-		return this.authLibrary === Constants.AuthLibrary.MSAL
-			? this.getAuthMethod().deleteAllCacheMsal()
-			// fallback to ADAL as default
-			: this.getAuthMethod().deleteAllCacheAdal();
+		return this.getAuthMethod().deleteAllCache();
 	}
 
-	private handleAuthMapping(metadata: AzureAccountProviderMetadata, tokenCache: SimpleTokenCache, context: vscode.ExtensionContext, uriEventHandler: vscode.EventEmitter<vscode.Uri>) {
+	private handleAuthMapping(metadata: AzureAccountProviderMetadata, context: vscode.ExtensionContext, uriEventHandler: vscode.EventEmitter<vscode.Uri>) {
 		this.authMappings.forEach(m => m.dispose());
 		this.authMappings.clear();
 
@@ -71,10 +68,10 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 		const deviceCodeMethod: boolean = configuration.get<boolean>(Constants.AuthType.DeviceCode, false);
 
 		if (codeGrantMethod === true && !this.forceDeviceCode) {
-			this.authMappings.set(AzureAuthType.AuthCodeGrant, new AzureAuthCodeGrant(metadata, tokenCache, context, uriEventHandler, this.clientApplication, this.authLibrary));
+			this.authMappings.set(AzureAuthType.AuthCodeGrant, new AzureAuthCodeGrant(metadata, this.msalCacheProvider, context, uriEventHandler, this.clientApplication));
 		}
 		if (deviceCodeMethod === true || this.forceDeviceCode) {
-			this.authMappings.set(AzureAuthType.DeviceCode, new AzureDeviceCode(metadata, tokenCache, context, uriEventHandler, this.clientApplication, this.authLibrary));
+			this.authMappings.set(AzureAuthType.DeviceCode, new AzureDeviceCode(metadata, this.msalCacheProvider, context, uriEventHandler, this.clientApplication));
 		}
 		if (codeGrantMethod === false && deviceCodeMethod === false && !this.forceDeviceCode) {
 			console.error('No authentication methods selected');
@@ -106,31 +103,25 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 	private async _initialize(storedAccounts: AzureAccount[]): Promise<AzureAccount[]> {
 		const accounts: AzureAccount[] = [];
 		Logger.verbose(`Initializing stored accounts ${JSON.stringify(accounts)}`);
-		const updatedAccounts = filterAccounts(storedAccounts, this.authLibrary);
-		for (let account of updatedAccounts) {
+		for (let account of storedAccounts) {
 			const azureAuth = this.getAuthMethod(account);
 			if (!azureAuth) {
 				account.isStale = true;
 				accounts.push(account);
 			} else {
 				account.isStale = false;
-				if (this.authLibrary === Constants.AuthLibrary.MSAL) {
-					// Check MSAL Cache before adding account, to mark it as stale if it is not present in cache
-					const accountInCache = await azureAuth.getAccountFromMsalCache(account.key.accountId);
-					if (!accountInCache) {
-						account.isStale = true;
-					}
-					accounts.push(account);
-
-				} else { // fallback to ADAL as default
-					accounts.push(await azureAuth.refreshAccessAdal(account));
+				// Check MSAL Cache before adding account, to mark it as stale if it is not present in cache
+				const accountInCache = await azureAuth.getAccountFromMsalCache(account.key.accountId);
+				if (!accountInCache) {
+					account.isStale = true;
 				}
+				accounts.push(account);
+
 			}
 		}
 		this.initComplete.resolve();
 		return accounts;
 	}
-
 
 	getSecurityToken(account: AzureAccount, resource: azdata.AzureResource): Thenable<MultiTenantTokenResponse | undefined> {
 		return this._getSecurityToken(account, resource);
@@ -145,34 +136,51 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 		const azureAuth = this.getAuthMethod(account);
 		if (azureAuth) {
 			Logger.piiSanitized(`Getting account security token for ${JSON.stringify(account.key)} (tenant ${tenantId}). Auth Method = ${azureAuth.userFriendlyName}`, [], []);
-			if (this.authLibrary === Constants.AuthLibrary.MSAL) {
-				tenantId = tenantId || account.properties.owningTenant.id;
-				let authResult = await azureAuth.getTokenMsal(account.key.accountId, resource, tenantId);
-				if (this.isAuthenticationResult(authResult) && authResult.account && authResult.account.idTokenClaims) {
-					const token: Token = {
-						key: authResult.account.homeAccountId,
-						token: authResult.accessToken,
-						tokenType: authResult.tokenType,
-						expiresOn: authResult.account.idTokenClaims.exp
-					};
-					return token;
-				} else {
-					Logger.error(`MSAL: getToken call failed`);
-					// Throw error with MSAL-specific code/message, else throw generic error message
-					if (this.isProviderError(authResult)) {
-						throw new Error(localize('msalTokenError', `{0} occurred when acquiring token. \n{1}`, authResult.errorCode, authResult.errorMessage));
-					} else {
-						throw new Error(localize('genericTokenError', 'Failed to get token'));
-					}
+			try {
+				// Fetch cached token from local cache if token is available and valid.
+				let accessToken = await this.msalCacheProvider.getTokenFromLocalCache(account.key.accountId, tenantId, resource);
+				if (this.isValidToken(accessToken) &&
+					// Ensure MSAL Cache contains user account
+					(await this.clientApplication.getAllAccounts()).find((accountInfo) => accountInfo.homeAccountId === account.key.accountId)) {
+					return accessToken;
+				} // else fallback to fetching a new token.
+			} catch (e) {
+				// Log any error and move on to fetching fresh access token.
+				Logger.info(`Could not fetch access token from cache: ${e}, fetching new access token instead.`);
+			}
+			tenantId = tenantId || account.properties.owningTenant.id;
+			let authResult = await azureAuth.getToken(account.key.accountId, resource, tenantId);
+			if (this.isAuthenticationResult(authResult) && authResult.account && authResult.account.idTokenClaims) {
+				const token: Token = {
+					key: authResult.account.homeAccountId,
+					token: authResult.accessToken,
+					tokenType: authResult.tokenType,
+					expiresOn: authResult.account.idTokenClaims.exp!,
+					tenantId: tenantId,
+					resource: resource
+				};
+				try {
+					await this.msalCacheProvider.writeTokenToLocalCache(token);
+				} catch (e) {
+					Logger.error(`Could not save access token to local cache: ${e}, this might cause throttling of AAD requests.`);
 				}
-			} else { // fallback to ADAL as default
-				return azureAuth.getAccountSecurityTokenAdal(account, tenantId, resource);
+				return token;
+			} else {
+				Logger.error(`MSAL: getToken call failed: ${authResult}`);
+				// Throw error with MSAL-specific code/message, else throw generic error message
+				if (this.isProviderError(authResult)) {
+					if (authResult.errorCode?.includes(multiple_matching_tokens_error)) {
+						authResult.errorMessage = authResult.errorMessage?.concat(` To resolve this error, please clear token cache, and refresh account credentials.`);
+					}
+					throw new Error(localize('msalTokenError', `{0} occurred when acquiring token. \n{1}`, authResult.errorCode, authResult.errorMessage));
+				} else {
+					throw new Error(localize('genericTokenError', 'Failed to get token'));
+				}
 			}
 		} else {
 			account.isStale = true;
 			Logger.error(`_getAccountSecurityToken: Authentication method not found for account ${account.displayInfo.displayName}`);
 			throw Error('Failed to get authentication method, please remove and re-add the account');
-
 		}
 	}
 
@@ -192,13 +200,29 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 		}
 	}
 
+	/**
+	 * Validates if access token is still valid by checking it's expiration time has a threshold of atleast 2 mins.
+	 * @param accessToken Access token to be validated
+	 * @returns True if access token is valid.
+	 */
+	private isValidToken(accessToken: Token | undefined): boolean {
+		const currentTime = new Date().getTime() / 1000;
+		return (accessToken !== undefined && accessToken.expiresOn !== undefined
+			&& Number(accessToken.expiresOn) - currentTime > 5 * 60); // threshold = 5 mins (matches the threshold used in MSAL dotnet)
+	}
 
 	private async _getSecurityToken(account: AzureAccount, resource: azdata.AzureResource): Promise<MultiTenantTokenResponse | undefined> {
 		void vscode.window.showInformationMessage(localize('azure.deprecatedGetSecurityToken', "A call was made to azdata.accounts.getSecurityToken, this method is deprecated and will be removed in future releases. Please use getAccountSecurityToken instead."));
 		const azureAccount = account as AzureAccount;
 		const response: MultiTenantTokenResponse = {};
 		for (const tenant of azureAccount.properties.tenants) {
-			response[tenant.id] = await this._getAccountSecurityToken(account, tenant.id, resource);
+			try {
+				response[tenant.id] = await this._getAccountSecurityToken(account, tenant.id, resource);
+			} catch (e) {
+				if (!(e instanceof TenantIgnoredError)) {
+					throw e;
+				}
+			}
 		}
 
 		return response;
@@ -254,7 +278,7 @@ export class AzureAccountProvider implements azdata.AccountProvider, vscode.Disp
 		return this.prompt();
 	}
 
-	clear(accountKey: azdata.AccountKey): Thenable<void> {
+	async clear(accountKey: azdata.AccountKey): Promise<void> {
 		return this._clear(accountKey);
 	}
 

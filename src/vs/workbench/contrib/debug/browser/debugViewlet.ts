@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
@@ -98,7 +98,7 @@ export class DebugViewPaneContainer extends ViewPaneContainer {
 			return this.startDebugActionViewItem;
 		}
 		if (action.id === FOCUS_SESSION_ID) {
-			return new FocusSessionActionViewItem(action, undefined, this.debugService, this.themeService, this.contextViewService, this.configurationService);
+			return new FocusSessionActionViewItem(action, undefined, this.debugService, this.contextViewService, this.configurationService);
 		}
 
 		if (action.id === STOP_ID || action.id === DISCONNECT_ID) {

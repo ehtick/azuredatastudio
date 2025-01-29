@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 /*eslint-env mocha*/
 
+const fs = require('fs');
+
 (function () {
-	const fs = require('fs');
 	const originals = {};
 	let logging = false;
 	let withStacks = false;
@@ -74,6 +75,22 @@ if (util.inspect && util.inspect['defaultOptions']) {
 	util.inspect['defaultOptions'].customInspect = false;
 }
 
+// VSCODE_GLOBALS: node_modules
+globalThis._VSCODE_NODE_MODULES = new Proxy(Object.create(null), { get: (_target, mod) => (require.__$__nodeRequire ?? require)(String(mod)) });
+
+// VSCODE_GLOBALS: package/product.json
+globalThis._VSCODE_PRODUCT_JSON = (require.__$__nodeRequire ?? require)('../../../product.json');
+globalThis._VSCODE_PACKAGE_JSON = (require.__$__nodeRequire ?? require)('../../../package.json');
+
+// Test file operations that are common across platforms. Used for test infra, namely snapshot tests
+Object.assign(globalThis, {
+	__readFileInTests: path => fs.promises.readFile(path, 'utf-8'),
+	__writeFileInTests: (path, contents) => fs.promises.writeFile(path, contents),
+	__readDirInTests: path => fs.promises.readdir(path),
+	__unlinkInTests: path => fs.promises.unlink(path),
+	__mkdirPInTests: path => fs.promises.mkdir(path, { recursive: true }),
+});
+
 const _tests_glob = '**/test/**/*.test.js';
 let loader;
 let _out;
@@ -86,7 +103,6 @@ function initLoader(opts) {
 	loader = require(`${_out}/vs/loader`);
 	const loaderConfig = {
 		nodeRequire: require,
-		nodeMain: __filename,
 		catchError: true,
 		baseUrl: bootstrap.fileUriFromPath(path.join(__dirname, '../../../src'), { isWindows: process.platform === 'win32' }),
 		paths: {
@@ -135,6 +151,15 @@ function loadWorkbenchTestingUtilsModule() {
 	});
 }
 
+async function loadModules(modules) {
+	for (const file of modules) {
+		mocha.suite.emit(Mocha.Suite.constants.EVENT_FILE_PRE_REQUIRE, globalThis, file, mocha);
+		const m = await new Promise((resolve, reject) => loader.require([file], resolve, reject));
+		mocha.suite.emit(Mocha.Suite.constants.EVENT_FILE_REQUIRE, m, file, mocha);
+		mocha.suite.emit(Mocha.Suite.constants.EVENT_FILE_POST_REQUIRE, globalThis, file, mocha);
+	}
+}
+
 function loadTestModules(opts) {
 
 	if (opts.run) {
@@ -144,9 +169,7 @@ function loadTestModules(opts) {
 			file = file.replace(/\.ts$/, '.js');
 			return path.relative(_out, file).replace(/\.js$/, '');
 		});
-		return new Promise((resolve, reject) => {
-			loader.require(modules, resolve, reject);
-		});
+		return loadModules(modules);
 	}
 
 	const pattern = opts.runGlob || _tests_glob;
@@ -160,11 +183,7 @@ function loadTestModules(opts) {
 			const modules = files.map(file => file.replace(/\.js$/, ''));
 			resolve(modules);
 		});
-	}).then(modules => {
-		return new Promise((resolve, reject) => {
-			loader.require(modules, resolve, reject);
-		});
-	});
+	}).then(loadModules);
 }
 
 function loadTests(opts) {
@@ -313,6 +332,7 @@ function serializeError(err) {
 	return {
 		message: err.message,
 		stack: err.stack,
+		snapshotPath: err.snapshotPath,
 		actual: safeStringify({ value: err.actual }),
 		expected: safeStringify({ value: err.expected }),
 		uncaught: err.uncaught,
@@ -382,7 +402,7 @@ function runTests(opts) {
 			}
 		}
 
-		if (!opts.debug) {
+		if (!opts.dev) {
 			mocha.reporter(IPCReporter);
 		}
 
@@ -392,7 +412,7 @@ function runTests(opts) {
 			});
 		});
 
-		if (opts.debug) {
+		if (opts.dev) {
 			runner.on('fail', (test, err) => {
 
 				console.error(test.fullTitle());

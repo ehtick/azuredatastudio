@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as should from 'should';
@@ -140,13 +140,6 @@ describe('Tests to verify utils functions', function (): void {
 		should(utils.findSqlVersionInTargetPlatform('SQL Server 2019')).equals(2019, 'invalid number returned for SQL Server 2019');
 		should(utils.findSqlVersionInTargetPlatform('Azure SQL Database')).equals(undefined, 'invalid number returned for Azure SQL Database');
 		should(utils.findSqlVersionInTargetPlatform('Azure Synapse SQL Pool')).equals(undefined, 'invalid number returned for Azure Synapse SQL Pool');
-	});
-
-	it('Should only return well known database strings when getWellKnownDatabaseSources function is called', async function (): Promise<void> {
-		const sources = ['test1', 'test2', 'test3', constants.WellKnownDatabaseSources[0]];
-
-		(utils.getWellKnownDatabaseSources(sources).length).should.equal(1);
-		(utils.getWellKnownDatabaseSources(sources)[0]).should.equal(constants.WellKnownDatabaseSources[0]);
 	});
 });
 

@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Connection, createConnection } from 'vscode-languageserver/node';
-import { startServer } from '../server';
+import { startVsCodeServer } from '../server';
 
 // Create a connection for the server.
 const connection: Connection = createConnection();
@@ -16,4 +16,4 @@ process.on('unhandledRejection', (e: any) => {
 	connection.console.error(`Unhandled exception ${e}`);
 });
 
-startServer(connection);
+startVsCodeServer(connection);

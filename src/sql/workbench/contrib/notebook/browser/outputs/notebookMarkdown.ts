@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as path from 'vs/base/common/path';
 
@@ -109,7 +109,7 @@ export class NotebookMarkdownRenderer {
 					uri.scheme === Schemas.data ||
 					uri.scheme === Schemas.attachment ||
 					uri.scheme === Schemas.vscodeFileResource)) {
-					uri = FileAccess.asBrowserUri(URI.file(href));
+					uri = FileAccess.uriToBrowserUri(URI.file(href));
 				}
 				attributes.push(`src="${uri.toString(true)}"`);
 			}

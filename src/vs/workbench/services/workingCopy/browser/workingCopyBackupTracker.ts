@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IWorkingCopyBackupService } from 'vs/workbench/services/workingCopy/common/workingCopyBackup';
@@ -32,27 +32,27 @@ export class BrowserWorkingCopyBackupTracker extends WorkingCopyBackupTracker im
 	protected onFinalBeforeShutdown(reason: ShutdownReason): boolean {
 
 		// Web: we cannot perform long running in the shutdown phase
-		// As such we need to check sync if there are any dirty working
+		// As such we need to check sync if there are any modified working
 		// copies that have not been backed up yet and then prevent the
 		// shutdown if that is the case.
 
-		const dirtyWorkingCopies = this.workingCopyService.dirtyWorkingCopies;
-		if (!dirtyWorkingCopies.length) {
-			return false; // no dirty: no veto
+		const modifiedWorkingCopies = this.workingCopyService.modifiedWorkingCopies;
+		if (!modifiedWorkingCopies.length) {
+			return false; // nothing modified: no veto
 		}
 
 		if (!this.filesConfigurationService.isHotExitEnabled) {
-			return true; // dirty without backup: veto
+			return true; // modified without backup: veto
 		}
 
-		for (const dirtyWorkingCopy of dirtyWorkingCopies) {
-			if (!this.workingCopyBackupService.hasBackupSync(dirtyWorkingCopy, this.getContentVersion(dirtyWorkingCopy))) {
+		for (const modifiedWorkingCopy of modifiedWorkingCopies) {
+			if (!this.workingCopyBackupService.hasBackupSync(modifiedWorkingCopy, this.getContentVersion(modifiedWorkingCopy))) {
 				this.logService.warn('Unload veto: pending backups');
 
-				return true; // dirty without backup: veto
+				return true; // modified without backup: veto
 			}
 		}
 
-		return false; // dirty with backups: no veto
+		return false; // modified and backed up: no veto
 	}
 }

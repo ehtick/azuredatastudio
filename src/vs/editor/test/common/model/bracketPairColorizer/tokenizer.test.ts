@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -124,7 +124,7 @@ function tokenToObj(token: Token, offset: Length, model: TextModel, keyProvider:
 	};
 }
 
-class TokenizedDocument {
+export class TokenizedDocument {
 	private readonly tokensByLine: readonly TokenInfo[][];
 	constructor(tokens: TokenInfo[]) {
 		const tokensByLine = new Array<TokenInfo[]>();
@@ -189,7 +189,7 @@ class TokenizedDocument {
 	}
 }
 
-class TokenInfo {
+export class TokenInfo {
 	constructor(
 		public readonly text: string,
 		public readonly languageId: LanguageId,

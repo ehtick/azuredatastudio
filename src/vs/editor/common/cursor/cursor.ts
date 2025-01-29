@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { onUnexpectedError } from 'vs/base/common/errors';
@@ -23,8 +23,6 @@ import { ICoordinatesConverter } from 'vs/editor/common/viewModel';
 import { CursorStateChangedEvent, ViewModelEventsCollector } from 'vs/editor/common/viewModelEventDispatcher';
 
 export class CursorsController extends Disposable {
-
-	public static readonly MAX_CURSOR_COUNT = 10000;
 
 	private readonly _model: ITextModel;
 	private _knownModelVersionId: number;
@@ -117,8 +115,9 @@ export class CursorsController extends Disposable {
 
 	public setStates(eventsCollector: ViewModelEventsCollector, source: string | null | undefined, reason: CursorChangeReason, states: PartialCursorState[] | null): boolean {
 		let reachedMaxCursorCount = false;
-		if (states !== null && states.length > CursorsController.MAX_CURSOR_COUNT) {
-			states = states.slice(0, CursorsController.MAX_CURSOR_COUNT);
+		const multiCursorLimit = this.context.cursorConfig.multiCursorLimit;
+		if (states !== null && states.length > multiCursorLimit) {
+			states = states.slice(0, multiCursorLimit);
 			reachedMaxCursorCount = true;
 		}
 
@@ -403,7 +402,7 @@ export class CursorsController extends Disposable {
 		const viewSelections = this._cursors.getViewSelections();
 
 		// Let the view get the event first.
-		eventsCollector.emitViewEvent(new ViewCursorStateChangedEvent(viewSelections, selections));
+		eventsCollector.emitViewEvent(new ViewCursorStateChangedEvent(viewSelections, selections, reason));
 
 		// Only after the view has been notified, let the rest of the world know...
 		if (!oldState

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
@@ -14,22 +14,23 @@ import { AzureResourceAccountTreeNode } from './accountTreeNode';
 import { AzureResourceAccountNotSignedInTreeNode } from './accountNotSignedInTreeNode';
 import { AzureResourceMessageTreeNode } from '../messageTreeNode';
 import { AzureResourceContainerTreeNodeBase } from './baseTreeNodes';
-import { AzureResourceErrorMessageUtil, equals, filterAccounts } from '../utils';
+import { AzureResourceErrorMessageUtil, equals } from '../utils';
 import { IAzureResourceTreeChangeHandler } from './treeChangeHandler';
 import { AzureAccount } from 'azurecore';
 
-export class AzureResourceTreeProvider implements vscode.TreeDataProvider<TreeNode>, IAzureResourceTreeChangeHandler {
+export class AzureResourceTreeProvider extends vscode.Disposable implements vscode.TreeDataProvider<TreeNode>, IAzureResourceTreeChangeHandler {
 	public isSystemInitialized: boolean = false;
-
 	private accounts: AzureAccount[] = [];
 	private _onDidChangeTreeData = new vscode.EventEmitter<TreeNode | undefined>();
 	private loadingAccountsPromise: Promise<void> | undefined;
 
-	public constructor(private readonly appContext: AppContext,
-		private readonly authLibrary: string) {
+	public constructor(private readonly appContext: AppContext) {
+		super(() => {
+			this._onDidChangeTreeData.dispose();
+		});
 		azdata.accounts.onDidChangeAccounts(async (e: azdata.DidChangeAccountsParams) => {
 			// This event sends it per provider, we need to make sure we get all the azure related accounts
-			let accounts = filterAccounts(await azdata.accounts.getAllAccounts(), authLibrary);
+			let accounts = await azdata.accounts.getAllAccounts();
 			accounts = accounts.filter(a => a.key.providerId.startsWith('azure'));
 			// the onDidChangeAccounts event will trigger in many cases where the accounts didn't actually change
 			// the notifyNodeChanged event triggers a refresh which triggers a getChildren which can trigger this callback
@@ -44,7 +45,7 @@ export class AzureResourceTreeProvider implements vscode.TreeDataProvider<TreeNo
 
 	public async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (element) {
-			return element.getChildren(true);
+			return element.getChildren();
 		}
 
 		if (!this.isSystemInitialized) {
@@ -55,11 +56,14 @@ export class AzureResourceTreeProvider implements vscode.TreeDataProvider<TreeNo
 		}
 
 		try {
-			if (this.accounts && this.accounts.length > 0) {
-				this.accounts = filterAccounts(this.accounts, this.authLibrary);
-				return this.accounts.map((account) => new AzureResourceAccountTreeNode(account, this.appContext, this));
+			if (this.accounts) {
+				if (this.accounts.length === 0) {
+					return [new AzureResourceAccountNotSignedInTreeNode()];
+				} else {
+					return this.accounts.map((account) => new AzureResourceAccountTreeNode(account, this.appContext, this));
+				}
 			} else {
-				return [new AzureResourceAccountNotSignedInTreeNode()];
+				return [AzureResourceMessageTreeNode.create(localize('azure.resource.tree.treeProvider.loadingLabel', "Loading ..."), undefined)];
 			}
 		} catch (error) {
 			return [AzureResourceMessageTreeNode.create(AzureResourceErrorMessageUtil.getErrorMessage(error), undefined)];
@@ -68,10 +72,10 @@ export class AzureResourceTreeProvider implements vscode.TreeDataProvider<TreeNo
 
 	private async loadAccounts(): Promise<void> {
 		try {
-			this.accounts = filterAccounts(await azdata.accounts.getAllAccounts(), this.authLibrary);
+			this.accounts = await azdata.accounts.getAllAccounts();
 			// System has been initialized
 			this.setSystemInitialized();
-			this._onDidChangeTreeData.fire(undefined);
+			this.notifyNodeChanged(undefined);
 		} catch (err) {
 			// Skip for now, we can assume that the accounts changed event will eventually notify instead
 			this.isSystemInitialized = false;
@@ -97,7 +101,7 @@ export class AzureResourceTreeProvider implements vscode.TreeDataProvider<TreeNo
 				node.clearCache();
 			}
 		}
-		this._onDidChangeTreeData.fire(node);
+		this.notifyNodeChanged(node);
 	}
 
 	public getTreeItem(element: TreeNode): vscode.TreeItem | Thenable<vscode.TreeItem> {

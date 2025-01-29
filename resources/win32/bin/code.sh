@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 #
 # Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the Source EULA. See License.txt in the project root for license information.
+# Licensed under the MIT License. See License.txt in the project root for license information.
 if [ "$VSCODE_WSL_DEBUG_INFO" = true ]; then
 	set -x
 fi
@@ -43,7 +43,7 @@ if [ $IN_WSL = true ]; then
 	# use the Remote WSL extension if installed
 	WSL_EXT_ID="ms-vscode-remote.remote-wsl"
 
-	ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" --ms-enable-electron-run-as-node --locate-extension $WSL_EXT_ID >/tmp/remote-wsl-loc.txt 2>/dev/null </dev/null
+	ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" --locate-extension $WSL_EXT_ID >/tmp/remote-wsl-loc.txt 2>/dev/null </dev/null
 	WSL_EXT_WLOC=$(cat /tmp/remote-wsl-loc.txt)
 
 	if [ -n "$WSL_EXT_WLOC" ]; then
@@ -58,5 +58,5 @@ elif [ -x "$(command -v cygpath)" ]; then
 else
 	CLI="$VSCODE_PATH/resources/app/out/cli.js"
 fi
-ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" --ms-enable-electron-run-as-node "$@"
+ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" "$@"
 exit $?

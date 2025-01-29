@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { AstNode, AstNodeKind, ListAstNode } from './ast';
@@ -108,7 +108,7 @@ function concat(node1: AstNode, node2: AstNode): AstNode {
 function append(list: ListAstNode, nodeToAppend: AstNode): AstNode {
 	list = list.toMutable() as ListAstNode;
 	let curNode: AstNode = list;
-	const parents = new Array<ListAstNode>();
+	const parents: ListAstNode[] = [];
 	let nodeToAppendOfCorrectHeight: AstNode | undefined;
 	while (true) {
 		// assert nodeToInsert.listHeight <= curNode.listHeight
@@ -157,7 +157,7 @@ function append(list: ListAstNode, nodeToAppend: AstNode): AstNode {
 function prepend(list: ListAstNode, nodeToAppend: AstNode): AstNode {
 	list = list.toMutable() as ListAstNode;
 	let curNode: AstNode = list;
-	const parents = new Array<ListAstNode>();
+	const parents: ListAstNode[] = [];
 	// assert nodeToInsert.listHeight <= curNode.listHeight
 	while (nodeToAppend.listHeight !== curNode.listHeight) {
 		// assert 0 <= nodeToInsert.listHeight < curNode.listHeight

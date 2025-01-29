@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { VSBufferReadableStream } from 'vs/base/common/buffer';
@@ -9,7 +9,7 @@ import { isUNC } from 'vs/base/common/extpath';
 import { Schemas } from 'vs/base/common/network';
 import { normalize, sep } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
-import { FileOperationError, FileOperationResult, IFileService } from 'vs/platform/files/common/files';
+import { FileOperationError, FileOperationResult, IFileService, IWriteFileOptions } from 'vs/platform/files/common/files';
 import { ILogService } from 'vs/platform/log/common/log';
 import { getWebviewContentMimeType } from 'vs/platform/webview/common/mimeTypes';
 
@@ -73,7 +73,7 @@ export async function loadLocalResource(
 
 			// NotModified status is expected and can be handled gracefully
 			if (result === FileOperationResult.FILE_NOT_MODIFIED_SINCE) {
-				return new WebviewResourceResponse.NotModified(mime, err.options?.mtime);
+				return new WebviewResourceResponse.NotModified(mime, (err.options as IWriteFileOptions | undefined)?.mtime);
 			}
 		}
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as TypeMoq from 'typemoq';
@@ -29,6 +29,9 @@ import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { TestTreeView } from 'sql/workbench/services/connection/test/browser/testTreeView';
 import { ConnectionTreeService, IConnectionTreeService } from 'sql/workbench/services/connection/common/connectionTreeService';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { Emitter } from 'vs/base/common/event';
+import { ConnectionProfile } from 'sql/platform/connection/common/connectionProfile';
+
 suite('ConnectionDialogWidget tests', () => {
 	const testTreeViewId = 'testTreeView';
 	const ViewsRegistry = Registry.as<IViewsRegistry>(Extensions.ViewsRegistry);
@@ -66,6 +69,7 @@ suite('ConnectionDialogWidget tests', () => {
 		mockConnectionManagementService.setup(x => x.isConnected(undefined, TypeMoq.It.isAny())).returns(() => true);
 		mockConnectionManagementService.setup(x => x.getConnectionIconId(TypeMoq.It.isAnyString())).returns(() => '');
 		mockConnectionManagementService.setup(x => x.getProviderProperties(TypeMoq.It.isAnyString())).returns(() => undefined);
+		mockConnectionManagementService.setup(x => x.onRecentConnectionProfileDeleted).returns(() => new Emitter<ConnectionProfile>().event);
 		cmInstantiationService.stub(IConnectionManagementService, mockConnectionManagementService.object);
 		let providerDisplayNames = ['Mock SQL Server'];
 		let providerNameToDisplayMap = { 'MSSQL': 'Mock SQL Server' };

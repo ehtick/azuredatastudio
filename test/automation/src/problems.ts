@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Code } from './code';
@@ -33,7 +33,7 @@ export class Problems {
 
 	static getSelectorInProblemsView(problemType: ProblemSeverity): string {
 		const selector = problemType === ProblemSeverity.WARNING ? 'codicon-warning' : 'codicon-error';
-		return `div[id="workbench.panel.markers"] .monaco-tl-contents .marker-icon.${selector}`;
+		return `div[id="workbench.panel.markers"] .monaco-tl-contents .marker-icon .${selector}`;
 	}
 
 	static getSelectorInEditor(problemType: ProblemSeverity): string {

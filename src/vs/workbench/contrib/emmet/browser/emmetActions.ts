@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { EditorAction, ServicesAccessor, IActionOptions } from 'vs/editor/browser/editorExtensions';
@@ -42,7 +42,7 @@ class GrammarContributions implements IGrammarContributions {
 	}
 }
 
-export interface IEmmetActionOptions extends IActionOptions {
+interface IEmmetActionOptions extends IActionOptions {
 	actionName: string;
 }
 

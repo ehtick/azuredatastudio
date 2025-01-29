@@ -1,19 +1,18 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { Codicon } from 'vs/base/common/codicons';
-import { Color } from 'vs/base/common/color';
 import * as nls from 'vs/nls';
 
 export interface IFindInputToggleOpts {
 	readonly appendTitle: string;
 	readonly isChecked: boolean;
-	readonly inputActiveOptionBorder?: Color;
-	readonly inputActiveOptionForeground?: Color;
-	readonly inputActiveOptionBackground?: Color;
+	readonly inputActiveOptionBorder: string | undefined;
+	readonly inputActiveOptionForeground: string | undefined;
+	readonly inputActiveOptionBackground: string | undefined;
 }
 
 const NLS_CASE_SENSITIVE_TOGGLE_LABEL = nls.localize('caseDescription', "Match Case");

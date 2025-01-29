@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -160,8 +160,8 @@ suite('TokenizationSupport2Adapter', () => {
 				new Token(0, 'bar', languageId),
 			],
 			[
-				0, (0 << MetadataConsts.FOREGROUND_OFFSET),
-				0, (1 << MetadataConsts.FOREGROUND_OFFSET)
+				0, (0 << MetadataConsts.FOREGROUND_OFFSET) | MetadataConsts.BALANCED_BRACKETS_MASK,
+				0, (1 << MetadataConsts.FOREGROUND_OFFSET) | MetadataConsts.BALANCED_BRACKETS_MASK
 			]
 		);
 	});
@@ -179,9 +179,9 @@ suite('TokenizationSupport2Adapter', () => {
 				new Token(5, 'foo', languageId),
 			],
 			[
-				0, (0 << MetadataConsts.FOREGROUND_OFFSET),
-				5, (1 << MetadataConsts.FOREGROUND_OFFSET),
-				5, (2 << MetadataConsts.FOREGROUND_OFFSET)
+				0, (0 << MetadataConsts.FOREGROUND_OFFSET) | MetadataConsts.BALANCED_BRACKETS_MASK,
+				5, (1 << MetadataConsts.FOREGROUND_OFFSET) | MetadataConsts.BALANCED_BRACKETS_MASK,
+				5, (2 << MetadataConsts.FOREGROUND_OFFSET) | MetadataConsts.BALANCED_BRACKETS_MASK
 			]
 		);
 	});

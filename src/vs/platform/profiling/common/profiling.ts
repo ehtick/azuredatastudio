@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { basename, isAbsolute, join } from 'vs/base/common/path';
@@ -45,10 +45,14 @@ export interface IV8InspectProfilingService {
 
 export namespace Utils {
 
+	export function isValidProfile(profile: IV8Profile): profile is Required<IV8Profile> {
+		return Boolean(profile.samples && profile.timeDeltas);
+	}
+
 	export function rewriteAbsolutePaths(profile: IV8Profile, replace: string = 'noAbsolutePaths') {
 		for (const node of profile.nodes) {
 			if (node.callFrame && node.callFrame.url) {
-				if (isAbsolute(node.callFrame.url) || /^\w[\w\d+.-]*:\/\/\//.test(node.callFrame.url)) {
+				if (isAbsolute(node.callFrame.url) || /^\w[\w\d+.-]*:\/\/\/?/.test(node.callFrame.url)) {
 					node.callFrame.url = join(replace, basename(node.callFrame.url));
 				}
 			}

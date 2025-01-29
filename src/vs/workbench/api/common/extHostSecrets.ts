@@ -1,11 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+
+/* eslint-disable local/code-no-native-private */
 
 import type * as vscode from 'vscode';
 
-import { ExtHostSecretState } from 'vs/workbench/api/common/exHostSecretState';
+import { ExtHostSecretState } from 'vs/workbench/api/common/extHostSecretState';
 import { ExtensionIdentifier, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { Emitter, Event } from 'vs/base/common/event';
 

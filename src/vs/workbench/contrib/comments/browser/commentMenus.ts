@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from 'vs/base/common/lifecycle';
@@ -23,12 +23,24 @@ export class CommentMenus implements IDisposable {
 		return this.getMenu(MenuId.CommentThreadActions, contextKeyService);
 	}
 
+	getCommentEditorActions(contextKeyService: IContextKeyService): IMenu {
+		return this.getMenu(MenuId.CommentEditorActions, contextKeyService);
+	}
+
+	getCommentThreadAdditionalActions(contextKeyService: IContextKeyService): IMenu {
+		return this.getMenu(MenuId.CommentThreadAdditionalActions, contextKeyService);
+	}
+
 	getCommentTitleActions(comment: Comment, contextKeyService: IContextKeyService): IMenu {
 		return this.getMenu(MenuId.CommentTitle, contextKeyService);
 	}
 
 	getCommentActions(comment: Comment, contextKeyService: IContextKeyService): IMenu {
 		return this.getMenu(MenuId.CommentActions, contextKeyService);
+	}
+
+	getCommentThreadTitleContextActions(contextKeyService: IContextKeyService): IMenu {
+		return this.getMenu(MenuId.CommentThreadTitleContext, contextKeyService);
 	}
 
 	private getMenu(menuId: MenuId, contextKeyService: IContextKeyService): IMenu {

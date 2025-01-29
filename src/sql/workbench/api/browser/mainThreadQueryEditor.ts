@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ExtHostQueryEditorShape, MainThreadQueryEditorShape } from 'sql/workbench/api/common/sqlExtHost.protocol';
@@ -144,7 +144,7 @@ export class MainThreadQueryEditor extends Disposable implements MainThreadQuery
 	}
 
 	public async $createQueryDocument(options?: { content?: string }, providerId?: string): Promise<URI> {
-		const queryInput = await this._queryEditorService.newSqlEditor({ initalContent: options.content }, providerId);
+		const queryInput = await this._queryEditorService.newSqlEditor({ initialContent: options.content }, providerId);
 		return queryInput.resource;
 	}
 }

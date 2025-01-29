@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { MigrationWizardPage } from '../models/migrationWizardPage';
 import { MigrationMode, MigrationStateModel, NetworkContainerType, NetworkShare, StateChangeEvent } from '../models/stateMachine';
 import * as constants from '../constants/strings';
-import { createHeadingTextComponent, createInformationRow, createLabelTextComponent } from './wizardController';
+import { WizardController, createHeadingTextComponent, createInformationRow, createLabelTextComponent } from './wizardController';
 import { getResourceGroupFromId } from '../api/azure';
 import { TargetDatabaseSummaryDialog } from '../dialog/targetDatabaseSummary/targetDatabaseSummaryDialog';
 import * as styles from '../constants/styles';
@@ -19,7 +19,7 @@ export class SummaryPage extends MigrationWizardPage {
 	private _flexContainer!: azdata.FlexContainer;
 	private _disposables: vscode.Disposable[] = [];
 
-	constructor(wizard: azdata.window.Wizard, migrationStateModel: MigrationStateModel) {
+	constructor(wizard: azdata.window.Wizard, migrationStateModel: MigrationStateModel, private wizardController: WizardController) {
 		super(wizard, azdata.window.createWizardPage(constants.SUMMARY_PAGE_TITLE), migrationStateModel);
 	}
 
@@ -41,6 +41,11 @@ export class SummaryPage extends MigrationWizardPage {
 	}
 
 	public async onPageEnter(pageChangeInfo: azdata.window.WizardPageChangeInfo): Promise<void> {
+		this.wizardController.cancelReasonsList([
+			constants.WIZARD_CANCEL_REASON_CONTINUE_WITH_MIGRATION_LATER,
+			constants.WIZARD_CANCEL_REASON_WAITING_FOR_DOWNTIME_WINDOW
+		]);
+
 		this.wizard.registerNavigationValidator(pageChangeInfo => true);
 
 		const targetDatabaseSummary = new TargetDatabaseSummaryDialog(this.migrationStateModel);
@@ -100,8 +105,7 @@ export class SummaryPage extends MigrationWizardPage {
 				createInformationRow(
 					this._view,
 					constants.LOCATION,
-					await this.migrationStateModel.getLocationDisplayName(
-						this.migrationStateModel._targetServerInstance.location)),
+					this.migrationStateModel._location.displayName),
 				createInformationRow(
 					this._view,
 					constants.RESOURCE_GROUP,
@@ -140,16 +144,15 @@ export class SummaryPage extends MigrationWizardPage {
 				constants.IR_PAGE_TITLE),
 			createInformationRow(
 				this._view, constants.SUBSCRIPTION,
-				this.migrationStateModel._targetSubscription.name),
+				this.migrationStateModel._sqlMigrationServiceSubscription.name),
 			createInformationRow(
 				this._view,
 				constants.LOCATION,
-				await this.migrationStateModel.getLocationDisplayName(
-					this.migrationStateModel._sqlMigrationService?.location!)),
+				this.migrationStateModel._location.displayName),
 			createInformationRow(
 				this._view,
 				constants.RESOURCE_GROUP,
-				this.migrationStateModel._sqlMigrationService?.properties?.resourceGroup!),
+				this.migrationStateModel._sqlMigrationServiceResourceGroup.name),
 			createInformationRow(
 				this._view,
 				constants.IR_PAGE_TITLE,

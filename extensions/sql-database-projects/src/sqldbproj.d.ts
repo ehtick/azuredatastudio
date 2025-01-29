@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'sqldbproj' {
@@ -104,7 +104,8 @@ declare module 'sqldbproj' {
 		externalStreamingJob = 'externalStreamingJob',
 		folder = 'folder',
 		preDeployScript = 'preDeployScript',
-		postDeployScript = 'postDeployScript'
+		postDeployScript = 'postDeployScript',
+		publishProfile = 'publishProfile'
 	}
 
 	/**
@@ -153,6 +154,12 @@ declare module 'sqldbproj' {
 		addPostDeploymentScript(relativePath: string): Promise<void>;
 
 		/**
+		 * Adds a none item that is not included in "Build"
+		 * @param relativePath
+		 */
+		addNoneItem(relativePath: string): Promise<void>;
+
+		/**
 		 * Add a SQL object script that will be included in the schema
 		 * @param relativePath
 		 */
@@ -186,6 +193,11 @@ declare module 'sqldbproj' {
 		 * @param defaultValue
 		 */
 		addSqlCmdVariable(name: string, defaultValue: string): Promise<void>;
+
+		/**
+		 * Gets an array of all database sources specified in the project.
+		 */
+		getDatabaseSourceValues(): string[];
 
 		/**
 		 * Appends given database source to the DatabaseSource property element.
@@ -241,9 +253,9 @@ declare module 'sqldbproj' {
 		readonly projectFileName: string;
 
 		/**
-		 * Files and folders that are included in the project
+		 * SQL object scripts in this project
 		 */
-		readonly files: IFileProjectEntry[];
+		readonly sqlObjectScripts: IFileProjectEntry[];
 
 		/**
 		 * SqlCmd variables and their values
@@ -309,7 +321,10 @@ declare module 'sqldbproj' {
 		sqlServer2022 = 'SQL Server 2022',
 		sqlAzure = 'Azure SQL Database',
 		sqlDW = 'Azure Synapse SQL Pool',
-		sqlEdge = 'Azure SQL Edge'
+		sqlEdge = 'Azure SQL Edge',
+		sqlDwServerless = 'Azure Synapse Serverless SQL Pool',
+		sqlDwUnified = 'Synapse Data Warehouse in Microsoft Fabric',
+		sqlDbFabric = 'Fabric Mirrored SQL Database (Preview)'
 	}
 
 	export interface ISqlConnectionProperties {

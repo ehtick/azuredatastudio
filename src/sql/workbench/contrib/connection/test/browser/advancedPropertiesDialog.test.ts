@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { OptionsDialog } from 'sql/workbench/browser/modal/optionsDialog';
@@ -25,6 +25,8 @@ suite('Advanced properties dialog tests', () => {
 				groupName: 'a',
 				categoryValues: undefined,
 				defaultValue: undefined,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: null,
@@ -37,6 +39,8 @@ suite('Advanced properties dialog tests', () => {
 				groupName: 'b',
 				categoryValues: undefined,
 				defaultValue: undefined,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: null,
@@ -49,6 +53,8 @@ suite('Advanced properties dialog tests', () => {
 				groupName: undefined,
 				categoryValues: undefined,
 				defaultValue: undefined,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: null,
@@ -61,6 +67,8 @@ suite('Advanced properties dialog tests', () => {
 				groupName: 'a',
 				categoryValues: undefined,
 				defaultValue: undefined,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: null,
@@ -73,6 +81,8 @@ suite('Advanced properties dialog tests', () => {
 				groupName: 'b',
 				categoryValues: undefined,
 				defaultValue: undefined,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: null,

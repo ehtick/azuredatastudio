@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -46,8 +46,8 @@ suite('TextAreaInput', () => {
 			getDataToCopy: function (): ClipboardDataToCopy {
 				throw new Error('Function not implemented.');
 			},
-			getScreenReaderContent: function (currentState: TextAreaState): TextAreaState {
-				return new TextAreaState('', 0, 0, null, null);
+			getScreenReaderContent: function (): TextAreaState {
+				return new TextAreaState('', 0, 0, null, undefined);
 			},
 			deduceModelPosition: function (viewAnchorPosition: Position, deltaOffset: number, lineFeedCnt: number): Position {
 				throw new Error('Function not implemented.');
@@ -127,6 +127,7 @@ suite('TextAreaInput', () => {
 						metaKey: event.metaKey,
 						repeat: event.repeat,
 						shiftKey: event.shiftKey,
+						getModifierState: (keyArg: string) => false
 					};
 					if (event.type === 'keydown') {
 						this._onKeyDown.fire(mockEvent);

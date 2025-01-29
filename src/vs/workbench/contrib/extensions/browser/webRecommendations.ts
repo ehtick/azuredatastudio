@@ -1,12 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { ExtensionRecommendations, ExtensionRecommendation } from 'vs/workbench/contrib/extensions/browser/extensionRecommendations';
 import { IProductService } from 'vs/platform/product/common/productService';
 import { ExtensionRecommendationReason } from 'vs/workbench/services/extensionRecommendations/common/extensionRecommendations';
-import { isArray } from 'vs/base/common/types';
 import { localize } from 'vs/nls';
 import { IExtensionManagementServerService } from 'vs/workbench/services/extensionManagement/common/extensionManagement';
 
@@ -24,7 +23,7 @@ export class WebRecommendations extends ExtensionRecommendations {
 
 	protected async doActivate(): Promise<void> {
 		const isOnlyWeb = this.extensionManagementServerService.webExtensionManagementServer && !this.extensionManagementServerService.localExtensionManagementServer && !this.extensionManagementServerService.remoteExtensionManagementServer;
-		if (isOnlyWeb && isArray(this.productService.webExtensionTips)) {
+		if (isOnlyWeb && Array.isArray(this.productService.webExtensionTips)) {
 			this._recommendations = this.productService.webExtensionTips.map(extensionId => (<ExtensionRecommendation>{
 				extensionId: extensionId.toLowerCase(),
 				reason: {

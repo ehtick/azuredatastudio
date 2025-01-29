@@ -1,19 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter } from 'vs/base/common/event';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
+import { IOutlineViewState, OutlineSortOrder } from 'vs/workbench/contrib/outline/browser/outline';
 
-
-export const enum OutlineSortOrder {
-	ByPosition,
-	ByName,
-	ByKind
-}
-
-export class OutlineViewState {
+export class OutlineViewState implements IOutlineViewState {
 
 	private _followCursor = false;
 	private _filterOnType = true;
@@ -64,7 +58,7 @@ export class OutlineViewState {
 			followCursor: this.followCursor,
 			sortBy: this.sortBy,
 			filterOnType: this.filterOnType,
-		}), StorageScope.WORKSPACE, StorageTarget.USER);
+		}), StorageScope.WORKSPACE, StorageTarget.MACHINE);
 	}
 
 	restore(storageService: IStorageService): void {

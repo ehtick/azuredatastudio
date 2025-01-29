@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IRelativePattern, match as matchGlobPattern } from 'vs/base/common/glob';
@@ -17,6 +17,11 @@ export interface LanguageFilter {
 	 */
 	readonly hasAccessToAllModels?: boolean;
 	readonly exclusive?: boolean;
+
+	/**
+	 * This provider comes from a builtin extension.
+	 */
+	readonly isBuiltin?: boolean;
 }
 
 export type LanguageSelector = string | LanguageFilter | ReadonlyArray<string | LanguageFilter>;

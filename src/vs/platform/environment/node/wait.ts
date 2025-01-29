@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { randomPath } from 'vs/base/common/extpath';
 
-export function createWaitMarkerFile(verbose?: boolean): string | undefined {
+export function createWaitMarkerFileSync(verbose?: boolean): string | undefined {
 	const randomWaitMarkerPath = randomPath(tmpdir());
 
 	try {

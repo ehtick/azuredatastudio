@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IIntegrityService, IntegrityTestResult } from 'vs/workbench/services/integrity/common/integrity';
-import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 
 export class IntegrityService implements IIntegrityService {
 
@@ -15,4 +15,4 @@ export class IntegrityService implements IIntegrityService {
 	}
 }
 
-registerSingleton(IIntegrityService, IntegrityService, true);
+registerSingleton(IIntegrityService, IntegrityService, InstantiationType.Delayed);

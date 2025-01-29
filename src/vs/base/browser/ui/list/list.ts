@@ -1,10 +1,11 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IDragAndDropData } from 'vs/base/browser/dnd';
 import { IKeyboardEvent } from 'vs/base/browser/keyboardEvent';
+import { IMouseEvent } from 'vs/base/browser/mouseEvent';
 import { GestureEvent } from 'vs/base/browser/touch';
 
 export interface IListVirtualDelegate<T> {
@@ -24,40 +25,44 @@ export interface IListRenderer<T, TTemplateData> {
 }
 
 export interface IListEvent<T> {
-	elements: T[];
-	indexes: number[];
-	browserEvent?: UIEvent;
+	readonly elements: readonly T[];
+	readonly indexes: readonly number[];
+	readonly browserEvent?: UIEvent;
+}
+
+export interface IListBrowserMouseEvent extends MouseEvent {
+	isHandledByList?: boolean;
 }
 
 export interface IListMouseEvent<T> {
-	browserEvent: MouseEvent;
-	element: T | undefined;
-	index: number | undefined;
+	readonly browserEvent: IListBrowserMouseEvent;
+	readonly element: T | undefined;
+	readonly index: number | undefined;
 }
 
 export interface IListTouchEvent<T> {
-	browserEvent: TouchEvent;
-	element: T | undefined;
-	index: number | undefined;
+	readonly browserEvent: TouchEvent;
+	readonly element: T | undefined;
+	readonly index: number | undefined;
 }
 
 export interface IListGestureEvent<T> {
-	browserEvent: GestureEvent;
-	element: T | undefined;
-	index: number | undefined;
+	readonly browserEvent: GestureEvent;
+	readonly element: T | undefined;
+	readonly index: number | undefined;
 }
 
 export interface IListDragEvent<T> {
-	browserEvent: DragEvent;
-	element: T | undefined;
-	index: number | undefined;
+	readonly browserEvent: DragEvent;
+	readonly element: T | undefined;
+	readonly index: number | undefined;
 }
 
 export interface IListContextMenuEvent<T> {
-	browserEvent: UIEvent;
-	element: T | undefined;
-	index: number | undefined;
-	anchor: HTMLElement | { x: number; y: number };
+	readonly browserEvent: UIEvent;
+	readonly element: T | undefined;
+	readonly index: number | undefined;
+	readonly anchor: HTMLElement | IMouseEvent;
 }
 
 export interface IIdentityProvider<T> {

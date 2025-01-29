@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -13,6 +13,7 @@ import { IDialogService, IConfirmation } from 'vs/platform/dialogs/common/dialog
 import { INotificationService } from 'vs/platform/notification/common/notification';
 import Severity from 'vs/base/common/severity';
 import { ILogService } from 'vs/platform/log/common/log';
+import { IAuthenticationService } from 'vs/workbench/services/authentication/common/authentication';
 
 /**
  * Actions to add a new account
@@ -40,9 +41,9 @@ export class AddAccountAction extends Action {
 		super(AddAccountAction.ID, AddAccountAction.LABEL);
 		this.class = 'add-linked-account-action';
 
-		this._addAccountCompleteEmitter = new Emitter<void>();
-		this._addAccountErrorEmitter = new Emitter<string>();
-		this._addAccountStartEmitter = new Emitter<void>();
+		this._addAccountCompleteEmitter = this._register(new Emitter<void>());
+		this._addAccountErrorEmitter = this._register(new Emitter<string>());
+		this._addAccountStartEmitter = this._register(new Emitter<void>());
 	}
 
 	public override async run(): Promise<void> {
@@ -50,7 +51,12 @@ export class AddAccountAction extends Action {
 		// Fire the event that we've started adding accounts
 		this._addAccountStartEmitter.fire();
 		try {
-			await this._accountManagementService.addAccount(this._providerId);
+			if (!this._providerId) {
+				let providerId = await this._accountManagementService.promptProvider();
+				await this._accountManagementService.addAccount(providerId);
+			} else {
+				await this._accountManagementService.addAccount(this._providerId);
+			}
 			this._addAccountCompleteEmitter.fire();
 		} catch (err) {
 			this.logService.error(`Error while adding account: ${err}`);
@@ -81,7 +87,7 @@ export class RemoveAccountAction extends Action {
 		const confirm: IConfirmation = {
 			message: localize('confirmRemoveUserAccountMessage', "Are you sure you want to remove '{0}'?", this._account.displayInfo.displayName),
 			primaryButton: localize('accountActions.yes', "Yes"),
-			secondaryButton: localize('accountActions.no', "No"),
+			cancelButton: localize('accountActions.no', "No"),
 			type: 'question'
 		};
 
@@ -123,7 +129,7 @@ export class ApplyFilterAction extends Action {
  */
 export class RefreshAccountAction extends Action {
 	public static ID = 'account.refresh';
-	public static LABEL = localize('refreshAccount', "Reenter your credentials");
+	public static LABEL = localize('refreshAccount', "Refresh your credentials");
 	public account?: azdata.Account;
 
 	constructor(
@@ -143,5 +149,32 @@ export class RefreshAccountAction extends Action {
 			const errorMessage = localize('NoAccountToRefresh', "There is no account to refresh");
 			throw new Error(errorMessage);
 		}
+	}
+}
+
+/**
+ * Action to sign out of GitHub Copilot account
+ */
+export class GitHubCopilotSignOutAction extends Action {
+	public static ID = 'account.github.copilot.sign.out';
+	public static LABEL = localize('githubCopilotSignOut', "Sign out of GitHub Copilot");
+
+	constructor(
+		private _account: azdata.Account,
+		@IAccountManagementService private readonly _accountManagementService: IAccountManagementService,
+		@IAuthenticationService private readonly authenticationService: IAuthenticationService
+	) {
+		super(GitHubCopilotSignOutAction.ID, GitHubCopilotSignOutAction.LABEL, 'remove-account-action codicon remove');
+	}
+
+	public override async run(): Promise<void> {
+		this.authenticationService.onDidChangeSessions(async () => {
+			await this._accountManagementService.updateAccountListAuthSessions(this._account);
+		});
+
+		const providerId = this._account.key.providerId;
+		const allSessions = await this.authenticationService.getSessions(providerId);
+		const sessionsForAccount = allSessions.filter(s => s.account.label === this._account.displayInfo.userId);
+		await this.authenticationService.removeAccountSessions(providerId, this._account.displayInfo.userId, sessionsForAccount);
 	}
 }

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -12,6 +12,7 @@ import { ILabelService } from 'vs/platform/label/common/label';
 import { IFileService } from 'vs/platform/files/common/files';
 import { EditorInputCapabilities, Verbosity } from 'vs/workbench/common/editor';
 import { DisposableStore } from 'vs/base/common/lifecycle';
+import { IFilesConfigurationService } from 'vs/workbench/services/filesConfiguration/common/filesConfigurationService';
 
 suite('ResourceEditorInput', () => {
 
@@ -25,9 +26,10 @@ suite('ResourceEditorInput', () => {
 		constructor(
 			resource: URI,
 			@ILabelService labelService: ILabelService,
-			@IFileService fileService: IFileService
+			@IFileService fileService: IFileService,
+			@IFilesConfigurationService filesConfigurationService: IFilesConfigurationService
 		) {
-			super(resource, resource, labelService, fileService);
+			super(resource, resource, labelService, fileService, filesConfigurationService);
 		}
 	}
 
@@ -56,6 +58,7 @@ suite('ResourceEditorInput', () => {
 		assert.ok(input.getTitle(Verbosity.LONG).length > 0);
 
 		assert.strictEqual(input.hasCapability(EditorInputCapabilities.Readonly), false);
+		assert.strictEqual(input.isReadonly(), false);
 		assert.strictEqual(input.hasCapability(EditorInputCapabilities.Untitled), true);
 	});
 });

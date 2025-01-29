@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as should from 'should';
@@ -88,7 +88,7 @@ describe('Publish Database Dialog', () => {
 				['BackupDatabaseName', 'MyBackupDatabase']
 			]),
 			deploymentOptions: mockDacFxOptionsResult.deploymentOptions,
-			profileUsed: false
+			publishProfileUri: undefined
 		};
 
 		dialog.object.publish = (_, prof) => { profile = prof; };
@@ -105,7 +105,7 @@ describe('Publish Database Dialog', () => {
 				['BackupDatabaseName', 'MyBackupDatabase']
 			]),
 			deploymentOptions: mockDacFxOptionsResult.deploymentOptions,
-			profileUsed: false
+			publishProfileUri: undefined
 		};
 
 		dialog.object.generateScript = (_, prof) => { profile = prof; };
@@ -116,12 +116,12 @@ describe('Publish Database Dialog', () => {
 		const expectedContainerPublishProfile: IPublishToDockerSettings = {
 			dockerSettings: {
 				dbName: 'MockDatabaseName',
-				dockerBaseImage: '',
+				dockerBaseImage: 'mcr.microsoft.com/mssql/server',
 				password: '',
 				port: 1433,
 				serverName: 'localhost',
 				userName: 'sa',
-				dockerBaseImageEula: ''
+				dockerBaseImageEula: 'https://aka.ms/mcr/osslegalnotice'
 
 			},
 			sqlProjectPublishSettings: {
@@ -133,7 +133,7 @@ describe('Publish Database Dialog', () => {
 					['BackupDatabaseName', 'MyBackupDatabase']
 				]),
 				deploymentOptions: mockDacFxOptionsResult.deploymentOptions,
-				profileUsed: false
+				publishProfileUri: undefined
 			}
 		};
 		dialog.object.publishToExistingServer = false;

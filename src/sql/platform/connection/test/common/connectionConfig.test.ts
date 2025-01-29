@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -78,11 +78,11 @@ suite('ConnectionConfig', () => {
 	const testConnections: IConnectionProfileStore[] = deepFreeze([
 		{
 			options: {
-				serverName: 'server1',
-				databaseName: 'database',
-				userName: 'user',
+				server: 'server1',
+				database: 'database',
+				user: 'user',
 				password: 'password',
-				authenticationType: ''
+				authenticationType: 'SqlLogin'
 			},
 			providerName: 'MSSQL',
 			groupId: 'test',
@@ -91,11 +91,11 @@ suite('ConnectionConfig', () => {
 		},
 		{
 			options: {
-				serverName: 'server2',
-				databaseName: 'database',
-				userName: 'user',
+				server: 'server2',
+				database: 'database',
+				user: 'user',
 				password: 'password',
-				authenticationType: ''
+				authenticationType: 'SqlLogin'
 			},
 			providerName: 'MSSQL',
 			groupId: 'test',
@@ -104,11 +104,11 @@ suite('ConnectionConfig', () => {
 		},
 		{
 			options: {
-				serverName: 'server3',
-				databaseName: 'database',
-				userName: 'user',
+				server: 'server3',
+				database: 'database',
+				user: 'user',
 				password: 'password',
-				authenticationType: ''
+				authenticationType: 'SqlLogin'
 			},
 			providerName: 'MSSQL',
 			groupId: 'g3',
@@ -121,38 +121,45 @@ suite('ConnectionConfig', () => {
 		capabilitiesService = TypeMoq.Mock.ofType(TestCapabilitiesService);
 		capabilities = [];
 		let connectionProvider: azdata.ConnectionProviderOptions = {
+			groupDisplayNames: {},
 			options: [
 				{
-					name: 'serverName',
+					name: 'server',
 					displayName: undefined!,
 					description: undefined!,
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: undefined!,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.serverName,
 					valueType: ServiceOptionType.string
 				},
 				{
-					name: 'databaseName',
+					name: 'database',
 					displayName: undefined!,
 					description: undefined!,
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: undefined!,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.databaseName,
 					valueType: ServiceOptionType.string
 				},
 				{
-					name: 'userName',
+					name: 'user',
 					displayName: undefined!,
 					description: undefined!,
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: undefined!,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.userName,
@@ -165,6 +172,8 @@ suite('ConnectionConfig', () => {
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: undefined!,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.authType,
@@ -177,6 +186,8 @@ suite('ConnectionConfig', () => {
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: undefined!,
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: ConnectionOptionSpecialType.password,
@@ -189,6 +200,8 @@ suite('ConnectionConfig', () => {
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: "default",
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: undefined!,
@@ -201,6 +214,8 @@ suite('ConnectionConfig', () => {
 					groupName: undefined!,
 					categoryValues: undefined!,
 					defaultValue: "10",
+					objectType: undefined,
+					isArray: false,
 					isIdentity: true,
 					isRequired: true,
 					specialValueType: undefined!,
@@ -296,11 +311,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: undefined,
 			groupId: undefined,
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -324,15 +341,17 @@ suite('ConnectionConfig', () => {
 	test('addConnection should not add the new profile to user settings if already exists', async () => {
 		let existingConnection = testConnections[0];
 		let newProfile: IConnectionProfile = {
-			serverName: existingConnection.options['serverName'],
-			databaseName: existingConnection.options['databaseName'],
-			userName: existingConnection.options['userName'],
+			serverName: existingConnection.options['server'],
+			databaseName: existingConnection.options['database'],
+			userName: existingConnection.options['user'],
 			password: existingConnection.options['password'],
 			authenticationType: existingConnection.options['authenticationType'],
 			groupId: existingConnection.groupId,
 			savePassword: true,
 			groupFullName: undefined,
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -346,7 +365,6 @@ suite('ConnectionConfig', () => {
 		configurationService.updateValue('datasource.connections', deepClone(testConnections), ConfigurationTarget.USER);
 
 		let connectionProfile = new ConnectionProfile(capabilitiesService.object, newProfile);
-		connectionProfile.options['databaseDisplayName'] = existingConnection.options['databaseName'];
 
 		let config = new ConnectionConfig(configurationService, capabilitiesService.object);
 		await config.addConnection(connectionProfile);
@@ -360,11 +378,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g2/g2-2',
 			groupId: undefined,
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -407,7 +427,7 @@ suite('ConnectionConfig', () => {
 
 	test('getConnections should return connections with a valid id', () => {
 		let workspaceConnections = deepClone(testConnections).map(c => {
-			c.id = c.options['serverName'];
+			c.id = c.options['server'];
 			return c;
 		});
 		let userConnections = deepClone(testConnections).map(c => {
@@ -422,12 +442,12 @@ suite('ConnectionConfig', () => {
 		let allConnections = config.getConnections(false);
 		assert.strictEqual(allConnections.length, testConnections.length);
 		allConnections.forEach(connection => {
-			let userConnection = testConnections.find(u => u.options['serverName'] === connection.serverName);
+			let userConnection = testConnections.find(u => u.options['server'] === connection.serverName);
 			if (userConnection !== undefined) {
 				assert.notStrictEqual(connection.id, connection.getOptionsKey());
 				assert.ok(!!connection.id);
 			} else {
-				let workspaceConnection = workspaceConnections.find(u => u.options['serverName'] === connection.serverName);
+				let workspaceConnection = workspaceConnections.find(u => u.options['server'] === connection.serverName);
 				assert.notStrictEqual(connection.id, connection.getOptionsKey());
 				assert.strictEqual(workspaceConnection!.id, connection.id);
 			}
@@ -503,11 +523,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -533,11 +555,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -570,11 +594,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'newid',
+			serverCapabilities: undefined,
 			getOptionsKey: undefined!,
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -650,11 +676,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -667,11 +695,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -707,11 +737,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {
@@ -727,11 +759,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: { 'testProperty2': '15' },
@@ -765,11 +799,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {
@@ -785,14 +821,19 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
-			options: { 'testProperty1': 'nonDefault' },
+			options: {
+				'testProperty1': 'nonDefault',
+				'testProperty2': '10'
+			},
 			saveProfile: true,
 			id: 'server3',
 			connectionName: undefined!
@@ -826,11 +867,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {
@@ -846,11 +889,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: { 'testProperty2': '15' },
@@ -884,11 +929,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -986,11 +1033,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'g3',
 			groupId: 'g3',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -1003,11 +1052,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -1020,11 +1071,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -1054,11 +1107,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -1075,7 +1130,9 @@ suite('ConnectionConfig', () => {
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},
@@ -1088,11 +1145,13 @@ suite('ConnectionConfig', () => {
 			databaseName: 'database',
 			userName: 'user',
 			password: 'password',
-			authenticationType: '',
+			authenticationType: 'SqlLogin',
 			savePassword: true,
 			groupFullName: 'test',
 			groupId: 'test',
+			serverCapabilities: undefined,
 			getOptionsKey: () => { return 'connectionId'; },
+			getOptionKeyIdNames: undefined!,
 			matches: undefined!,
 			providerName: 'MSSQL',
 			options: {},

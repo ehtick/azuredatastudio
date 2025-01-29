@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable } from 'vs/base/common/lifecycle';
@@ -80,7 +80,8 @@ export class ContributedExternalUriOpenersStore extends Disposable {
 	}
 
 	private async invalidateOpenersOnExtensionsChanged() {
-		const registeredExtensions = await this._extensionService.getExtensions();
+		await this._extensionService.whenInstalledExtensionsRegistered();
+		const registeredExtensions = this._extensionService.extensions;
 
 		for (const [id, entry] of this._openers) {
 			const extension = registeredExtensions.find(r => r.identifier.value === entry.extensionId);

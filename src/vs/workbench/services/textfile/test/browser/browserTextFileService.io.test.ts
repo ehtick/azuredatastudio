@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { workbenchInstantiationService, TestInMemoryFileSystemProvider, TestBrowserTextFileServiceWithEncodingOverrides } from 'vs/workbench/test/browser/workbenchTestServices';
@@ -16,7 +16,7 @@ import { URI } from 'vs/base/common/uri';
 import { join } from 'vs/base/common/path';
 import { UTF16le, detectEncodingByBOMFromBuffer, UTF8_with_bom, UTF16be, toCanonicalName } from 'vs/workbench/services/textfile/common/encoding';
 import { VSBuffer } from 'vs/base/common/buffer';
-import files from 'vs/workbench/services/textfile/test/browser/fixtures/files';
+import files from 'vs/workbench/services/textfile/test/common/fixtures/files';
 import createSuite from 'vs/workbench/services/textfile/test/common/textFileService.io.test';
 import { isWeb } from 'vs/base/common/platform';
 import { IWorkingCopyFileService, WorkingCopyFileService } from 'vs/workbench/services/workingCopy/common/workingCopyFileService';
@@ -57,7 +57,7 @@ if (isWeb) {
 					await fileProvider.writeFile(
 						URI.file(join(testDir, fileName)),
 						files[fileName],
-						{ create: true, overwrite: false, unlock: false }
+						{ create: true, overwrite: false, unlock: false, atomic: false }
 					);
 				}
 

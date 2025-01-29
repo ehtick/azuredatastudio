@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IStringDictionary, INumberDictionary } from 'vs/base/common/collections';
@@ -413,7 +413,7 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 	private currentResource: string | undefined;
 
 	private lines: string[] = [];
-
+	public beginPatterns: RegExp[] = [];
 	constructor(problemMatchers: ProblemMatcher[], markerService: IMarkerService, modelService: IModelService, fileService?: IFileService) {
 		super(problemMatchers, markerService, modelService, fileService);
 		this.resetCurrentResource();
@@ -428,6 +428,7 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 					begin: matcher.watching.beginsPattern,
 					end: matcher.watching.endsPattern
 				});
+				this.beginPatterns.push(matcher.watching.beginsPattern.regexp);
 			}
 		});
 

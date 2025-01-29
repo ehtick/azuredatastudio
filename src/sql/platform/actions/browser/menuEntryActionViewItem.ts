@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { asCSSUrl, createCSSRule } from 'vs/base/browser/dom';
@@ -10,10 +10,12 @@ import { MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ICommandAction } from 'vs/platform/action/common/action';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-import { IThemeService, ThemeIcon } from 'vs/platform/theme/common/themeService';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { MenuEntryActionViewItem } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
+import { ThemeIcon } from 'vs/base/common/themables';
+import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 
 const ids = new IdGenerator('menu-item-action-item-icon-');
 
@@ -34,12 +36,13 @@ export class LabeledMenuItemActionItem extends MenuEntryActionViewItem {
 		@INotificationService _notificationService: INotificationService,
 		@IContextKeyService _contextKeyService: IContextKeyService,
 		@IThemeService _themeService: IThemeService,
-		@IContextMenuService _contextMenuService: IContextMenuService
+		@IContextMenuService _contextMenuService: IContextMenuService,
+		@IAccessibilityService _accessibilityService: IAccessibilityService
 	) {
-		super(_action, undefined, labeledkeybindingService, _notificationService, _contextKeyService, _themeService, _contextMenuService);
+		super(_action, undefined, labeledkeybindingService, _notificationService, _contextKeyService, _themeService, _contextMenuService, _accessibilityService);
 	}
 
-	override updateLabel(): void {
+	protected override updateLabel(): void {
 		if (this.label) {
 			this.label.innerText = this._commandAction.label;
 		}
@@ -109,12 +112,13 @@ export class MaskedLabeledMenuItemActionItem extends MenuEntryActionViewItem {
 		@INotificationService notificationService: INotificationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IThemeService _themeService: IThemeService,
-		@IContextMenuService _contextMenuService: IContextMenuService
+		@IContextMenuService _contextMenuService: IContextMenuService,
+		@IAccessibilityService _accessibilityService: IAccessibilityService
 	) {
-		super(action, undefined, keybindingService, notificationService, contextKeyService, _themeService, _contextMenuService);
+		super(action, undefined, keybindingService, notificationService, contextKeyService, _themeService, _contextMenuService, _accessibilityService);
 	}
 
-	override updateLabel(): void {
+	protected override updateLabel(): void {
 		if (this.label) {
 			this.label.innerText = this._commandAction.label;
 		}

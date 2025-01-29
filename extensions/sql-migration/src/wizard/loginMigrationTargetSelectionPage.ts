@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -10,14 +10,15 @@ import { MigrationWizardPage } from '../models/migrationWizardPage';
 import { MigrationStateModel, StateChangeEvent } from '../models/stateMachine';
 import * as constants from '../constants/strings';
 import * as styles from '../constants/styles';
-import { WIZARD_INPUT_COMPONENT_WIDTH } from './wizardController';
+import { WIZARD_INPUT_COMPONENT_WIDTH, WizardController } from './wizardController';
 import * as utils from '../api/utils';
-import { MigrationTargetType } from '../api/utils';
+import { getSourceLogins, MigrationTargetType } from '../api/utils';
 import { azureResource } from 'azurecore';
 import { AzureSqlDatabaseServer, getVMInstanceView, SqlVMServer } from '../api/azure';
-import { collectSourceLogins, collectTargetLogins, getSourceConnectionId, getSourceConnectionProfile, isSourceConnectionSysAdmin, LoginTableInfo } from '../api/sqlUtils';
+import { collectTargetLogins, getSourceConnectionProfile, isSourceConnectionSysAdmin } from '../api/sqlUtils';
 import { NetworkInterfaceModel } from '../api/dataModels/azure/networkInterfaceModel';
 import { getTelemetryProps, logError, sendSqlMigrationActionEvent, TelemetryAction, TelemetryViews } from '../telemetry';
+import { ConnectingToTargetFailed, } from '../models/loginMigrationModel';
 
 export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 	private _view!: azdata.ModelView;
@@ -36,15 +37,22 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 	private _azureResourceDropdown!: azdata.DropDownComponent;
 	private _resourceSelectionContainer!: azdata.FlexContainer;
 	private _resourceAuthenticationContainer!: azdata.FlexContainer;
+	private _targetPortLabel!: azdata.TextComponent;
 	private _targetUserNameInputBox!: azdata.InputBoxComponent;
 	private _targetPasswordInputBox!: azdata.InputBoxComponent;
+	private _targetPortInputBox!: azdata.InputBoxComponent;
 	private _testConectionButton!: azdata.ButtonComponent;
 	private _connectionResultsInfoBox!: azdata.InfoBoxComponent;
 	private _migrationTargetPlatform!: MigrationTargetType;
 
+	private readonly _defaultSqlPort: string = "1433";
+	// setting this value to true as we are setting a valid default SQL port
+	private _isPortValid: boolean = true;
+
 	constructor(
 		wizard: azdata.window.Wizard,
-		migrationStateModel: MigrationStateModel) {
+		migrationStateModel: MigrationStateModel,
+		private wizardController: WizardController) {
 		super(
 			wizard,
 			azdata.window.createWizardPage(constants.LOGIN_MIGRATIONS_AZURE_SQL_TARGET_PAGE_TITLE),
@@ -58,13 +66,6 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 			.withProps({
 				style: 'information',
 				text: constants.LOGIN_MIGRATIONS_TARGET_SELECTION_PAGE_PREVIEW_WARNING,
-				CSSStyles: { ...styles.BODY_CSS }
-			}).component();
-
-		const loginMigrationInfoBox = this._view.modelBuilder.infoBox()
-			.withProps({
-				style: 'information',
-				text: constants.LOGIN_MIGRATIONS_TARGET_SELECTION_PAGE_DATA_MIGRATION_WARNING,
 				CSSStyles: { ...styles.BODY_CSS }
 			}).component();
 
@@ -89,10 +90,67 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				CSSStyles: { ...styles.BODY_CSS, 'margin': '0' }
 			}).component();
 
+		const preRequisiteListTitle = view.modelBuilder.text()
+			.withProps({
+				value: constants.LOGIN_MIGRATIONS_PRE_REQ_TITLE,
+				CSSStyles: {
+					...styles.LABEL_CSS,
+					'margin': '0px',
+				}
+			}).component();
+
+		const preRequisiteListSubTitle = view.modelBuilder.text()
+			.withProps({
+				value: constants.LOGIN_MIGRATIONS_PRE_REQ_SUBTITLE,
+				CSSStyles: {
+					...styles.BODY_CSS,
+					'margin-top': '10px',
+				}
+			}).component();
+
+		const preRequisiteListElement = view.modelBuilder.text()
+			.withProps({
+				value: [
+					constants.LOGIN_MIGRATIONS_PRE_REQ_1,
+					constants.LOGIN_MIGRATIONS_PRE_REQ_2,
+					constants.LOGIN_MIGRATIONS_PRE_REQ_3,
+					constants.LOGIN_MIGRATIONS_PRE_REQ_4,
+					constants.LOGIN_MIGRATIONS_PRE_REQ_5
+				],
+				CSSStyles: {
+					...styles.BODY_CSS,
+					'padding-left': '20px',
+				}
+			}).component();
+
+		const preRequisiteListInfoBox = this._view.modelBuilder.infoBox()
+			.withProps({
+				style: 'information',
+				text: constants.LOGIN_MIGRATIONS_PRE_REQ_INFO,
+				CSSStyles: { ...styles.BODY_CSS },
+				links: [
+					{ text: constants.VIEW_TUTORIAL, url: 'https://learn.microsoft.com/en-us/azure/dms/tutorial-login-migration-ads' },
+				]
+			}).component();
+
+		const preReqContainer = view.modelBuilder.flexContainer()
+			.withItems([
+				preRequisiteListTitle,
+				preRequisiteListSubTitle,
+				preRequisiteListElement,
+				preRequisiteListInfoBox])
+			.withLayout({ flexFlow: 'column' })
+			.component();
+
+		const tasksContainer = view.modelBuilder.flexContainer()
+			.withLayout({
+				flexFlow: 'row',
+				width: '100%',
+			}).component();
+
 		const form = this._view.modelBuilder.formContainer()
 			.withFormItems([
 				{ component: loginMigrationPreviewInfoBox },
-				{ component: loginMigrationInfoBox },
 				{ component: permissionsInfoBox },
 				{ component: this._pageDescription },
 				{ component: this.createAzureSqlTargetTypeDropdown() },
@@ -103,15 +161,25 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				CSSStyles: { 'padding-top': '0' }
 			}).component();
 
+		tasksContainer.addItem(form, {});
+		tasksContainer.addItems(
+			[preReqContainer],
+			{ CSSStyles: { 'margin': '10px' } });
+
 		this._disposables.push(
 			this._view.onClosed(e => {
 				this._disposables.forEach(
 					d => { try { d.dispose(); } catch { } });
 			}));
-		await this._view.initializeModel(form);
+		await this._view.initializeModel(tasksContainer);
 	}
 
 	public async onPageEnter(pageChangeInfo: azdata.window.WizardPageChangeInfo): Promise<void> {
+		this.wizardController.cancelReasonsList([
+			constants.WIZARD_CANCEL_REASON_CONTINUE_WITH_MIGRATION_LATER,
+			constants.WIZARD_CANCEL_REASON_AZURE_SQL_TARGET_NOT_READY
+		]);
+
 		this.wizard.nextButton.enabled = false;
 		this.wizard.registerNavigationValidator((pageChangeInfo) => {
 			this.wizard.message = {
@@ -121,9 +189,9 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 			if (pageChangeInfo.newPage < pageChangeInfo.lastPage) {
 				return true;
 			}
-			if (!this.migrationStateModel._targetServerInstance || !this.migrationStateModel._targetUserName || !this.migrationStateModel._targetPassword) {
+			if (!this.migrationStateModel._targetServerInstance || !this.migrationStateModel._targetUserName || !this.migrationStateModel._targetPassword || !this.migrationStateModel._targetPort) {
 				this.wizard.message = {
-					text: constants.SELECT_DATABASE_TO_CONTINUE,
+					text: constants.SELECT_REQUIRED_DETAILS_TO_CONTINUE,
 					level: azdata.window.MessageLevel.Error
 				}; ``
 				return false;
@@ -330,13 +398,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 			await this.populateSubscriptionDropdown();
 			await this.populateLocationDropdown();
 
-			// Collect source login info here, as it will speed up loading the next page
-			const sourceLogins: LoginTableInfo[] = [];
-			sourceLogins.push(...await collectSourceLogins(
-				await getSourceConnectionId(),
-				this.migrationStateModel.isWindowsAuthMigrationSupported));
-			this.migrationStateModel._loginMigrationModel.collectedSourceLogins = true;
-			this.migrationStateModel._loginMigrationModel.loginsOnSource = sourceLogins;
+			await getSourceLogins(this.migrationStateModel);
 		}));
 
 		const flexContainer = this._view.modelBuilder.flexContainer()
@@ -347,6 +409,9 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				azureSqlTargetTypeLabel,
 				this._azureSqlTargetTypeDropdown
 			])
+			.withProps({
+				CSSStyles: { 'margin-bottom': '-1em' },
+			})
 			.component();
 		return flexContainer;
 	}
@@ -373,10 +438,13 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 			this._azureAccountsDropdown.onValueChanged(async (value) => {
 				if (value && value !== 'undefined') {
 					const selectedAccount = this.migrationStateModel._azureAccounts.find(account => account.displayInfo.displayName === value);
-					this.migrationStateModel._azureAccount = (selectedAccount)
+					this.migrationStateModel._azureAccount = selectedAccount
 						? utils.deepClone(selectedAccount)!
 						: undefined!;
+				} else {
+					this.migrationStateModel._azureAccount = undefined!;
 				}
+				await utils.clearDropDown(this._accountTenantDropdown);
 				await this.populateTenantsDropdown();
 			}));
 
@@ -402,6 +470,9 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				azureAccountLabel,
 				this._azureAccountsDropdown,
 				linkAccountButton])
+			.withProps({
+				CSSStyles: { 'margin-bottom': '-2em' },
+			})
 			.component();
 	}
 
@@ -424,16 +495,14 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 		this._disposables.push(
 			this._accountTenantDropdown.onValueChanged(async (value) => {
 				if (value && value !== 'undefined') {
-					/**
-					 * Replacing all the tenants in azure account with the tenant user has selected.
-					 * All azure requests will only run on this tenant from now on
-					 */
-					const selectedTenant = this.migrationStateModel._accountTenants.find(tenant => tenant.displayName === value);
-					if (selectedTenant) {
-						this.migrationStateModel._azureTenant = utils.deepClone(selectedTenant)!;
-						this.migrationStateModel._azureAccount.properties.tenants = [this.migrationStateModel._azureTenant];
-					}
+					const selectedTenant = this.migrationStateModel._accountTenants?.find(tenant => tenant.displayName === value);
+					this.migrationStateModel._azureTenant = selectedTenant
+						? utils.deepClone(selectedTenant)
+						: undefined!;
+				} else {
+					this.migrationStateModel._azureTenant = undefined!;
 				}
+				await utils.clearDropDown(this._azureSubscriptionDropdown);
 				await this.populateSubscriptionDropdown();
 			}));
 
@@ -469,12 +538,16 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 		this._disposables.push(
 			this._azureSubscriptionDropdown.onValueChanged(async (value) => {
 				if (value && value !== 'undefined' && value !== constants.NO_SUBSCRIPTIONS_FOUND) {
-					const selectedSubscription = this.migrationStateModel._subscriptions.find(subscription => `${subscription.name} - ${subscription.id}` === value);
+					const selectedSubscription = this.migrationStateModel._subscriptions?.find(
+						subscription => `${subscription.name} - ${subscription.id}` === value);
 					this.migrationStateModel._targetSubscription = (selectedSubscription)
 						? utils.deepClone(selectedSubscription)!
 						: undefined!;
-					this.migrationStateModel.refreshDatabaseBackupPage = true;
+				} else {
+					this.migrationStateModel._targetSubscription = undefined!;
 				}
+				this.migrationStateModel.refreshDatabaseBackupPage = true;
+				await utils.clearDropDown(this._azureLocationDropdown);
 				await this.populateLocationDropdown();
 			}));
 
@@ -503,8 +576,11 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 					this.migrationStateModel._location = (selectedLocation)
 						? utils.deepClone(selectedLocation)!
 						: undefined!;
+				} else {
+					this.migrationStateModel._location = undefined!;
 				}
 				this.migrationStateModel.refreshDatabaseBackupPage = true;
+				await utils.clearDropDown(this._azureResourceGroupDropdown);
 				await this.populateResourceGroupDropdown();
 			}));
 
@@ -527,7 +603,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 		// target user name
 		const targetUserNameLabel = this._view.modelBuilder.text()
 			.withProps({
-				value: constants.TARGET_USERNAME_LAbEL,
+				value: constants.TARGET_USERNAME_LABEL,
 				requiredIndicator: true,
 				CSSStyles: { ...styles.LABEL_CSS, 'margin-top': '-1em' }
 			}).component();
@@ -554,7 +630,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 		// target password
 		const targetPasswordLabel = this._view.modelBuilder.text()
 			.withProps({
-				value: constants.TARGET_PASSWORD_LAbEL,
+				value: constants.TARGET_PASSWORD_LABEL,
 				requiredIndicator: true,
 				title: '',
 				CSSStyles: { ...styles.LABEL_CSS, 'margin-top': '-1em' }
@@ -607,9 +683,10 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				const targetDatabaseServer = this.migrationStateModel._targetServerInstance;
 				const userName = this.migrationStateModel._targetUserName;
 				const password = this.migrationStateModel._targetPassword;
+				const port = this.migrationStateModel._targetPort;
 				const loginsOnTarget: string[] = [];
 				let connectionSuccessful = false;
-				if (targetDatabaseServer && userName && password) {
+				if (targetDatabaseServer && userName && password && port) {
 					try {
 						connectionButtonLoadingContainer.loading = true;
 						await utils.updateControlDisplay(this._connectionResultsInfoBox, false);
@@ -620,6 +697,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 								targetDatabaseServer.id,
 								userName,
 								password,
+								port,
 								this.migrationStateModel.isWindowsAuthMigrationSupported));
 						this.migrationStateModel._loginMigrationModel.collectedTargetLogins = true;
 						this.migrationStateModel._loginMigrationModel.loginsOnTarget = loginsOnTarget;
@@ -636,7 +714,16 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 							loginsOnTarget,
 							constants.AZURE_SQL_TARGET_CONNECTION_ERROR_TITLE);
 
-						logError(TelemetryViews.LoginMigrationTargetSelectionPage, 'ConnectingToTargetFailed', error);
+						logError(TelemetryViews.LoginMigrationTargetSelectionPage, ConnectingToTargetFailed, error);
+						sendSqlMigrationActionEvent(
+							TelemetryViews.LoginMigrationTargetSelectionPage,
+							TelemetryAction.LoginMigrationError,
+							{
+								...getTelemetryProps(this.migrationStateModel),
+								'errorMessage': ConnectingToTargetFailed,
+							},
+							{}
+						);
 						connectionSuccessful = false;
 					}
 					finally {
@@ -663,7 +750,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				alignContent: 'center',
 				alignItems: 'center',
 			})
-			.withProps({ CSSStyles: { 'margin': '15px 0 0 0' } })
+			.withProps({ CSSStyles: { 'margin': '10px 0 0 0' } })
 			.component();
 
 		return this._view.modelBuilder.flexContainer()
@@ -674,7 +761,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				this._targetPasswordInputBox,
 				connectionContainer])
 			.withLayout({ flexFlow: 'column' })
-			.withProps({ CSSStyles: { 'margin': '15px 0 0 0' } })
+			.withProps({ CSSStyles: { 'margin': '5px 0 0 0' } })
 			.component();
 	}
 
@@ -722,7 +809,10 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 					this.migrationStateModel._resourceGroup = (selectedResourceGroup)
 						? utils.deepClone(selectedResourceGroup)!
 						: undefined!;
+				} else {
+					this.migrationStateModel._resourceGroup = undefined!;
 				}
+				await utils.clearDropDown(this._azureResourceDropdown);
 				await this.populateResourceInstanceDropdown();
 			}));
 
@@ -768,7 +858,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 								this.wizard.message = { text: '' };
 
 								// validate power state from VM instance view
-								const runningState = 'PowerState/running'.toLowerCase();
+								const runningState = 'powerstate/running';
 								if (!this.migrationStateModel._vmInstanceView.statuses.some(status => status.code.toLowerCase() === runningState)) {
 									this.wizard.message = {
 										text: constants.VM_NOT_READY_POWER_STATE_ERROR(this.migrationStateModel._targetServerInstance.name),
@@ -777,7 +867,7 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 								}
 
 								// validate IaaS extension mode
-								const fullMode = 'Full'.toLowerCase();
+								const fullMode = 'full';
 								if (this.migrationStateModel._targetServerInstance.properties.sqlManagement.toLowerCase() !== fullMode) {
 									this.wizard.message = {
 										text: constants.VM_NOT_READY_IAAS_EXTENSION_ERROR(this.migrationStateModel._targetServerInstance.name, this.migrationStateModel._targetServerInstance.properties.sqlManagement),
@@ -842,23 +932,84 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 				}
 			}));
 
+		// Target port
+		this._targetPortLabel = this._view.modelBuilder.text()
+			.withProps({
+				value: constants.TARGET_PORT_LABEL,
+				description: constants.TARGET_RESOURCE_PORT_INFO,
+				requiredIndicator: true,
+				CSSStyles: { ...styles.LABEL_CSS, 'margin-top': '-1em' }
+			}).component();
+
+		this._targetPortInputBox = this._view.modelBuilder.inputBox()
+			.withProps({
+				width: '300px',
+				inputType: 'text',
+				placeHolder: constants.TARGET_PORT_PLACEHOLDER,
+				value: this._defaultSqlPort,
+				required: true,
+				CSSStyles: { 'margin-top': '-1em' },
+			})
+			.withValidation((inputBox) => {
+				let value = inputBox.value ?? "";
+				this._validatePort(value);
+				return this._isPortValid;
+			})
+			.component();
+
+		this._disposables.push(
+			this._targetPortInputBox.onTextChanged(
+				(value: string) => {
+					this.migrationStateModel._targetPort = value ?? "";
+					this._updateConnectionButtonState();
+				}));
+
+		this._disposables.push(
+			this._targetPortInputBox.onValidityChanged(
+				valid => this._updateConnectionButtonState()));
+
 		return this._view.modelBuilder.flexContainer()
 			.withItems([
 				this._azureResourceGroupLabel,
 				this._azureResourceGroupDropdown,
 				this._azureResourceDropdownLabel,
-				this._azureResourceDropdown])
+				this._azureResourceDropdown,
+				this._targetPortLabel,
+				this._targetPortInputBox,])
 			.withLayout({ flexFlow: 'column' })
 			.component();
 	}
 
+	/**
+	 * The function validates the port number
+	 * @param port Port number
+	 */
+	private _validatePort(port: string): void {
+		// check if port is empty
+		if (port === "") {
+			this._isPortValid = false;
+			return;
+		}
+
+		// Check if the port is a number, port is an integer and port is in the range of 0 to 65535
+		let portNumber = Number(port);
+		if (isNaN(portNumber) || !Number.isInteger(portNumber) || portNumber < 0 || portNumber > 65535) {
+			this._isPortValid = false;
+			return;
+		}
+
+		// If all the checks pass, the port is valid
+		this._isPortValid = true;
+	}
+
 	private _updateConnectionButtonState(): void {
 		const targetDatabaseServer = (this._azureResourceDropdown.value as azdata.CategoryValue)?.name ?? '';
-		const userName = this._targetUserNameInputBox.value ?? '';
-		const password = this._targetPasswordInputBox.value ?? '';
+		const userName = this.migrationStateModel._targetUserName ?? '';
+		const password = this.migrationStateModel._targetPassword ?? '';
 		this._testConectionButton.enabled = targetDatabaseServer.length > 0
 			&& userName.length > 0
-			&& password.length > 0;
+			&& password.length > 0
+			&& this._isPortValid;
 	}
 
 	private async populateAzureAccountsDropdown(): Promise<void> {
@@ -900,7 +1051,10 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 	private async populateSubscriptionDropdown(): Promise<void> {
 		try {
 			this._azureSubscriptionDropdown.loading = true;
-			this.migrationStateModel._subscriptions = await utils.getAzureSubscriptions(this.migrationStateModel._azureAccount);
+			this.migrationStateModel._subscriptions = await utils.getAzureSubscriptions(
+				this.migrationStateModel._azureAccount,
+				this.migrationStateModel._azureTenant?.id);
+
 			this._azureSubscriptionDropdown.values = await utils.getAzureSubscriptionsDropdownValues(this.migrationStateModel._subscriptions);
 		} catch (e) {
 			console.log(e);
@@ -1026,3 +1180,4 @@ export class LoginMigrationTargetSelectionPage extends MigrationWizardPage {
 		}
 	}
 }
+

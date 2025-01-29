@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -9,7 +9,7 @@ import { IconPathHelper } from '../constants/iconPathHelper';
 import { getCurrentMigrations, getSelectedServiceStatus } from '../models/migrationLocalStorage';
 import * as loc from '../constants/strings';
 import { filterMigrations, getMigrationDuration, getMigrationStatusImage, getMigrationStatusWithErrors, getMigrationTime, MenuCommands } from '../api/utils';
-import { getMigrationTargetType, getMigrationMode, canCancelMigration, canCutoverMigration, canDeleteMigration, canRetryMigration } from '../constants/helper';
+import { getMigrationTargetType, getMigrationMode, canCancelMigration, canCutoverMigration, canDeleteMigration, canRetryMigration, getMigrationType } from '../constants/helper';
 import { DatabaseMigration, getMigrationErrors, getResourceName } from '../api/azure';
 import { logError, TelemetryViews } from '../telemetry';
 import { SelectMigrationServiceDialog } from '../dialog/selectMigrationService/selectMigrationServiceDialog';
@@ -24,6 +24,7 @@ const TableColumns = {
 	sourceServer: 'sourceServer',
 	status: 'status',
 	mode: 'mode',
+	type: 'type',
 	targetType: 'targetType',
 	targetDatabse: 'targetDatabase',
 	targetServer: 'TargetServer',
@@ -78,7 +79,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 		}
 	}
 
-	public async refresh(): Promise<void> {
+	public async refresh(initialize?: boolean): Promise<void> {
 		if (this.isRefreshing ||
 			this._refreshLoader === undefined) {
 
@@ -90,6 +91,10 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 			this._refreshLoader.loading = true;
 
 			await this.statusBar.clearError();
+
+			if (initialize) {
+				await this.updateServiceButtonContext(this._serviceContextButton);
+			}
 
 			await this._statusTable.updateProperty('data', []);
 			this._migrations = await getCurrentMigrations();
@@ -146,7 +151,8 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 		toolbar.addToolbarItems([
 			<azdata.ToolbarComponent>{ component: this.createNewMigrationButton(), toolbarSeparatorAfter: true },
 			<azdata.ToolbarComponent>{ component: this.createNewLoginMigrationButton(), toolbarSeparatorAfter: true },
-			<azdata.ToolbarComponent>{ component: this.createNewSupportRequestButton() },
+			<azdata.ToolbarComponent>{ component: this.createImportMigrationButton(), toolbarSeparatorAfter: true },
+			<azdata.ToolbarComponent>{ component: this.createNewHelpAndSupportButton() },
 			<azdata.ToolbarComponent>{ component: this.createFeedbackButton(), toolbarSeparatorAfter: true },
 			<azdata.ToolbarComponent>{ component: this._refreshLoader },
 		]);
@@ -180,12 +186,11 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 			this.serviceContextChangedEvent.event(
 				async (e) => {
 					if (e.connectionId === await getSourceConnectionId()) {
-						await this.updateServiceContext(this._serviceContextButton);
-						await this.refresh();
+						await this.refresh(true);
 					}
 				}
 			));
-		await this.updateServiceContext(this._serviceContextButton);
+		await this.updateServiceButtonContext(this._serviceContextButton);
 
 		this._searchBox = this.view.modelBuilder.inputBox()
 			.withProps({
@@ -249,6 +254,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 					<azdata.CategoryValue>{ name: TableColumns.sourceServer, displayName: loc.SRC_SERVER },
 					<azdata.CategoryValue>{ name: TableColumns.status, displayName: loc.STATUS_COLUMN },
 					<azdata.CategoryValue>{ name: TableColumns.mode, displayName: loc.MIGRATION_MODE },
+					<azdata.CategoryValue>{ name: TableColumns.type, displayName: loc.MIGRATION_TYPE },
 					<azdata.CategoryValue>{ name: TableColumns.targetType, displayName: loc.AZURE_SQL_TARGET },
 					<azdata.CategoryValue>{ name: TableColumns.targetDatabse, displayName: loc.TARGET_DATABASE_COLUMN },
 					<azdata.CategoryValue>{ name: TableColumns.targetServer, displayName: loc.TARGET_SERVER_COLUMN },
@@ -343,6 +349,13 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						getMigrationMode(m2),
 						sortDir));
 				return;
+			case TableColumns.type:
+				migrations.sort(
+					(m1, m2) => this.stringCompare(
+						getMigrationType(m1),
+						getMigrationType(m2),
+						sortDir));
+				return;
 			case TableColumns.targetType:
 				migrations.sort(
 					(m1, m2) => this.stringCompare(
@@ -424,6 +437,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						role: 'button'
 					},															// statue
 					getMigrationMode(migration),								// mode
+					getMigrationType(migration),                                // type
 					getMigrationTargetType(migration),							// targetType
 					getResourceName(migration.id),								// targetDatabase
 					getResourceName(migration.properties.scope),				// targetServer
@@ -463,7 +477,8 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 				ariaLabel: loc.MIGRATION_STATUS,
 				CSSStyles: { 'margin-left': '10px' },
 				data: [],
-				forceFitColumns: azdata.ColumnSizingMode.AutoFit,
+				forceFitColumns: azdata.ColumnSizingMode.DataFit,
+				width: 1530,
 				height: '500px',
 				columns: [
 					<azdata.HyperlinkColumn>{
@@ -489,7 +504,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						headerCssClass: headerCssStyles,
 						name: loc.STATUS_COLUMN,
 						value: 'status',
-						width: 160,
+						width: 180,
 						type: azdata.ColumnType.hyperlink,
 						toolTip: loc.STATUS_TOOL_TIP,
 					},
@@ -505,9 +520,18 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 					{
 						cssClass: rowCssStyles,
 						headerCssClass: headerCssStyles,
+						name: loc.MIGRATION_TYPE,
+						value: 'type',
+						width: 120,
+						type: azdata.ColumnType.text,
+						toolTip: loc.MIGRATION_TYPE_TOOL_TIP,
+					},
+					{
+						cssClass: rowCssStyles,
+						headerCssClass: headerCssStyles,
 						name: loc.AZURE_SQL_TARGET,
 						value: 'targetType',
-						width: 120,
+						width: 160,
 						type: azdata.ColumnType.text,
 						toolTip: loc.AZURE_SQL_TARGET_TOOL_TIP,
 					},
@@ -534,7 +558,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						headerCssClass: headerCssStyles,
 						name: loc.DURATION,
 						value: 'duration',
-						width: 55,
+						width: 65,
 						type: azdata.ColumnType.text,
 						toolTip: loc.DURATION_TOOL_TIP,
 					},
@@ -543,7 +567,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						headerCssClass: headerCssStyles,
 						name: loc.START_TIME,
 						value: 'startTime',
-						width: 115,
+						width: 160,
 						type: azdata.ColumnType.text,
 						toolTip: loc.START_TIME_TOOL_TIP,
 					},
@@ -552,7 +576,7 @@ export class MigrationsListTab extends TabBase<MigrationsListTab> {
 						headerCssClass: headerCssStyles,
 						name: loc.FINISH_TIME,
 						value: 'finishTime',
-						width: 115,
+						width: 160,
 						type: azdata.ColumnType.text,
 						toolTip: loc.FINISH_TIME_TOOL_TIP,
 					},

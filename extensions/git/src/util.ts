@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event, Disposable, EventEmitter } from 'vscode';
@@ -74,7 +74,7 @@ export function onceEvent<T>(event: Event<T>): Event<T> {
 
 export function debounceEvent<T>(event: Event<T>, delay: number): Event<T> {
 	return (listener: (e: T) => any, thisArgs?: any, disposables?: Disposable[]) => {
-		let timer: NodeJS.Timer;
+		let timer: NodeJS.Timeout;
 		return event(e => {
 			clearTimeout(timer);
 			timer = setTimeout(() => listener.call(thisArgs, e), delay);
@@ -314,6 +314,13 @@ export function pathEquals(a: string, b: string): boolean {
  * casing.
  */
 export function relativePath(from: string, to: string): string {
+	// On Windows, there are cases in which `from` is a path that contains a trailing `\` character
+	// (ex: C:\, \\server\folder\) due to the implementation of `path.normalize()`. This behavior is
+	// by design as documented in https://github.com/nodejs/node/issues/1765.
+	if (isWindows) {
+		from = from.replace(/\\$/, '');
+	}
+
 	if (isDescendant(from, to) && from.length < to.length) {
 		return to.substring(from.length + 1);
 	}

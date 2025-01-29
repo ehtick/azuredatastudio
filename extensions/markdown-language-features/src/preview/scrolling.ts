@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
@@ -11,13 +11,21 @@ export function scrollEditorToLine(
 	line: number,
 	editor: vscode.TextEditor
 ) {
+	const revealRange = toRevealRange(line, editor);
+	editor.revealRange(revealRange, vscode.TextEditorRevealType.AtTop);
+}
+
+function toRevealRange(line: number, editor: vscode.TextEditor): vscode.Range {
+	line = Math.max(0, line);
 	const sourceLine = Math.floor(line);
+	if (sourceLine >= editor.document.lineCount) {
+		return new vscode.Range(editor.document.lineCount - 1, 0, editor.document.lineCount - 1, 0);
+	}
+
 	const fraction = line - sourceLine;
 	const text = editor.document.lineAt(sourceLine).text;
 	const start = Math.floor(fraction * text.length);
-	editor.revealRange(
-		new vscode.Range(sourceLine, start, sourceLine + 1, 0),
-		vscode.TextEditorRevealType.AtTop);
+	return new vscode.Range(sourceLine, start, sourceLine + 1, 0);
 }
 
 export class StartingScrollFragment {

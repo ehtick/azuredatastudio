@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -262,20 +262,3 @@ export interface ILifecycleService {
 	 */
 	shutdown(): Promise<void>;
 }
-
-export const NullLifecycleService: ILifecycleService = {
-
-	_serviceBrand: undefined,
-
-	onBeforeShutdown: Event.None,
-	onBeforeShutdownError: Event.None,
-	onShutdownVeto: Event.None,
-	onWillShutdown: Event.None,
-	onDidShutdown: Event.None,
-
-	phase: LifecyclePhase.Restored,
-	startupKind: StartupKind.NewWindow,
-
-	async when() { },
-	async shutdown() { }
-};

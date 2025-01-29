@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from 'vs/base/common/event';
@@ -9,7 +9,6 @@ import { ITextBufferFactory, ITextModel, ITextModelCreationOptions } from 'vs/ed
 import { ILanguageSelection } from 'vs/editor/common/languages/language';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { DocumentSemanticTokensProvider, DocumentRangeSemanticTokensProvider } from 'vs/editor/common/languages';
-import { SemanticTokensProviderStyling } from 'vs/editor/common/services/semanticTokensProviderStyling';
 
 export const IModelService = createDecorator<IModelService>('modelService');
 
@@ -22,8 +21,6 @@ export interface IModelService {
 
 	updateModel(model: ITextModel, value: string | ITextBufferFactory): void;
 
-	setMode(model: ITextModel, languageSelection: ILanguageSelection): void;
-
 	destroyModel(resource: URI): void;
 
 	getModels(): ITextModel[];
@@ -31,8 +28,6 @@ export interface IModelService {
 	getCreationOptions(language: string, resource: URI, isForSimpleWidget: boolean): ITextModelCreationOptions;
 
 	getModel(resource: URI): ITextModel | null;
-
-	getSemanticTokensProviderStyling(provider: DocumentTokensProvider): SemanticTokensProviderStyling;
 
 	onModelAdded: Event<ITextModel>;
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -26,6 +26,10 @@ export const walkthroughsExtensionPoint = ExtensionsRegistry.registerExtensionPo
 				title: {
 					type: 'string',
 					description: localize('walkthroughs.title', "Title of walkthrough.")
+				},
+				icon: {
+					type: 'string',
+					description: localize('walkthroughs.icon', "Relative path to the icon of the walkthrough. The path is relative to the extension location. If not specified, the icon defaults to the extension icon if available."),
 				},
 				description: {
 					type: 'string',
@@ -211,6 +215,13 @@ export const walkthroughsExtensionPoint = ExtensionsRegistry.registerExtensionPo
 						}
 					}
 				}
+			}
+		}
+	},
+	activationEventsGenerator: (walkthroughContributions, result) => {
+		for (const walkthroughContribution of walkthroughContributions) {
+			if (walkthroughContribution.id) {
+				result.push(`onWalkthrough:${walkthroughContribution.id}`);
 			}
 		}
 	}

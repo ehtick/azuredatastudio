@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
@@ -11,4 +11,4 @@ import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
  * - respect VSCODE_APPDATA environment variable
  * - respect --user-data-dir CLI argument
  */
-export function getUserDataPath(args: NativeParsedArgs): string;
+export function getUserDataPath(args: NativeParsedArgs, productName: string): string;

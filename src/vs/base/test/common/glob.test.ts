@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -1088,6 +1088,22 @@ suite('Glob', () => {
 		} else if (isLinux) {
 			const p: glob.IRelativePattern = { base: '/DNXConsoleApp/foo', pattern: 'something/*.cs' };
 			assertNoGlobMatch(p, '/DNXConsoleApp/foo/something/Program.cs'.toLowerCase());
+		}
+	});
+
+	test('relative pattern - trailing slash / backslash (#162498)', function () {
+		if (isWindows) {
+			let p: glob.IRelativePattern = { base: 'C:\\', pattern: 'foo.cs' };
+			assertGlobMatch(p, 'C:\\foo.cs');
+
+			p = { base: 'C:\\bar\\', pattern: 'foo.cs' };
+			assertGlobMatch(p, 'C:\\bar\\foo.cs');
+		} else {
+			let p: glob.IRelativePattern = { base: '/', pattern: 'foo.cs' };
+			assertGlobMatch(p, '/foo.cs');
+
+			p = { base: '/bar/', pattern: 'foo.cs' };
+			assertGlobMatch(p, '/bar/foo.cs');
 		}
 	});
 

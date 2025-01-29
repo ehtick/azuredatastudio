@@ -1,19 +1,16 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Button as vsButton, IButtonOptions, IButtonStyles as vsIButtonStyles } from 'vs/base/browser/ui/button/button';
+import { Button as vsButton, IButtonOptions } from 'vs/base/browser/ui/button/button';
 import { Color } from 'vs/base/common/color';
-
-export interface IButtonStyles extends vsIButtonStyles {
-}
 
 export class Button extends vsButton {
 	protected buttonFocusOutline?: Color;
 
 	constructor(container: HTMLElement, options?: IButtonOptions) {
-		super(container, options);
+		super(container, options ?? {});
 	}
 
 	public set title(value: string) {

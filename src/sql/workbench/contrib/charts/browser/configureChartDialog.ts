@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -14,7 +14,6 @@ import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService
 import { ILogService } from 'vs/platform/log/common/log';
 import { ITextResourcePropertiesService } from 'vs/editor/common/services/textResourceConfiguration';
 import { attachModalDialogStyler } from 'sql/workbench/common/styler';
-import { attachButtonStyler } from 'vs/platform/theme/common/styler';
 
 export class ConfigureChartDialog extends Modal {
 	constructor(
@@ -39,9 +38,7 @@ export class ConfigureChartDialog extends Modal {
 	public override render() {
 		super.render();
 		attachModalDialogStyler(this, this._themeService);
-
-		let closeButton = this.addFooterButton(localize('configureChartDialog.close', "Close"), () => this.close());
-		attachButtonStyler(closeButton, this._themeService);
+		this.addFooterButton(localize('configureChartDialog.close', "Close"), () => this.close());
 	}
 
 	protected renderBody(container: HTMLElement) {

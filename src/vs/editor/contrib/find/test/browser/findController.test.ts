@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -22,7 +22,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 
-export class TestFindController extends CommonFindController {
+class TestFindController extends CommonFindController {
 
 	public hasFocus: boolean;
 	public delayUpdateHistory: boolean = false;
@@ -63,25 +63,28 @@ function executeAction(instantiationService: IInstantiationService, editor: ICod
 	});
 }
 
-suite.skip('FindController', async () => { // {{SQL CARBON EDIT}} Skip suite
+suite.skip('FindController', () => { // {{SQL CARBON EDIT}} Skip suite
 	const queryState: { [key: string]: any } = {};
 	let clipboardState = '';
 	const serviceCollection = new ServiceCollection();
 	serviceCollection.set(IStorageService, {
 		_serviceBrand: undefined,
 		onDidChangeTarget: Event.None,
-		onDidChangeValue: Event.None,
+		onDidChangeValue: () => Event.None,
 		onWillSaveState: Event.None,
 		get: (key: string) => queryState[key],
 		getBoolean: (key: string) => !!queryState[key],
 		getNumber: (key: string) => undefined!,
+		getObject: (key: string) => undefined!,
 		store: (key: string, value: any) => { queryState[key] = value; return Promise.resolve(); },
+		storeAll: () => { throw new Error(); },
 		remove: () => undefined,
 		isNew: () => false,
 		flush: () => { return Promise.resolve(); },
 		keys: () => [],
 		log: () => { },
-		switch: () => { throw new Error(); }
+		switch: () => { throw new Error(); },
+		hasScope() { return false; }
 	} as IStorageService);
 
 	if (platform.isMacintosh) {
@@ -501,18 +504,21 @@ suite.skip('FindController query options persistence', async () => { // {{SQL CA
 	serviceCollection.set(IStorageService, {
 		_serviceBrand: undefined,
 		onDidChangeTarget: Event.None,
-		onDidChangeValue: Event.None,
+		onDidChangeValue: () => Event.None,
 		onWillSaveState: Event.None,
 		get: (key: string) => queryState[key],
 		getBoolean: (key: string) => !!queryState[key],
 		getNumber: (key: string) => undefined!,
+		getObject: (key: string) => undefined!,
 		store: (key: string, value: any) => { queryState[key] = value; return Promise.resolve(); },
+		storeAll: () => { throw new Error(); },
 		remove: () => undefined,
 		isNew: () => false,
 		flush: () => { return Promise.resolve(); },
 		keys: () => [],
 		log: () => { },
-		switch: () => { throw new Error(); }
+		switch: () => { throw new Error(); },
+		hasScope() { return false; }
 	} as IStorageService);
 
 	test('matchCase', async () => {

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { FastDomNode } from 'vs/base/browser/fastDomNode';
@@ -12,6 +12,7 @@ export function applyFontInfo(domNode: FastDomNode<HTMLElement> | HTMLElement, f
 		domNode.setFontWeight(fontInfo.fontWeight);
 		domNode.setFontSize(fontInfo.fontSize);
 		domNode.setFontFeatureSettings(fontInfo.fontFeatureSettings);
+		domNode.setFontVariationSettings(fontInfo.fontVariationSettings);
 		domNode.setLineHeight(fontInfo.lineHeight);
 		domNode.setLetterSpacing(fontInfo.letterSpacing);
 	} else {
@@ -19,6 +20,7 @@ export function applyFontInfo(domNode: FastDomNode<HTMLElement> | HTMLElement, f
 		domNode.style.fontWeight = fontInfo.fontWeight;
 		domNode.style.fontSize = fontInfo.fontSize + 'px';
 		domNode.style.fontFeatureSettings = fontInfo.fontFeatureSettings;
+		domNode.style.fontVariationSettings = fontInfo.fontVariationSettings;
 		domNode.style.lineHeight = fontInfo.lineHeight + 'px';
 		domNode.style.letterSpacing = fontInfo.letterSpacing + 'px';
 	}

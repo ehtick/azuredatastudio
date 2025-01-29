@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as nls from 'vs/nls';
@@ -26,6 +26,7 @@ export class EmptyView extends ViewPane {
 
 	static readonly ID: string = 'workbench.explorer.emptyView';
 	static readonly NAME = nls.localize('noWorkspace', "No Folder Opened");
+	private _disposed: boolean = false;
 
 	constructor(
 		options: IViewletViewOptions,
@@ -81,10 +82,19 @@ export class EmptyView extends ViewPane {
 	}
 
 	private refreshTitle(): void {
+		if (this._disposed) {
+			return;
+		}
+
 		if (this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE) {
 			this.updateTitle(EmptyView.NAME);
 		} else {
 			this.updateTitle(this.title);
 		}
+	}
+
+	override dispose(): void {
+		this._disposed = true;
+		super.dispose();
 	}
 }

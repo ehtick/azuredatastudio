@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from 'vs/nls';
@@ -152,7 +152,7 @@ export class NotebookEditor extends EditorPane implements IFindNotebookControlle
 	/**
 	 * @param parent Called to create the editor in the parent element.
 	 */
-	public createEditor(parent: HTMLElement): void {
+	protected createEditor(parent: HTMLElement): void {
 		this._overlay = document.createElement('div');
 		this._overlay.className = 'overlayWidgets monaco-editor';
 		this._overlay.style.width = '100%';

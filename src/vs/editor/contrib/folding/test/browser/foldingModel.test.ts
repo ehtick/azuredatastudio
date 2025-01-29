@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as assert from 'assert';
 import { escapeRegExpCharacters } from 'vs/base/common/strings';
@@ -383,7 +383,7 @@ suite('Folding Model', () => {
 
 	});
 
-	test('getRegionAtLine', () => {
+	test('getRegionAtLine2', () => {
 		const lines = [
 		/* 1*/	'//#region',
 		/* 2*/	'class A {',

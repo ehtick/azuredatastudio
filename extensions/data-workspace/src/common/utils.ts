@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as fs from 'fs';
@@ -90,4 +90,13 @@ export async function showInfoMessageWithLearnMoreLink(message: string, link: st
 	if (result === constants.LearnMore) {
 		void vscode.env.openExternal(vscode.Uri.parse(link));
 	}
+}
+
+/**
+ * Consolidates on the error message string
+ */
+export function getErrorMessage(error: any): string {
+	return (error instanceof Error)
+		? (typeof error.message === 'string' ? error.message : '')
+		: typeof error === 'string' ? error : `${JSON.stringify(error, undefined, '\t')}`;
 }

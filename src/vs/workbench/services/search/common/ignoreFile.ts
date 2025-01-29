@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as glob from 'vs/base/common/glob';
@@ -133,7 +133,13 @@ export class IgnoreFile {
 			line = '**/' + line;
 		} else {
 			if (firstSep === 0) {
-				line = line.slice(1);
+				if (dirPath.slice(-1) === '/') {
+					line = line.slice(1);
+				}
+			} else {
+				if (dirPath.slice(-1) !== '/') {
+					line = '/' + line;
+				}
 			}
 			line = dirPath + line;
 		}

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
@@ -92,7 +92,13 @@ export interface IOutline<E> {
 
 export const enum OutlineConfigKeys {
 	'icons' = 'outline.icons',
+	'collapseItems' = 'outline.collapseItems',
 	'problemsEnabled' = 'outline.problems.enabled',
 	'problemsColors' = 'outline.problems.colors',
 	'problemsBadges' = 'outline.problems.badges'
+}
+
+export const enum OutlineConfigCollapseItemsValues {
+	Collapsed = 'alwaysCollapse',
+	Expanded = 'alwaysExpand'
 }

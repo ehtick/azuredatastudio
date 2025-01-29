@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 'use strict';
@@ -88,6 +88,7 @@ function buildWin32Setup(arch, target) {
 		productJson['target'] = target;
 		fs.writeFileSync(productJsonPath, JSON.stringify(productJson, undefined, '\t'));
 
+		const quality = product.quality || 'dev';
 		const definitions = {
 			NameLong: product.nameLong,
 			NameShort: product.nameShort,
@@ -99,6 +100,9 @@ function buildWin32Setup(arch, target) {
 			RegValueName: product.win32RegValueName,
 			ShellNameShort: product.win32ShellNameShort,
 			AppMutex: product.win32MutexName,
+			TunnelMutex: product.win32TunnelMutex,
+			TunnelServiceMutex: product.win32TunnelServiceMutex,
+			ApplicationName: product.applicationName,
 			Arch: arch,
 			AppId: { 'ia32': ia32AppId, 'x64': x64AppId, 'arm64': arm64AppId }[arch],
 			IncompatibleTargetAppId: { 'ia32': product.win32AppId, 'x64': product.win32x64AppId, 'arm64': product.win32arm64AppId }[arch],
@@ -110,8 +114,14 @@ function buildWin32Setup(arch, target) {
 			RepoDir: repoPath,
 			OutputDir: outputPath,
 			InstallTarget: target,
-			ProductJsonPath: productJsonPath
+			ProductJsonPath: productJsonPath,
+			Quality: quality
 		};
+
+		if (quality === 'insider') {
+			definitions['AppxPackage'] = `code_insiders_explorer_${arch === 'ia32' ? 'x86' : arch}.appx`;
+			definitions['AppxPackageFullname'] = `Microsoft.${product.win32RegValueName}_1.0.0.0_neutral__8wekyb3d8bbwe`;
+		}
 
 		packageInnoSetup(issPath, { definitions }, cb);
 	};
@@ -173,3 +183,48 @@ function updateIcon(executablePath) {
 gulp.task(task.define('vscode-win32-ia32-inno-updater', task.series(copyInnoUpdater('ia32'), updateIcon(path.join(buildPath('ia32'), 'tools', 'inno_updater.exe')))));
 gulp.task(task.define('vscode-win32-x64-inno-updater', task.series(copyInnoUpdater('x64'), updateIcon(path.join(buildPath('x64'), 'tools', 'inno_updater.exe')))));
 gulp.task(task.define('vscode-win32-arm64-inno-updater', task.series(copyInnoUpdater('arm64'), updateIcon(path.join(buildPath('arm64'), 'tools', 'inno_updater.exe')))));
+
+/**
+ * Updates azuredatastudio.exe icon and metadata
+ * @param {string} arch
+ */
+function updateExeIconAndMetadata(arch) {
+	return cb => {
+		const { config } = require('./lib/electron');
+		const fancyLog = require('fancy-log');
+		const ansiColors = require('ansi-colors');
+
+		var patch = {
+			"version-string": {
+				CompanyName: config.companyName || "Microsoft",
+				FileDescription: config.productAppName || opts.productName,
+				LegalCopyright:
+					config.copyright ||
+					"Copyright (C) 2024 Microsoft, All rights reserved",
+				ProductName: config.productAppName || config.productName,
+				ProductVersion: pkg.version,
+			},
+			"file-version": pkg.version,
+			"product-version": pkg.version,
+			"icon": config.winIcon
+		};
+
+		fancyLog(ansiColors.cyan('[Updating exe icon]'), JSON.stringify(patch, null, 2));
+		fancyLog(ansiColors.yellow(`Checking if icon exists`), fs.existsSync('resources/win32/code.ico'));
+		fs.readdir(buildPath(arch), (err, files) => {
+			if (err) {
+				return cb(err);
+			}
+			files.forEach(file => {
+				if (file.startsWith('azuredatastudio') && file.endsWith('.exe')) {
+					fancyLog(ansiColors.cyan('[Patching exe]'), `Updating ${file}`);
+					rcedit(path.join(buildPath(arch), file), patch, cb);
+				}
+			});
+		});
+	};
+}
+
+gulp.task(task.define('vscode-win32-x64-exe-patcher', updateExeIconAndMetadata('x64')));
+gulp.task(task.define('vscode-win32-ia32-exe-patcher', updateExeIconAndMetadata('ia32')));
+gulp.task(task.define('vscode-win32-arm64-exe-patcher', updateExeIconAndMetadata('arm64')));

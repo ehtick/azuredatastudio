@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -208,6 +208,74 @@ suite('WordPartOperations', () => {
 			ed => deleteWordPartRight(ed),
 			ed => new Position(1, text.length - ed.getValue().length + 1),
 			ed => ed.getValue().length === 0
+		);
+		const actual = serializePipePositions(text, actualStops);
+		assert.deepStrictEqual(actual, EXPECTED);
+	});
+
+	test('issue #158667: cursorWordPartLeft stops at "-" even when "-" is not in word separators', () => {
+		const EXPECTED = [
+			'|this-|is-|a-|kebab-|case-|var| |THIS-|IS-|CAPS-|KEBAB| |this-|IS|Mixed|Use',
+		].join('\n');
+		const [text,] = deserializePipePositions(EXPECTED);
+		const actualStops = testRepeatedActionAndExtractPositions(
+			text,
+			new Position(1000, 1000),
+			ed => cursorWordPartLeft(ed),
+			ed => ed.getPosition()!,
+			ed => ed.getPosition()!.equals(new Position(1, 1)),
+			{ wordSeparators: "!\"#&'()*+,./:;<=>?@[\\]^`{|}·" } // default characters sans '$-%~' plus '·'
+		);
+		const actual = serializePipePositions(text, actualStops);
+		assert.deepStrictEqual(actual, EXPECTED);
+	});
+
+	test('issue #158667: cursorWordPartRight stops at "-" even when "-" is not in word separators', () => {
+		const EXPECTED = [
+			'this|-is|-a|-kebab|-case|-var| |THIS|-IS|-CAPS|-KEBAB| |this|-IS|Mixed|Use|',
+		].join('\n');
+		const [text,] = deserializePipePositions(EXPECTED);
+		const actualStops = testRepeatedActionAndExtractPositions(
+			text,
+			new Position(1, 1),
+			ed => cursorWordPartRight(ed),
+			ed => ed.getPosition()!,
+			ed => ed.getPosition()!.equals(new Position(1, 60)),
+			{ wordSeparators: "!\"#&'()*+,./:;<=>?@[\\]^`{|}·" } // default characters sans '$-%~' plus '·'
+		);
+		const actual = serializePipePositions(text, actualStops);
+		assert.deepStrictEqual(actual, EXPECTED);
+	});
+
+	test('issue #158667: deleteWordPartLeft stops at "-" even when "-" is not in word separators', () => {
+		const EXPECTED = [
+			'|this-|is-|a-|kebab-|case-|var| |THIS-|IS-|CAPS-|KEBAB| |this-|IS|Mixed|Use',
+		].join(' ');
+		const [text,] = deserializePipePositions(EXPECTED);
+		const actualStops = testRepeatedActionAndExtractPositions(
+			text,
+			new Position(1000, 1000),
+			ed => deleteWordPartLeft(ed),
+			ed => ed.getPosition()!,
+			ed => ed.getValue().length === 0,
+			{ wordSeparators: "!\"#&'()*+,./:;<=>?@[\\]^`{|}·" } // default characters sans '$-%~' plus '·'
+		);
+		const actual = serializePipePositions(text, actualStops);
+		assert.deepStrictEqual(actual, EXPECTED);
+	});
+
+	test('issue #158667: deleteWordPartRight stops at "-" even when "-" is not in word separators', () => {
+		const EXPECTED = [
+			'this|-is|-a|-kebab|-case|-var| |THIS|-IS|-CAPS|-KEBAB| |this|-IS|Mixed|Use|',
+		].join(' ');
+		const [text,] = deserializePipePositions(EXPECTED);
+		const actualStops = testRepeatedActionAndExtractPositions(
+			text,
+			new Position(1, 1),
+			ed => deleteWordPartRight(ed),
+			ed => new Position(1, text.length - ed.getValue().length + 1),
+			ed => ed.getValue().length === 0,
+			{ wordSeparators: "!\"#&'()*+,./:;<=>?@[\\]^`{|}·" } // default characters sans '$-%~' plus '·'
 		);
 		const actual = serializePipePositions(text, actualStops);
 		assert.deepStrictEqual(actual, EXPECTED);

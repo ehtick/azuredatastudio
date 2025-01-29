@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from 'vs/base/common/event';
@@ -21,7 +21,14 @@ export const enum WorkingCopyCapabilities {
 	 * additional input when saving, e.g. an
 	 * associated path to save to.
 	 */
-	Untitled = 1 << 1
+	Untitled = 1 << 1,
+
+	/**
+	 * The working copy will not indicate that
+	 * it is dirty and unsaved content will be
+	 * discarded without prompting if closed.
+	 */
+	Scratchpad = 1 << 2
 }
 
 /**
@@ -156,12 +163,33 @@ export interface IWorkingCopy extends IWorkingCopyIdentifier {
 
 	//#region Dirty Tracking
 
+	/**
+	 * Indicates that the file has unsaved changes
+	 * and should confirm before closing.
+	 */
 	isDirty(): boolean;
+
+	/**
+	 * Indicates that the file has unsaved changes.
+	 * Used for backup tracking and accounts for
+	 * working copies that are never dirty e.g.
+	 * scratchpads.
+	 */
+	isModified(): boolean;
 
 	//#endregion
 
 
 	//#region Save / Backup
+
+	/**
+	 * The delay in milliseconds to wait before triggering
+	 * a backup after the content of the model has changed.
+	 *
+	 * If not configured, a sensible default will be taken
+	 * based on user settings.
+	 */
+	readonly backupDelay?: number;
 
 	/**
 	 * The workbench may call this method often after it receives

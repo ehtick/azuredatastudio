@@ -1,10 +1,9 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as es from 'event-stream';
-import * as _ from 'underscore';
 import * as fancyLog from 'fancy-log';
 import * as ansiColors from 'ansi-colors';
 import * as fs from 'fs';
@@ -35,7 +34,7 @@ class ErrorLog {
 	}
 
 	log(): void {
-		const errors = _.flatten(this.allErrors);
+		const errors = this.allErrors.flat();
 		const seen = new Set<string>();
 
 		errors.map(err => {

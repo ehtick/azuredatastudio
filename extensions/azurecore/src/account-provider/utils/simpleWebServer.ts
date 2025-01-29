@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
 import * as url from 'url';
@@ -17,7 +17,7 @@ export class SimpleWebServer {
 	private readonly pathMappings = new Map<string, WebHandler>();
 	private readonly server: http.Server;
 	private lastUsed: number = new Date().getTime();
-	private shutoffInterval: NodeJS.Timer;
+	private shutoffInterval: NodeJS.Timeout;
 
 	constructor(private readonly autoShutoffTimer = 5 * 60 * 1000) { // Default to five minutes.
 		this.bumpLastUsed();
@@ -64,7 +64,7 @@ export class SimpleWebServer {
 			throw new AlreadyRunningError();
 		}
 		this.hasStarted = true;
-		let portTimeout: NodeJS.Timer;
+		let portTimeout: NodeJS.Timeout;
 		const portPromise = new Promise<string>((resolve, reject) => {
 			portTimeout = setTimeout(() => {
 				reject(new Error('Timed out waiting for the server to start'));

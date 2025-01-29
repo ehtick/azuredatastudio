@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as assert from 'assert';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
@@ -106,6 +106,12 @@ suite('CancellationToken', function () {
 		source.dispose(true);
 		// source.cancel();
 		assert.strictEqual(count, 1);
+	});
+
+	test('dispose does not cancel', function () {
+		const source = new CancellationTokenSource();
+		source.dispose();
+		assert.strictEqual(source.token.isCancellationRequested, false);
 	});
 
 	test('parent cancels child', function () {

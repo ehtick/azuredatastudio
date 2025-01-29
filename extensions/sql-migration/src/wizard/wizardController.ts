@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as azdata from 'azdata';
 import * as vscode from 'vscode';
 import { MigrationStateModel, NetworkContainerType, Page } from '../models/stateMachine';
 import * as loc from '../constants/strings';
 import { MigrationWizardPage } from '../models/migrationWizardPage';
-import { SKURecommendationPage } from './skuRecommendationPage';
+import { SKURecommendationPage } from './skuRecommendation/skuRecommendationPage';
 import { DatabaseBackupPage } from './databaseBackupPage';
 import { TargetSelectionPage } from './targetSelectionPage';
 import { LoginMigrationTargetSelectionPage } from './loginMigrationTargetSelectionPage';
@@ -22,11 +22,15 @@ import { MigrationLocalStorage, MigrationServiceContext } from '../models/migrat
 import { azureResource } from 'azurecore';
 import { ServiceContextChangeEvent } from '../dashboard/tabBase';
 import { getSourceConnectionProfile } from '../api/sqlUtils';
+import { AssessmentDetailsPage } from './assessmentDetailsPage/assessmentDetailsPage';
+import { CancelFeedbackDialog } from '../dialog/help/cancelFeedbackDialog';
 
 export const WIZARD_INPUT_COMPONENT_WIDTH = '600px';
 export class WizardController {
 	private _wizardObject!: azdata.window.Wizard;
 	private _disposables: vscode.Disposable[] = [];
+	private _cancelReasonsList!: string[];
+
 	constructor(
 		private readonly extensionContext: vscode.ExtensionContext,
 		private readonly _model: MigrationStateModel,
@@ -59,8 +63,7 @@ export class WizardController {
 		this._wizardObject.doneButton.secondary = false;
 		this._wizardObject.backButton.position = 'left';
 		this._wizardObject.backButton.secondary = true;
-		this._wizardObject.cancelButton.position = 'left';
-		this._wizardObject.cancelButton.secondary = true;
+		this._wizardObject.cancelButton.hidden = true;
 
 		const saveAndCloseButton = azdata.window.createButton(
 			loc.SAVE_AND_CLOSE,
@@ -79,17 +82,30 @@ export class WizardController {
 		tdeMigrateButton.secondary = false;
 		tdeMigrateButton.hidden = true;
 
-		this._wizardObject.customButtons = [validateButton, tdeMigrateButton, saveAndCloseButton];
-		const databaseSelectorPage = new DatabaseSelectorPage(this._wizardObject, stateModel);
-		const skuRecommendationPage = new SKURecommendationPage(this._wizardObject, stateModel);
-		const targetSelectionPage = new TargetSelectionPage(this._wizardObject, stateModel);
-		const integrationRuntimePage = new IntergrationRuntimePage(this._wizardObject, stateModel);
-		const databaseBackupPage = new DatabaseBackupPage(this._wizardObject, stateModel);
-		const summaryPage = new SummaryPage(this._wizardObject, stateModel);
+		const saveAssessmentButton = azdata.window.createButton(
+			loc.SAVE_ASSESSMENT_REPORT,
+			'right');
+		saveAssessmentButton.secondary = true;
+		saveAssessmentButton.hidden = true;
+
+		const customCancelButton = azdata.window.createButton(
+			loc.CANCEL,
+			'right');
+		customCancelButton.secondary = true;
+
+		this._wizardObject.customButtons = [validateButton, tdeMigrateButton, saveAssessmentButton, saveAndCloseButton, customCancelButton];
+		const databaseSelectorPage = new DatabaseSelectorPage(this._wizardObject, stateModel, this);
+		const skuRecommendationPage = new SKURecommendationPage(this._wizardObject, stateModel, this);
+		const assessmentDetailsPage = new AssessmentDetailsPage(this._wizardObject, stateModel, this);
+		const targetSelectionPage = new TargetSelectionPage(this._wizardObject, stateModel, this);
+		const integrationRuntimePage = new IntergrationRuntimePage(this._wizardObject, stateModel, this);
+		const databaseBackupPage = new DatabaseBackupPage(this._wizardObject, stateModel, this);
+		const summaryPage = new SummaryPage(this._wizardObject, stateModel, this);
 
 		const pages: MigrationWizardPage[] = [
 			databaseSelectorPage,
 			skuRecommendationPage,
+			assessmentDetailsPage,
 			targetSelectionPage,
 			integrationRuntimePage,
 			databaseBackupPage,
@@ -158,16 +174,14 @@ export class WizardController {
 			}));
 
 		this._disposables.push(
-			this._wizardObject.cancelButton.onClick(e => {
-				sendSqlMigrationActionEvent(
-					TelemetryViews.SqlMigrationWizard,
-					TelemetryAction.PageButtonClick,
-					{
-						...getTelemetryProps(this._model),
-						'buttonPressed': TelemetryAction.Cancel,
-						'pageTitle': this._wizardObject.pages[this._wizardObject.currentPage].title
-					},
-					{});
+			customCancelButton.onClick(async () => {
+				const cancelFeedbackDialog = new CancelFeedbackDialog();
+				cancelFeedbackDialog.updateCancelReasonsList(this._cancelReasonsList); // Fix: Use the element access expression with an argument
+				await cancelFeedbackDialog.openDialog(async (isCancelled: boolean, cancellationReason: string) => {
+					if (isCancelled) {
+						await this.cancelWizardAndLogTelemetry(cancellationReason);
+					}
+				});
 			}));
 
 		this._disposables.push(
@@ -200,9 +214,26 @@ export class WizardController {
 
 		this._wizardObject.generateScriptButton.enabled = false;
 		this._wizardObject.generateScriptButton.hidden = true;
-		const targetSelectionPage = new LoginMigrationTargetSelectionPage(this._wizardObject, stateModel);
-		const loginSelectorPage = new LoginSelectorPage(this._wizardObject, stateModel);
-		const migrationStatusPage = new LoginMigrationStatusPage(this._wizardObject, stateModel);
+		this._wizardObject.nextButton.position = 'left';
+		this._wizardObject.nextButton.secondary = false;
+		this._wizardObject.cancelButton.hidden = true;
+
+		const validateButton = azdata.window.createButton(
+			loc.RUN_VALIDATION,
+			'left');
+		validateButton.secondary = false;
+		validateButton.hidden = true;
+
+		const customCancelButton = azdata.window.createButton(
+			loc.CANCEL,
+			'right');
+		customCancelButton.secondary = true;
+		this._wizardObject.customButtons = [validateButton, customCancelButton];
+
+
+		const targetSelectionPage = new LoginMigrationTargetSelectionPage(this._wizardObject, stateModel, this);
+		const loginSelectorPage = new LoginSelectorPage(this._wizardObject, stateModel, this);
+		const migrationStatusPage = new LoginMigrationStatusPage(this._wizardObject, stateModel, this);
 
 		const pages: MigrationWizardPage[] = [
 			targetSelectionPage,
@@ -240,18 +271,15 @@ export class WizardController {
 		await Promise.all(wizardSetupPromises);
 
 		this._disposables.push(
-			this._wizardObject.cancelButton.onClick(e => {
-				// TODO AKMA: add dialog prompting confirmation of cancel if migration is in progress
+			customCancelButton.onClick(async () => {
+				const cancelFeedbackDialog = new CancelFeedbackDialog();
+				cancelFeedbackDialog.updateCancelReasonsList(this._cancelReasonsList);
 
-				sendSqlMigrationActionEvent(
-					TelemetryViews.LoginMigrationWizard,
-					TelemetryAction.PageButtonClick,
-					{
-						...getTelemetryProps(this._model),
-						'buttonPressed': TelemetryAction.Cancel,
-						'pageTitle': this._wizardObject.pages[this._wizardObject.currentPage].title
-					},
-					{});
+				await cancelFeedbackDialog.openDialog(async (isCancelled: boolean, cancellationReason: string) => {
+					if (isCancelled) {
+						await this.cancelLoginWizardAndLogTelemetry(cancellationReason);
+					}
+				});
 			}));
 
 		this._disposables.push(
@@ -268,14 +296,45 @@ export class WizardController {
 			}));
 	}
 
+	private async cancelWizardAndLogTelemetry(cancellationReason: string): Promise<void> {
+		await this._wizardObject.close();
+
+		sendSqlMigrationActionEvent(
+			TelemetryViews.LoginMigrationWizard,
+			TelemetryAction.PageButtonClick,
+			{
+				...getTelemetryProps(this._model),
+				'buttonPressed': TelemetryAction.Cancel,
+				'pageTitle': this._wizardObject.pages[this._wizardObject.currentPage].title,
+				'cancellationReason': cancellationReason
+			},
+			{});
+	}
+
+	private async cancelLoginWizardAndLogTelemetry(cancellationReason: string): Promise<void> {
+		await this._wizardObject.close();
+
+		sendSqlMigrationActionEvent(
+			TelemetryViews.LoginMigrationWizard,
+			TelemetryAction.PageButtonClick,
+			{
+				...getTelemetryProps(this._model),
+				'buttonPressed': TelemetryAction.Cancel,
+				'pageTitle': this._wizardObject.pages[this._wizardObject.currentPage].title,
+				'cancellationReason': cancellationReason
+			},
+			{});
+	}
+
+	public cancelReasonsList(cancelReasons: string[]): void {
+		this._cancelReasonsList = cancelReasons;
+	}
+
 	private async updateServiceContext(
 		stateModel: MigrationStateModel,
 		serviceContextChangedEvent: vscode.EventEmitter<ServiceContextChangeEvent>): Promise<void> {
 
-		const resourceGroup = this._getResourceGroupByName(
-			stateModel._resourceGroups,
-			stateModel._sqlMigrationService?.properties.resourceGroup);
-
+		const resourceGroup = stateModel._sqlMigrationServiceResourceGroup;
 		const subscription = this._getSubscriptionFromResourceId(
 			stateModel._subscriptions,
 			resourceGroup?.id);
@@ -294,13 +353,6 @@ export class WizardController {
 				migrationService: stateModel._sqlMigrationService,
 			},
 			serviceContextChangedEvent);
-	}
-
-	private _getResourceGroupByName(
-		resourceGroups: azureResource.AzureResourceResourceGroup[],
-		displayName?: string): azureResource.AzureResourceResourceGroup | undefined {
-
-		return resourceGroups.find(rg => rg.name === displayName);
 	}
 
 	private _getLocationByValue(

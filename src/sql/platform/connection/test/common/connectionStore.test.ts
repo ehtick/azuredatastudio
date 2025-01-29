@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -31,7 +31,9 @@ suite('ConnectionStore', () => {
 		savePassword: true,
 		groupId: '',
 		groupFullName: '',
+		serverCapabilities: undefined,
 		getOptionsKey: undefined!,
+		getOptionKeyIdNames: undefined!,
 		matches: () => false,
 		providerName: mssqlProviderName,
 		options: {},
@@ -56,6 +58,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.connectionName,
@@ -68,6 +72,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.serverName,
@@ -80,6 +86,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.databaseName,
@@ -92,6 +100,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.userName,
@@ -104,6 +114,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.authType,
@@ -116,6 +128,8 @@ suite('ConnectionStore', () => {
 				groupName: undefined!,
 				categoryValues: undefined!,
 				defaultValue: undefined!,
+				objectType: undefined,
+				isArray: false,
 				isIdentity: true,
 				isRequired: true,
 				specialValueType: ConnectionOptionSpecialType.password,

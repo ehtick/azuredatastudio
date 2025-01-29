@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Application, Terminal, SettingsEditor, TerminalCommandIdWithValue, TerminalCommandId } from '../../../../automation';
@@ -49,18 +49,6 @@ export function setup() {
 						await createShellIntegrationProfile();
 						await terminal.runCommandInTerminal(`false`);
 						await terminal.assertCommandDecorations({ placeholder: 1, success: 0, error: 1 });
-					});
-				});
-				describe('Custom configuration', function () {
-					it('Should update and show custom icons', async () => {
-						await createShellIntegrationProfile();
-						await terminal.assertCommandDecorations({ placeholder: 1, success: 0, error: 0 });
-						await terminal.runCommandInTerminal(`echo "foo"`);
-						await terminal.runCommandInTerminal(`bar`);
-						await settingsEditor.addUserSetting('terminal.integrated.shellIntegration.decorationIcon', '"zap"');
-						await settingsEditor.addUserSetting('terminal.integrated.shellIntegration.decorationIconSuccess', '"zap"');
-						await settingsEditor.addUserSetting('terminal.integrated.shellIntegration.decorationIconError', '"zap"');
-						await terminal.assertCommandDecorations(undefined, { updatedIcon: "zap", count: 3 });
 					});
 				});
 				describe('terminal.integrated.shellIntegration.decorationsEnabled should determine gutter and overview ruler decoration visibility', function () {

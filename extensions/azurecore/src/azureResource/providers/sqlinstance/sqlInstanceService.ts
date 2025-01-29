@@ -1,29 +1,23 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { azureResource } from 'azurecore';
 import { sqlInstanceQuery } from '../queryStringConstants';
-import { ResourceServiceBase, GraphData } from '../resourceTreeDataProviderBase';
+import { ResourceServiceBase } from '../resourceTreeDataProviderBase';
+import { SqlInstanceGraphData } from '../../interfaces';
+import { SQLINSTANCE_PROVIDER_ID } from '../../../constants';
 
-interface SqlInstanceGraphData extends GraphData {
-	properties: {
-		fullyQualifiedDomainName: string;
-		administratorLogin: string;
-	};
-}
+export class SqlInstanceResourceService extends ResourceServiceBase<SqlInstanceGraphData> {
 
-export class SqlInstanceResourceService extends ResourceServiceBase<SqlInstanceGraphData, azureResource.AzureResourceDatabaseServer> {
+	public override queryFilter: string = sqlInstanceQuery;
 
-	protected get query(): string {
-		return sqlInstanceQuery;
-	}
-
-	protected convertResource(resource: SqlInstanceGraphData): azureResource.AzureResourceDatabaseServer {
+	public override convertServerResource(resource: SqlInstanceGraphData): azureResource.AzureResourceDatabaseServer | undefined {
 		return {
 			id: resource.id,
 			name: resource.name,
+			provider: SQLINSTANCE_PROVIDER_ID,
 			fullName: resource.properties.fullyQualifiedDomainName,
 			loginName: resource.properties.administratorLogin,
 			defaultDatabaseName: 'master',

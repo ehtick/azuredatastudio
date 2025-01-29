@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
@@ -129,9 +129,7 @@ export class CancellationTokenSource {
 		if (cancel) {
 			this.cancel();
 		}
-		if (this._parentListener) {
-			this._parentListener.dispose();
-		}
+		this._parentListener?.dispose();
 		if (!this._token) {
 			// ensure to initialize with an empty token if we had none
 			this._token = CancellationToken.None;

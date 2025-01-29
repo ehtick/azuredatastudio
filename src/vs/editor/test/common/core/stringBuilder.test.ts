@@ -1,11 +1,12 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
 import { writeUInt16LE } from 'vs/base/common/buffer';
-import { decodeUTF16LE } from 'vs/editor/common/core/stringBuilder';
+import { CharCode } from 'vs/base/common/charCode';
+import { decodeUTF16LE, StringBuilder } from 'vs/editor/common/core/stringBuilder';
 
 suite('decodeUTF16LE', () => {
 
@@ -33,4 +34,14 @@ suite('decodeUTF16LE', () => {
 		assert.deepStrictEqual(actual, 'a﻿b');
 	});
 
+});
+
+suite('StringBuilder', () => {
+	test('basic', () => {
+		const sb = new StringBuilder(100);
+		sb.appendASCIICharCode(CharCode.A);
+		sb.appendASCIICharCode(CharCode.Space);
+		sb.appendString('😊');
+		assert.strictEqual(sb.build(), 'A 😊');
+	});
 });

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableStore } from 'vs/base/common/lifecycle';
@@ -26,7 +26,7 @@ export class UniversalWatcherClient extends AbstractUniversalWatcherClient {
 		// Fork the universal file watcher and build a client around
 		// its server for passing over requests and receiving events.
 		const client = disposables.add(new Client(
-			FileAccess.asFileUri('bootstrap-fork', require).fsPath,
+			FileAccess.asFileUri('bootstrap-fork').fsPath,
 			{
 				serverName: 'File Watcher',
 				args: ['--type=fileWatcher'],

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as es from 'event-stream';
@@ -9,8 +9,6 @@ import * as cp from 'child_process';
 import * as glob from 'glob';
 import * as gulp from 'gulp';
 import * as path from 'path';
-import * as through2 from 'through2'
-import got from 'got';
 import { Stream } from 'stream';
 import * as File from 'vinyl';
 import { createStatsStream } from './stats';
@@ -24,9 +22,12 @@ const buffer = require('gulp-buffer');
 import * as jsoncParser from 'jsonc-parser';
 import webpack = require('webpack');
 import { getProductionDependencies } from './dependencies';
-const util = require('./util');
+import { IExtensionDefinition, getExtensionStream } from './builtInExtensions';
+import { getVersion } from './getVersion';
+import { fetchUrls, fetchGithub } from './fetch';
+
 const root = path.dirname(path.dirname(__dirname));
-const commit = util.getVersion(root);
+const commit = getVersion(root);
 const sourceMappingURLBase = `https://sqlopsbuilds.blob.core.windows.net/sourcemaps/${commit}`; // {{SQL CARBON EDIT}}
 
 function minifyExtensionResources(input: Stream): Stream {
@@ -36,7 +37,7 @@ function minifyExtensionResources(input: Stream): Stream {
 		.pipe(buffer())
 		.pipe(es.mapSync((f: File) => {
 			const errors: jsoncParser.ParseError[] = [];
-			const value = jsoncParser.parse(f.contents.toString('utf8'), errors);
+			const value = jsoncParser.parse(f.contents.toString('utf8'), errors, { allowTrailingComma: true });
 			if (errors.length === 0) {
 				// file parsed OK => just stringify to drop whitespace and comments
 				f.contents = Buffer.from(JSON.stringify(value));
@@ -59,12 +60,12 @@ function updateExtensionPackageJSON(input: Stream, update: (data: any) => any): 
 		.pipe(packageJsonFilter.restore);
 }
 
-export function fromLocal(extensionPath: string, forWeb: boolean): Stream { // {{SQL CARBON EDIT}} - Needed in locFunc
+export function fromLocal(extensionPath: string, forWeb: boolean, disableMangle: boolean): Stream {
 	const webpackConfigFileName = forWeb ? 'extension-browser.webpack.config.js' : 'extension.webpack.config.js';
 
 	const isWebPacked = fs.existsSync(path.join(extensionPath, webpackConfigFileName));
 	let input = isWebPacked
-		? fromLocalWebpack(extensionPath, webpackConfigFileName)
+		? fromLocalWebpack(extensionPath, webpackConfigFileName, disableMangle)
 		: fromLocalNormal(extensionPath);
 
 	if (isWebPacked) {
@@ -82,7 +83,8 @@ export function fromLocal(extensionPath: string, forWeb: boolean): Stream { // {
 	return input;
 }
 
-function fromLocalWebpack(extensionPath: string, webpackConfigFileName: string): Stream {
+
+function fromLocalWebpack(extensionPath: string, webpackConfigFileName: string, disableMangle: boolean): Stream {
 	const vsce = require('@vscode/vsce') as typeof import('@vscode/vsce');
 	const webpack = require('webpack');
 	const webpackGulp = require('webpack-stream');
@@ -138,6 +140,19 @@ function fromLocalWebpack(extensionPath: string, webpackConfigFileName: string):
 					...config,
 					...{ mode: 'production' }
 				};
+				if (disableMangle) {
+					if (Array.isArray(config.module.rules)) {
+						for (const rule of config.module.rules) {
+							if (Array.isArray(rule.use)) {
+								for (const use of rule.use) {
+									if (String(use.loader).endsWith('mangle-loader.js')) {
+										use.options.disabled = true;
+									}
+								}
+							}
+						}
+					}
+				}
 				const relativeOutputPath = path.relative(extensionPath, webpackConfig.output.path);
 
 				return webpackGulp(webpackConfig, webpack, webpackDone)
@@ -206,8 +221,7 @@ const baseHeaders = {
 	'X-Market-User-Id': '291C1CD0-051A-4123-9B4B-30D60EF52EE2',
 };
 
-export function fromMarketplace(_serviceUrl: string, { name: extensionName, version, metadata }: IBuiltInExtension): Stream { // {{SQL CARBON EDIT}} We don't use the passed in service URL
-	const remote = require('gulp-remote-retry-src');
+export function fromMarketplace(_serviceUrl: string, { name: extensionName, version, sha256, metadata }: IExtensionDefinition): Stream { // {{SQL CARBON EDIT}} We don't use the passed in service URL
 	const json = require('gulp-json-editor') as typeof import('gulp-json-editor');
 
 	const [_publisher, name] = extensionName.split('.'); // {{SQL CARBON EDIT}} We don't have the publisher in our path
@@ -215,17 +229,15 @@ export function fromMarketplace(_serviceUrl: string, { name: extensionName, vers
 
 	fancyLog('Downloading extension:', ansiColors.yellow(`${extensionName}@${version}`), '...');
 
-	const options = {
-		base: url,
-		requestOptions: {
-			gzip: true,
-			headers: baseHeaders
-		}
-	};
-
 	const packageJsonFilter = filter('package.json', { restore: true });
 
-	return remote('', options)
+	return fetchUrls('', {
+		base: url,
+		nodeFetchOptions: {
+			headers: baseHeaders
+		},
+		checksumSha256: sha256
+	})
 		.pipe(vzip.src())
 		.pipe(filter('extension/**'))
 		.pipe(rename(p => p.dirname = p.dirname!.replace(/^extension\/?/, '')))
@@ -235,39 +247,19 @@ export function fromMarketplace(_serviceUrl: string, { name: extensionName, vers
 		.pipe(packageJsonFilter.restore);
 }
 
-const ghApiHeaders: Record<string, string> = {
-	Accept: 'application/vnd.github.v3+json',
-	'User-Agent': userAgent,
-};
-if (process.env.GITHUB_TOKEN) {
-	ghApiHeaders.Authorization = 'Basic ' + Buffer.from(process.env.GITHUB_TOKEN).toString('base64');
-}
-const ghDownloadHeaders = {
-	...ghApiHeaders,
-	Accept: 'application/octet-stream',
-};
 
-export function fromGithub({ name, version, repo, metadata }: IBuiltInExtension): Stream {
-	const remote = require('gulp-remote-retry-src');
+export function fromGithub({ name, version, repo, sha256, metadata }: IExtensionDefinition): Stream {
 	const json = require('gulp-json-editor') as typeof import('gulp-json-editor');
 
 	fancyLog('Downloading extension from GH:', ansiColors.yellow(`${name}@${version}`), '...');
 
 	const packageJsonFilter = filter('package.json', { restore: true });
 
-	return remote([`/repos${new URL(repo).pathname}/releases/tags/v${version}`], {
-		base: 'https://api.github.com',
-		requestOptions: { headers: ghApiHeaders }
-	}).pipe(through2.obj(function (file, _enc, callback) {
-		const asset = JSON.parse(file.contents.toString()).assets.find((a: any) => a.name.endsWith('.vsix'));
-		if (!asset) {
-			return callback(new Error(`Could not find vsix in release of ${repo} @ ${version}`));
-		}
-
-		const res = got.stream(asset.url, { headers: ghDownloadHeaders, followRedirect: true });
-		file.contents = res.pipe(through2());
-		callback(null, file);
-	}))
+	return fetchGithub(new URL(repo).pathname, {
+		version,
+		name: name => name.endsWith('.vsix'),
+		checksumSha256: sha256
+	})
 		.pipe(buffer())
 		.pipe(vzip.src())
 		.pipe(filter('extension/**'))
@@ -285,7 +277,6 @@ const excludedExtensions = [
 	'ms-vscode.node-debug',
 	'ms-vscode.node-debug2',
 	'vscode-custom-editor-tests',
-	'vscode-notebook-tests',
 	'integration-tests', // {{SQL CARBON EDIT}}
 ];
 
@@ -301,7 +292,6 @@ const externalExtensions = [
 	'arc',
 	'asde-deployment',
 	'azcli',
-	'azurehybridtoolkit',
 	'azuremonitor',
 	'cms',
 	'dacpac',
@@ -339,16 +329,9 @@ const marketplaceWebExtensionsExclude = new Set([
 	'ms-vscode.vscode-js-profile-table'
 ]);
 
-interface IBuiltInExtension {
-	name: string;
-	version: string;
-	repo: string;
-	metadata: any;
-}
-
 const productJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../../product.json'), 'utf8'));
-const builtInExtensions: IBuiltInExtension[] = productJson.builtInExtensions || [];
-const webBuiltInExtensions: IBuiltInExtension[] = productJson.webBuiltInExtensions || [];
+const builtInExtensions: IExtensionDefinition[] = productJson.builtInExtensions || [];
+const webBuiltInExtensions: IExtensionDefinition[] = productJson.webBuiltInExtensions || [];
 
 type ExtensionKind = 'ui' | 'workspace' | 'web';
 interface IExtensionManifest {
@@ -386,7 +369,7 @@ function isWebExtension(manifest: IExtensionManifest): boolean {
 	return true;
 }
 
-export function packageLocalExtensionsStream(forWeb: boolean): Stream {
+export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boolean): Stream {
 	const localExtensionsDescriptions = (
 		(<string[]>glob.sync('extensions/*/package.json'))
 			.map(manifestPath => {
@@ -403,7 +386,7 @@ export function packageLocalExtensionsStream(forWeb: boolean): Stream {
 	const localExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...localExtensionsDescriptions.map(extension => {
-				return fromLocal(extension.path, forWeb)
+				return fromLocal(extension.path, forWeb, disableMangle)
 					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
 			})
 		)
@@ -420,7 +403,8 @@ export function packageLocalExtensionsStream(forWeb: boolean): Stream {
 		result = es.merge(
 			localExtensionsStream,
 			gulp.src(dependenciesSrc, { base: '.' })
-				.pipe(util2.cleanNodeModules(path.join(root, 'build', '.moduleignore'))));
+				.pipe(util2.cleanNodeModules(path.join(root, 'build', '.moduleignore')))
+				.pipe(util2.cleanNodeModules(path.join(root, 'build', `.moduleignore.${process.platform}`))));
 	}
 
 	return (
@@ -429,7 +413,7 @@ export function packageLocalExtensionsStream(forWeb: boolean): Stream {
 	);
 }
 
-export function packageMarketplaceExtensionsStream(forWeb: boolean, galleryServiceUrl?: string): Stream {
+export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
 	const marketplaceExtensionsDescriptions = [
 		...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
 		...(forWeb ? webBuiltInExtensions : [])
@@ -438,9 +422,8 @@ export function packageMarketplaceExtensionsStream(forWeb: boolean, galleryServi
 		es.merge(
 			...marketplaceExtensionsDescriptions
 				.map(extension => {
-					const input = (galleryServiceUrl ? fromMarketplace(galleryServiceUrl, extension) : fromGithub(extension))
-						.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
-					return updateExtensionPackageJSON(input, (data: any) => {
+					const src = getExtensionStream(extension).pipe(rename(p => p.dirname = `extensions/${p.dirname}`));
+					return updateExtensionPackageJSON(src, (data: any) => {
 						delete data.scripts;
 						delete data.dependencies;
 						delete data.devDependencies;
@@ -512,7 +495,7 @@ export function packageExternalExtensionsStream(): NodeJS.ReadWriteStream {
 		.filter(({ name }) => externalExtensions.indexOf(name) >= 0 || vscodeExternalExtensions.indexOf(name) >= 0);
 
 	const builtExtensions = extenalExtensionDescriptions.map(extension => {
-		return fromLocal(extension.path, false)
+		return fromLocal(extension.path, false, true)
 			.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
 	});
 
@@ -535,7 +518,7 @@ export function packageRebuildExtensionsStream(): NodeJS.ReadWriteStream {
 		.filter(({ name }) => rebuildExtensions.indexOf(name) >= 0);
 
 	const builtExtensions = extenalExtensionDescriptions.map(extension => {
-		return fromLocal(extension.path, false)
+		return fromLocal(extension.path, false, true)
 			.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
 	});
 
@@ -587,20 +570,14 @@ export async function webpackExtensions(taskName: string, isWatch: boolean, webp
 
 	for (const { configPath, outputRoot } of webpackConfigLocations) {
 		const configOrFnOrArray = require(configPath);
-		function addConfig(configOrFn: webpack.Configuration | Function) {
-			let config;
-			if (typeof configOrFn === 'function') {
-				config = (configOrFn as Function)({}, {});
+		function addConfig(configOrFnOrArray: webpack.Configuration | ((env: unknown, args: unknown) => webpack.Configuration) | webpack.Configuration[]) {
+			for (const configOrFn of Array.isArray(configOrFnOrArray) ? configOrFnOrArray : [configOrFnOrArray]) {
+				const config = typeof configOrFn === 'function' ? configOrFn({}, {}) : configOrFn;
+				if (outputRoot) {
+					config.output!.path = path.join(outputRoot, path.relative(path.dirname(configPath), config.output!.path!));
+				}
 				webpackConfigs.push(config);
-			} else {
-				config = configOrFn;
 			}
-
-			if (outputRoot) {
-				config.output.path = path.join(outputRoot, path.relative(path.dirname(configPath), config.output.path));
-			}
-
-			webpackConfigs.push(configOrFn);
 		}
 		addConfig(configOrFnOrArray);
 	}

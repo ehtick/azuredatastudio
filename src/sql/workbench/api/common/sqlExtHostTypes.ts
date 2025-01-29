@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as azdata from 'azdata';
@@ -120,7 +120,7 @@ export enum AlertType {
 }
 
 export enum FrequencyTypes {
-	Unknown,
+	Unknown = 0,
 	OneTime = 1 << 1,
 	Daily = 1 << 2,
 	Weekly = 1 << 3,
@@ -180,13 +180,16 @@ export enum ModelComponentTypes {
 	Separator,
 	PropertiesContainer,
 	InfoBox,
-	Slider
+	Slider,
+	ExecutionPlan,
+	Chart
 }
 
 export enum ModelViewAction {
 	SelectTab = 'selectTab',
 	AppendData = 'appendData',
-	Filter = 'filter'
+	Filter = 'filter',
+	SetActiveCell = 'setActiveCell'
 }
 
 export enum ColumnSizingMode {
@@ -215,6 +218,11 @@ export enum StepCompletionAction {
 	QuitWithFailure = 2,
 	GoToNextStep = 3,
 	GoToStep = 4
+}
+
+export enum ProfilingSessionType {
+	RemoteSession = 0,
+	LocalFile = 1
 }
 
 export interface CheckBoxInfo {
@@ -414,7 +422,8 @@ export enum DataProviderType {
 	SqlAssessmentServicesProvider = 'SqlAssessmentServicesProvider',
 	DataGridProvider = 'DataGridProvider',
 	TableDesignerProvider = 'TableDesignerProvider',
-	ExecutionPlanProvider = 'ExecutionPlanProvider'
+	ExecutionPlanProvider = 'ExecutionPlanProvider',
+	ServerContextualizationProvider = 'ServerContextualizationProvider'
 }
 
 export enum DeclarativeDataType {
@@ -451,7 +460,8 @@ export enum DatabaseEngineEdition {
 	SqlDataWarehouse = 6,
 	SqlStretchDatabase = 7,
 	SqlManagedInstance = 8,
-	SqlOnDemand = 11
+	SqlOnDemand = 11,
+	SqlDbFabric = 12
 }
 
 export interface ToolbarLayout {
@@ -467,7 +477,7 @@ export enum AzureResource {
 	Sql = 1,
 	OssRdbms = 2,
 	AzureKeyVault = 3,
-	Graph = 4,
+	// 4 (formerly Azure Graph) is no longer used.
 	MicrosoftResourceManagement = 5,
 	AzureDevOps = 6,
 	MsGraph = 7,
@@ -476,6 +486,31 @@ export enum AzureResource {
 	AzureKusto = 10,
 	PowerBi = 11,
 	Custom = 12 // Handles custom resource URIs as received from server endpoint.
+}
+
+export enum NodeFilterPropertyDataType {
+	String = 0,
+	Number = 1,
+	Boolean = 2,
+	Date = 3,
+	Choice = 4
+}
+
+export enum NodeFilterOperator {
+	Equals = 0,
+	NotEquals = 1,
+	LessThan = 2,
+	LessThanOrEquals = 3,
+	GreaterThan = 4,
+	GreaterThanOrEquals = 5,
+	Between = 6,
+	NotBetween = 7,
+	Contains = 8,
+	NotContains = 9,
+	StartsWith = 10,
+	NotStartsWith = 11,
+	EndsWith = 12,
+	NotEndsWith = 13
 }
 
 export class TreeItem extends vsExtTypes.TreeItem {

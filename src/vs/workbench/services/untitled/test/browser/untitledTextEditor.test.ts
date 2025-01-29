@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -20,6 +20,7 @@ import { EditorInputCapabilities } from 'vs/workbench/common/editor';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { isReadable, isReadableStream } from 'vs/base/common/stream';
 import { readableToBuffer, streamToBuffer, VSBufferReadable, VSBufferReadableStream } from 'vs/base/common/buffer';
+import { LanguageDetectionLanguageEventSource } from 'vs/workbench/services/languageDetection/common/languageDetectionWorkerService';
 
 suite('Untitled text editors', () => {
 
@@ -45,14 +46,17 @@ suite('Untitled text editors', () => {
 		const input1 = instantiationService.createInstance(UntitledTextEditorInput, service.create());
 		await input1.resolve();
 		assert.strictEqual(service.get(input1.resource), input1.model);
+		assert.ok(!accessor.untitledTextEditorService.isUntitledWithAssociatedResource(input1.resource));
 
 		assert.ok(service.get(input1.resource));
 		assert.ok(!service.get(URI.file('testing')));
 
 		assert.ok(input1.hasCapability(EditorInputCapabilities.Untitled));
 		assert.ok(!input1.hasCapability(EditorInputCapabilities.Readonly));
+		assert.ok(!input1.isReadonly());
 		assert.ok(!input1.hasCapability(EditorInputCapabilities.Singleton));
 		assert.ok(!input1.hasCapability(EditorInputCapabilities.RequiresTrust));
+		assert.ok(!input1.hasCapability(EditorInputCapabilities.Scratchpad));
 
 		const input2 = instantiationService.createInstance(UntitledTextEditorInput, service.create());
 		assert.strictEqual(service.get(input2.resource), input2.model);
@@ -136,6 +140,7 @@ suite('Untitled text editors', () => {
 		});
 
 		const model = service.create({ associatedResource: file });
+		assert.ok(accessor.untitledTextEditorService.isUntitledWithAssociatedResource(model.resource));
 		const untitled = instantiationService.createInstance(UntitledTextEditorInput, model);
 		assert.ok(untitled.isDirty());
 		assert.strictEqual(model, onDidChangeDirtyModel);
@@ -334,6 +339,54 @@ suite('Untitled text editors', () => {
 		registration.dispose();
 	});
 
+	// Issue #159202
+	test('remembers that language was set explicitly if set by another source (i.e. ModelService)', async () => {
+		const language = 'untitled-input-test';
+
+		const registration = accessor.languageService.registerLanguage({
+			id: language,
+		});
+
+		const service = accessor.untitledTextEditorService;
+		const model = service.create();
+		const input = instantiationService.createInstance(UntitledTextEditorInput, model);
+		await input.resolve();
+
+		assert.ok(!input.model.hasLanguageSetExplicitly);
+		model.textEditorModel!.setLanguage(accessor.languageService.createById(language));
+		assert.ok(input.model.hasLanguageSetExplicitly);
+
+		assert.strictEqual(model.getLanguageId(), language);
+
+		model.dispose();
+		registration.dispose();
+	});
+
+	test('Language is not set explicitly if set by language detection source', async () => {
+		const language = 'untitled-input-test';
+
+		const registration = accessor.languageService.registerLanguage({
+			id: language,
+		});
+
+		const service = accessor.untitledTextEditorService;
+		const model = service.create();
+		const input = instantiationService.createInstance(UntitledTextEditorInput, model);
+		await input.resolve();
+
+		assert.ok(!input.model.hasLanguageSetExplicitly);
+		model.textEditorModel!.setLanguage(
+			accessor.languageService.createById(language),
+			// This is really what this is testing
+			LanguageDetectionLanguageEventSource);
+		assert.ok(!input.model.hasLanguageSetExplicitly);
+
+		assert.strictEqual(model.getLanguageId(), language);
+
+		model.dispose();
+		registration.dispose();
+	});
+
 	test('service#onDidChangeEncoding', async () => {
 		const service = accessor.untitledTextEditorService;
 		const input = instantiationService.createInstance(UntitledTextEditorInput, service.create());
@@ -489,10 +542,14 @@ suite('Untitled text editors', () => {
 		assert.strictEqual(input.getName(), '123456789012345678901234567890123456789');
 		assert.strictEqual(model.name, '123456789012345678901234567890123456789');
 
-		assert.strictEqual(counter, 6);
+		model.textEditorModel?.setValue('hello\u202Eworld'); // do not allow RTL in names (#190133)
+		assert.strictEqual(input.getName(), 'helloworld');
+		assert.strictEqual(model.name, 'helloworld');
+
+		assert.strictEqual(counter, 7);
 
 		model.textEditorModel?.setValue('Hello\nWorld');
-		assert.strictEqual(counter, 7);
+		assert.strictEqual(counter, 8);
 
 		function createSingleEditOp(text: string, positionLineNumber: number, positionColumn: number, selectionLineNumber: number = positionLineNumber, selectionColumn: number = positionColumn): ISingleEditOperation {
 			const range = new Range(
@@ -510,7 +567,7 @@ suite('Untitled text editors', () => {
 		}
 
 		model.textEditorModel?.applyEdits([createSingleEditOp('hello', 2, 2)]);
-		assert.strictEqual(counter, 7); // change was not on first line
+		assert.strictEqual(counter, 8); // change was not on first line
 
 		input.dispose();
 		model.dispose();
@@ -563,36 +620,4 @@ suite('Untitled text editors', () => {
 		input.dispose();
 		model.dispose();
 	});
-
-	test('backup and restore (simple)', async function () {
-		return testBackupAndRestore('Some very small file text content.');
-	});
-
-	test('backup and restore (large, #121347)', async function () {
-		const largeContent = '국어한\n'.repeat(100000);
-		return testBackupAndRestore(largeContent);
-	});
-
-	async function testBackupAndRestore(content: string) {
-		const service = accessor.untitledTextEditorService;
-		const originalInput = instantiationService.createInstance(UntitledTextEditorInput, service.create());
-		const restoredInput = instantiationService.createInstance(UntitledTextEditorInput, service.create());
-
-		const originalModel = await originalInput.resolve();
-		originalModel.textEditorModel?.setValue(content);
-
-		const backup = await originalModel.backup(CancellationToken.None);
-		const modelRestoredIdentifier = { typeId: originalModel.typeId, resource: restoredInput.resource };
-		await accessor.workingCopyBackupService.backup(modelRestoredIdentifier, backup.content);
-
-		const restoredModel = await restoredInput.resolve();
-
-		assert.strictEqual(restoredModel.textEditorModel?.getValue(), content);
-		assert.strictEqual(restoredModel.isDirty(), true);
-
-		originalInput.dispose();
-		originalModel.dispose();
-		restoredInput.dispose();
-		restoredModel.dispose();
-	}
 });

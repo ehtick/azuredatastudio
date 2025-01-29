@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { clamp } from 'vs/base/common/numbers';
@@ -34,8 +34,8 @@ export class SashSettingsController implements IWorkbenchContribution, IDisposab
 		const size = clamp(configuredSize, 4, 20);
 		const hoverSize = clamp(configuredSize, 1, 8);
 
-		document.documentElement.style.setProperty('--sash-size', size + 'px');
-		document.documentElement.style.setProperty('--sash-hover-size', hoverSize + 'px');
+		document.documentElement.style.setProperty('--vscode-sash-size', size + 'px');
+		document.documentElement.style.setProperty('--vscode-sash-hover-size', hoverSize + 'px');
 		setGlobalSashSize(size);
 	}
 

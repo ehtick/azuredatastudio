@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { asCSSPropertyValue, asCSSUrl } from 'vs/base/browser/dom';
 import { Emitter, Event } from 'vs/base/common/event';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { getIconRegistry, IconContribution, IconFontDefinition } from 'vs/platform/theme/common/iconRegistry';
-import { IProductIconTheme, IThemeService, ThemeIcon } from 'vs/platform/theme/common/themeService';
+import { IProductIconTheme, IThemeService } from 'vs/platform/theme/common/themeService';
 
 export interface IIconsStyleSheet {
 	getCSS(): string;

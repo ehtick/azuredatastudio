@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -9,8 +9,7 @@ import { DialogPane } from 'sql/workbench/services/dialog/browser/dialogPane';
 import { DialogComponentParams } from 'sql/workbench/services/dialog/browser/dialogContainer.component';
 import { bootstrapAngular } from 'sql/workbench/services/bootstrap/browser/bootstrapService';
 import { TestThemeService } from 'vs/platform/theme/test/common/testThemeService';
-import { workbenchInstantiationService } from 'vs/workbench/test/electron-browser/workbenchTestServices';
-
+import { workbenchInstantiationService } from 'vs/workbench/test/electron-sandbox/workbenchTestServices';
 
 interface BootstrapAngular {
 	(collection, moduleType, container, selectorString, params: DialogComponentParams, input, callbackSetModule): void;

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/part';
@@ -14,13 +14,13 @@ import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/la
 import { assertIsDefined } from 'vs/base/common/types';
 
 export interface IPartOptions {
-	hasTitle?: boolean;
-	borderWidth?: () => number;
+	readonly hasTitle?: boolean;
+	readonly borderWidth?: () => number;
 }
 
 export interface ILayoutContentResult {
-	titleSize: IDimension;
-	contentSize: IDimension;
+	readonly titleSize: IDimension;
+	readonly contentSize: IDimension;
 }
 
 /**

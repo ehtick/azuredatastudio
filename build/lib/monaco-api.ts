@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as fs from 'fs';
@@ -115,7 +115,7 @@ function getNodeText(sourceFile: ts.SourceFile, node: { pos: number; end: number
 	return sourceFile.getFullText().substring(node.pos, node.end);
 }
 
-function hasModifier(modifiers: ts.NodeArray<ts.ModifierLike> | undefined, kind: ts.SyntaxKind): boolean {
+function hasModifier(modifiers: readonly ts.ModifierLike[] | undefined, kind: ts.SyntaxKind): boolean {
 	if (modifiers) {
 		for (let i = 0; i < modifiers.length; i++) {
 			const mod = modifiers[i];
@@ -128,7 +128,10 @@ function hasModifier(modifiers: ts.NodeArray<ts.ModifierLike> | undefined, kind:
 }
 
 function isStatic(ts: typeof import('typescript'), member: ts.ClassElement | ts.TypeElement): boolean {
-	return hasModifier(member.modifiers, ts.SyntaxKind.StaticKeyword);
+	if (ts.canHaveModifiers(member)) {
+		return hasModifier(ts.getModifiers(member), ts.SyntaxKind.StaticKeyword);
+	}
+	return false;
 }
 
 function isDefaultExport(ts: typeof import('typescript'), declaration: ts.InterfaceDeclaration | ts.ClassDeclaration): boolean {
@@ -527,7 +530,7 @@ function generateDeclarationFile(ts: typeof import('typescript'), recipe: string
 	let resultEnums = [
 		'/*---------------------------------------------------------------------------------------------',
 		' *  Copyright (c) Microsoft Corporation. All rights reserved.',
-		' *  Licensed under the Source EULA. See License.txt in the project root for license information.',
+		' *  Licensed under the MIT License. See License.txt in the project root for license information.',
 		' *--------------------------------------------------------------------------------------------*/',
 		'',
 		'// THIS IS A GENERATED FILE. DO NOT EDIT DIRECTLY.',

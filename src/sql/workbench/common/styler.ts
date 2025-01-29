@@ -1,14 +1,13 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import * as cr from 'vs/platform/theme/common/colorRegistry';
 import * as sqlcr from 'sql/platform/theme/common/colorRegistry';
-import { IThemable } from 'vs/base/common/styler';
-import { attachStyler, IStyleOverrides } from 'vs/platform/theme/common/styler';
+import { IThemable, attachStyler, IStyleOverrides } from 'sql/platform/theme/common/vsstyler';
 import {
 	SIDE_BAR_SECTION_HEADER_FOREGROUND, SIDE_BAR_BACKGROUND, SIDE_BAR_SECTION_HEADER_BACKGROUND, SIDE_BAR_DRAG_AND_DROP_BACKGROUND,
 	PANEL_ACTIVE_TITLE_BORDER, PANEL_ACTIVE_TITLE_FOREGROUND, PANEL_INACTIVE_TITLE_FOREGROUND

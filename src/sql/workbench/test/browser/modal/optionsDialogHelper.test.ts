@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as OptionsDialogHelper from 'sql/workbench/browser/modal/optionsDialogHelper';
@@ -98,7 +98,7 @@ suite('Advanced options helper tests', () => {
 			isArray: undefined
 		};
 
-		inputBox = TypeMoq.Mock.ofType(InputBox, TypeMoq.MockBehavior.Loose, $('div'), null, null);
+		inputBox = TypeMoq.Mock.ofType(InputBox, TypeMoq.MockBehavior.Loose, $('div'), null, {});
 		inputBox.callBase = true;
 		inputBox.setup(x => x.validate()).returns(() => isValid ? undefined : MessageType.ERROR);
 		inputBox.setup(x => x.value).returns(() => inputValue);

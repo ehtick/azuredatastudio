@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 //@ts-check
@@ -21,12 +21,14 @@ module.exports = withBrowserDefaults({
 		extension: './src/extension.ts',
 	},
 	externals: {
-		'keytar': 'commonjs keytar'
+		'keytar': 'commonjs keytar',
 	},
 	resolve: {
 		alias: {
-			'./env/node': path.resolve(__dirname, 'src/env/browser'),
-			'./authServer': path.resolve(__dirname, 'src/env/browser/authServer'),
+			'./node/crypto': path.resolve(__dirname, 'src/browser/crypto'),
+			'./node/authServer': path.resolve(__dirname, 'src/browser/authServer'),
+			'./node/buffer': path.resolve(__dirname, 'src/browser/buffer'),
+			'./node/fetch': path.resolve(__dirname, 'src/browser/fetch'),
 		}
 	}
 });

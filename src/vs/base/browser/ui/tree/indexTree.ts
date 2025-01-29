@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
@@ -14,7 +14,7 @@ export interface IIndexTreeOptions<T, TFilterData = void> extends IAbstractTreeO
 
 export class IndexTree<T, TFilterData = void> extends AbstractTree<T, TFilterData, number[]> {
 
-	protected override model!: IndexTreeModel<T, TFilterData>;
+	protected declare model: IndexTreeModel<T, TFilterData>;
 
 	constructor(
 		user: string,

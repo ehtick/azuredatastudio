@@ -1,10 +1,10 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { EditorConfiguration, IEnvConfiguration } from 'vs/editor/browser/config/editorConfiguration';
-import { EditorFontLigatures, IEditorOptions } from 'vs/editor/common/config/editorOptions';
+import { EditorFontLigatures, EditorFontVariations, IEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { BareFontInfo, FontInfo } from 'vs/editor/common/config/fontInfo';
 import { AccessibilitySupport } from 'vs/platform/accessibility/common/accessibility';
 import { TestAccessibilityService } from 'vs/platform/accessibility/test/common/testAccessibilityService';
@@ -33,6 +33,7 @@ export class TestConfiguration extends EditorConfiguration {
 			fontWeight: 'normal',
 			fontSize: 14,
 			fontFeatureSettings: EditorFontLigatures.OFF,
+			fontVariationSettings: EditorFontVariations.OFF,
 			lineHeight: 19,
 			letterSpacing: 1.5,
 			isMonospace: true,

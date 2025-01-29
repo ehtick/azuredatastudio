@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -178,6 +178,7 @@ export function groupBy<T>(data: ReadonlyArray<T>, compare: (a: T, b: T) => numb
 }
 
 interface IMutableSplice<T> extends ISplice<T> {
+	readonly toInsert: T[];
 	deleteCount: number;
 }
 
@@ -397,14 +398,14 @@ export function uniqueFilter<T, R>(keyFn: (t: T) => R): (t: T) => boolean {
 }
 
 export function findLast<T>(arr: readonly T[], predicate: (item: T) => boolean): T | undefined {
-	const idx = lastIndex(arr, predicate);
+	const idx = findLastIndex(arr, predicate);
 	if (idx === -1) {
 		return undefined;
 	}
 	return arr[idx];
 }
 
-export function lastIndex<T>(array: ReadonlyArray<T>, fn: (item: T) => boolean): number {
+export function findLastIndex<T>(array: ReadonlyArray<T>, fn: (item: T) => boolean): number {
 	for (let i = array.length - 1; i >= 0; i--) {
 		const element = array[i];
 
@@ -665,6 +666,10 @@ export namespace CompareResult {
 		return result < 0;
 	}
 
+	export function isLessThanOrEqual(result: CompareResult): boolean {
+		return result <= 0;
+	}
+
 	export function isGreaterThan(result: CompareResult): boolean {
 		return result > 0;
 	}
@@ -705,6 +710,12 @@ export function tieBreakComparators<TItem>(...comparators: Comparator<TItem>[]):
  * The natural order on numbers.
 */
 export const numberComparator: Comparator<number> = (a, b) => a - b;
+
+export const booleanComparator: Comparator<boolean> = (a, b) => numberComparator(a ? 1 : 0, b ? 1 : 0);
+
+export function reverseOrder<TItem>(comparator: Comparator<TItem>): Comparator<TItem> {
+	return (a, b) => -comparator(a, b);
+}
 
 /**
  * Returns the first item that is equal to or greater than every other item.
@@ -747,6 +758,21 @@ export function findLastMaxBy<T>(items: readonly T[], comparator: Comparator<T>)
 */
 export function findMinBy<T>(items: readonly T[], comparator: Comparator<T>): T | undefined {
 	return findMaxBy(items, (a, b) => -comparator(a, b));
+}
+
+export function findMaxIdxBy<T>(items: readonly T[], comparator: Comparator<T>): number {
+	if (items.length === 0) {
+		return -1;
+	}
+
+	let maxIdx = 0;
+	for (let i = 1; i < items.length; i++) {
+		const item = items[i];
+		if (comparator(item, items[maxIdx]) > 0) {
+			maxIdx = i;
+		}
+	}
+	return maxIdx;
 }
 
 export class ArrayQueue<T> {
@@ -826,6 +852,82 @@ export class ArrayQueue<T> {
 	takeCount(count: number): T[] {
 		const result = this.items.slice(this.firstIdx, this.firstIdx + count);
 		this.firstIdx += count;
+		return result;
+	}
+}
+
+/**
+ * This class is faster than an iterator and array for lazy computed data.
+*/
+export class CallbackIterable<T> {
+	public static readonly empty = new CallbackIterable<never>(_callback => { });
+
+	constructor(
+		/**
+		 * Calls the callback for every item.
+		 * Stops when the callback returns false.
+		*/
+		public readonly iterate: (callback: (item: T) => boolean) => void
+	) {
+	}
+
+	forEach(handler: (item: T) => void) {
+		this.iterate(item => { handler(item); return true; });
+	}
+
+	toArray(): T[] {
+		const result: T[] = [];
+		this.iterate(item => { result.push(item); return true; });
+		return result;
+	}
+
+	filter(predicate: (item: T) => boolean): CallbackIterable<T> {
+		return new CallbackIterable(cb => this.iterate(item => predicate(item) ? cb(item) : true));
+	}
+
+	map<TResult>(mapFn: (item: T) => TResult): CallbackIterable<TResult> {
+		return new CallbackIterable<TResult>(cb => this.iterate(item => cb(mapFn(item))));
+	}
+
+	some(predicate: (item: T) => boolean): boolean {
+		let result = false;
+		this.iterate(item => { result = predicate(item); return !result; });
+		return result;
+	}
+
+	findFirst(predicate: (item: T) => boolean): T | undefined {
+		let result: T | undefined;
+		this.iterate(item => {
+			if (predicate(item)) {
+				result = item;
+				return false;
+			}
+			return true;
+		});
+		return result;
+	}
+
+	findLast(predicate: (item: T) => boolean): T | undefined {
+		let result: T | undefined;
+		this.iterate(item => {
+			if (predicate(item)) {
+				result = item;
+			}
+			return true;
+		});
+		return result;
+	}
+
+	findLastMaxBy(comparator: Comparator<T>): T | undefined {
+		let result: T | undefined;
+		let first = true;
+		this.iterate(item => {
+			if (first || CompareResult.isGreaterThan(comparator(item, result!))) {
+				first = false;
+				result = item;
+			}
+			return true;
+		});
 		return result;
 	}
 }

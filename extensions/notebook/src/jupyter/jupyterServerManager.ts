@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { nb } from 'azdata';
@@ -14,7 +14,6 @@ import { JupyterServerInstallation } from './jupyterServerInstallation';
 import * as utils from '../common/utils';
 import { IServerInstance } from './common';
 import { PerFolderServerInstance, IInstanceOptions } from './serverInstance';
-import { CommandContext, BuiltInCommands } from '../common/constants';
 
 export interface IServerManagerOptions {
 	documentPath: string;
@@ -53,18 +52,33 @@ export class LocalJupyterServerManager implements nb.ServerManager, vscode.Dispo
 	}
 
 	public async startServer(kernelSpec: nb.IKernelSpec): Promise<void> {
-		try {
-			if (!this._jupyterServer) {
-				this._jupyterServer = await this.doStartServer(kernelSpec);
-				this.options.extensionContext.subscriptions.push(this);
-				let partialSettings = LocalJupyterServerManager.getLocalConnectionSettings(this._jupyterServer.uri);
-				this._serverSettings = partialSettings;
-				this._onServerStarted.fire();
-			}
-		} catch (error) {
-			// this is caught and notified up the stack, no longer showing a message here
-			throw error;
+		if (!this._jupyterServer) {
+			this._jupyterServer = await this.doStartServer(kernelSpec);
+
+			// Ensure the server is ready before firing the event
+			await this.verifyServerReady(this._jupyterServer.uri.toString());
+
+			this.options.extensionContext.subscriptions.push(this);
+			let partialSettings = LocalJupyterServerManager.getLocalConnectionSettings(this._jupyterServer.uri);
+			this._serverSettings = partialSettings;
+			this._onServerStarted.fire();
 		}
+
+	}
+
+	private async verifyServerReady(uri: string): Promise<void> {
+		const maxRetries = 10; // Adjust as necessary
+		const retryDelay = 500; // 500ms between retries
+		for (let i = 0; i < maxRetries; i++) {
+			try {
+				// Perform a simple GET request to verify server readiness
+				await fetch(`${uri}/api/status`, { method: 'GET' });
+				return; // Server is ready
+			} catch {
+				await new Promise(resolve => setTimeout(resolve, retryDelay)); // Wait before retrying
+			}
+		}
+		throw new Error(`Jupyter server at ${uri} did not become ready in time.`);
 	}
 
 	public dispose(): void {
@@ -105,7 +119,6 @@ export class LocalJupyterServerManager implements nb.ServerManager, vscode.Dispo
 	private async doStartServer(kernelSpec: nb.IKernelSpec): Promise<IServerInstance> { // We can't find or create servers until the installation is complete
 		let installation = this.options.jupyterInstallation;
 		await installation.promptForPythonInstall(kernelSpec.display_name);
-		void vscode.commands.executeCommand(BuiltInCommands.SetContext, CommandContext.NotebookPythonInstalled, true);
 
 		// Calculate the path to use as the notebook-dir for Jupyter based on the path of the uri of the
 		// notebook to open. This will be the workspace folder if the notebook uri is inside a workspace

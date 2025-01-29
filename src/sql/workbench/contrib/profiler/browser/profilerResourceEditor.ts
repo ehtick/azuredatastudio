@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
@@ -55,7 +55,7 @@ export class ProfilerResourceEditor extends AbstractTextCodeEditor<editorCommon.
 		super(ProfilerResourceEditor.ID, telemetryService, instantiationService, storageService, configurationService, themeService, editorService, editorGroupService, fileService);
 	}
 
-	public override createEditorControl(parent: HTMLElement, configuration: IEditorOptions): editorCommon.IEditor {
+	protected override createEditorControl(parent: HTMLElement, configuration: IEditorOptions): editorCommon.IEditor {
 		this.editorControl = this.instantiationService.createInstance(ProfilerResourceCodeEditor, parent, configuration, {});
 
 		return this.editorControl;

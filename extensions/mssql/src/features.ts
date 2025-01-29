@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as nls from 'vscode-nls';
 import { SqlOpsDataClient, SqlOpsFeature } from 'dataprotocol-client';
@@ -107,14 +107,14 @@ export class AccountFeature implements StaticFeature {
 
 		// find account
 		const accountList = await azdata.accounts.getAllAccounts();
-		const account = accountList.find(a => a.key.accountId === request.accountId);
+		const account: azurecore.AzureAccount | undefined = accountList.find(a => a.key.accountId === request.accountId);
 		if (!account) {
 			console.log(`Failed to find azure account ${request.accountId} when executing token refresh`);
 			throw Error(localizedConstants.failedToFindAccount(request.accountId));
 		}
 
 		// find tenant
-		const tenant = account.properties.tenants.find((tenant: any) => tenant.id === request.tenantId);
+		const tenant = account.properties.tenants.find(tenant => tenant.id === request.tenantId);
 		if (!tenant) {
 			console.log(`Failed to find tenant ${request.tenantId} in account ${account.displayInfo.displayName} when refreshing security token`);
 			throw Error(localizedConstants.failedToFindTenants(request.tenantId, account.displayInfo.displayName));
@@ -1001,10 +1001,11 @@ export class ProfilerFeature extends SqlOpsFeature<undefined> {
 			);
 		};
 
-		let startSession = (ownerUri: string, sessionName: string): Thenable<boolean> => {
+		let startSession = (ownerUri: string, sessionName: string, sessionType: azdata.ProfilingSessionType = azdata.ProfilingSessionType.RemoteSession): Thenable<boolean> => {
 			let params: contracts.StartProfilingParams = {
 				ownerUri,
-				sessionName
+				sessionName,
+				sessionType
 			};
 
 			return client.sendRequest(contracts.StartProfilingRequest.type, params).then(
@@ -1075,8 +1076,9 @@ export class ProfilerFeature extends SqlOpsFeature<undefined> {
 			);
 		};
 
+		const onProfilerEventsAvailableEventEmitter = this.registerNotificationEmitter(contracts.ProfilerEventsAvailableNotification.type);
 		let registerOnSessionEventsAvailable = (handler: (response: azdata.ProfilerSessionEvents) => any): void => {
-			client.onNotification(contracts.ProfilerEventsAvailableNotification.type, (params: contracts.ProfilerEventsAvailableParams) => {
+			onProfilerEventsAvailableEventEmitter.event(params => {
 				handler(<azdata.ProfilerSessionEvents>{
 					sessionId: params.ownerUri,
 					events: params.events,
@@ -1085,24 +1087,25 @@ export class ProfilerFeature extends SqlOpsFeature<undefined> {
 			});
 		};
 
-
+		const onProfilerSessionStoppedEventEmitter = this.registerNotificationEmitter(contracts.ProfilerSessionStoppedNotification.type);
 		let registerOnSessionStopped = (handler: (response: azdata.ProfilerSessionStoppedParams) => any): void => {
-			client.onNotification(contracts.ProfilerSessionStoppedNotification.type, (params: contracts.ProfilerSessionStoppedParams) => {
+			onProfilerSessionStoppedEventEmitter.event(params => {
 				handler(<azdata.ProfilerSessionStoppedParams>{
 					ownerUri: params.ownerUri,
 					sessionId: params.sessionId
 				});
-			});
+			})
 		};
 
+		const onProfilerSessionCreatedEventEmitter = this.registerNotificationEmitter(contracts.ProfilerSessionCreatedNotification.type);
 		let registerOnProfilerSessionCreated = (handler: (response: azdata.ProfilerSessionCreatedParams) => any): void => {
-			client.onNotification(contracts.ProfilerSessionCreatedNotification.type, (params: contracts.ProfilerSessionCreatedParams) => {
+			onProfilerSessionCreatedEventEmitter.event(params => {
 				handler(<azdata.ProfilerSessionCreatedParams>{
 					ownerUri: params.ownerUri,
 					sessionName: params.sessionName,
 					templateName: params.templateName
 				});
-			});
+			})
 		};
 
 
@@ -1300,6 +1303,52 @@ export class ExecutionPlanServiceFeature extends SqlOpsFeature<undefined> {
 			getExecutionPlan,
 			compareExecutionPlanGraph,
 			isExecutionPlan
+		});
+	}
+}
+
+/**
+ * Server Contextualization Service Feature
+ */
+export class ServerContextualizationServiceFeature extends SqlOpsFeature<undefined> {
+	private static readonly messagesTypes: RPCMessageType[] = [
+		contracts.GetServerContextualizationRequest.type
+	];
+
+	constructor(client: SqlOpsDataClient) {
+		super(client, ServerContextualizationServiceFeature.messagesTypes);
+	}
+
+	public fillClientCapabilities(capabilities: ClientCapabilities): void {
+	}
+
+	public initialize(capabilities: ServerCapabilities): void {
+		this.register(this.messages, {
+			id: UUID.generateUuid(),
+			registerOptions: undefined
+		});
+	}
+
+	protected registerProvider(options: undefined): Disposable {
+		const client = this._client;
+
+		const getServerContextualization = (ownerUri: string): Thenable<azdata.contextualization.GetServerContextualizationResult> => {
+			const params: contracts.ServerContextualizationParams = {
+				ownerUri: ownerUri
+			};
+
+			return client.sendRequest(contracts.GetServerContextualizationRequest.type, params).then(
+				r => r,
+				e => {
+					client.logFailedRequest(contracts.GetServerContextualizationRequest.type, e);
+					return Promise.reject(e);
+				}
+			);
+		};
+
+		return azdata.dataprotocol.registerServerContextualizationProvider({
+			providerId: client.providerId,
+			getServerContextualization: getServerContextualization
 		});
 	}
 }

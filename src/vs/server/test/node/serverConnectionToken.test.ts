@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the Source EULA. See License.txt in the project root for license information.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import * as assert from 'assert';
@@ -25,13 +25,6 @@ suite('parseServerConnectionToken', () => {
 		const result = await parseServerConnectionToken({} as ServerParsedArgs, async () => 'defaultTokenValue');
 		assert.ok(!(result instanceof ServerConnectionTokenParseError));
 		assert.ok(result.type === ServerConnectionTokenType.Mandatory);
-	});
-
-	test('no arguments with --compatibility generates a token that is not mandatory', async () => {
-		const result = await parseServerConnectionToken({ 'compatibility': '1.63' } as ServerParsedArgs, async () => 'defaultTokenValue');
-		assert.ok(!(result instanceof ServerConnectionTokenParseError));
-		assert.ok(result.type === ServerConnectionTokenType.Optional);
-		assert.strictEqual(result.value, 'defaultTokenValue');
 	});
 
 	test('--without-connection-token', async () => {
@@ -74,11 +67,4 @@ suite('parseServerConnectionToken', () => {
 		assert.strictEqual(result.value, connectionToken);
 	});
 
-	test('--connection-token --compatibility marks a as not mandatory', async () => {
-		const connectionToken = `12345-123-abc`;
-		const result = await parseServerConnectionToken({ 'connection-token': connectionToken, 'compatibility': '1.63' } as ServerParsedArgs, async () => 'defaultTokenValue');
-		assert.ok(!(result instanceof ServerConnectionTokenParseError));
-		assert.ok(result.type === ServerConnectionTokenType.Optional);
-		assert.strictEqual(result.value, connectionToken);
-	});
 });
